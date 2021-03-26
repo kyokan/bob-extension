@@ -102,6 +102,8 @@ export class AppService extends GenericService {
   constructor() {
     super();
     this.services = {};
+    this.on('execute', (msg) => this.handleExecute(msg, this));
+    this.setServiceName('app', this.services);
   }
 
   private async handleExecute (msg: ServiceMessage, origin: GenericService) {

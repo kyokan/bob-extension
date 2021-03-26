@@ -1,4 +1,4 @@
-import React, {ReactElement, useCallback, useState} from "react";
+import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import "./onboarding.scss";
 import {Redirect, Route, Switch, useHistory} from "react-router";
 import {
@@ -13,6 +13,8 @@ import Checkbox from "@src/ui/components/Checkbox";
 import Icon from "@src/ui/components/Icon";
 import TermsOfUse from "@src/ui/pages/Onboarding/terms";
 import Input from "@src/ui/components/Input";
+import MessageTypes from "@src/util/messageTypes";
+import postMessage from "@src/util/postMessage";
 
 export default function Onboarding(): ReactElement {
   const [onboardingType, setOnboardingType] = useState<'create'|'import'|null>(null);
@@ -43,6 +45,23 @@ export default function Onboarding(): ReactElement {
           <CreatePassword
             password={password}
             setPassword={setPassword}
+          />
+        </Route>
+        <Route path="/onboarding/seedphrase-warning">
+          <SeedWarning
+            isImporting={onboardingType === 'import'}
+          />
+        </Route>
+        <Route path="/onboarding/reveal-seedphrase">
+          <RevealSeedphrase
+            seedphrase={seedphrase}
+            setSeedphrase={setSeedphrase}
+          />
+        </Route>
+        <Route path="/onboarding/confirm-seedphrase">
+          <ConfirmSeedphrase
+            seedphrase={seedphrase}
+            isImporting={onboardingType === 'import'}
           />
         </Route>
         <Route>
@@ -188,6 +207,10 @@ function CreatePassword(props: {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [visible, setVisibility] = useState(false);
 
+  useEffect(() => {
+    props.setPassword('');
+  }, []);
+
   const onChangePassword = useCallback((e) => {
     const value = e.target.value;
     props.setPassword(value);
@@ -202,7 +225,7 @@ function CreatePassword(props: {
     <OnboardingModal>
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
-        onBack={() => history.push('/onboarding/terms')}
+        onBack={() => history.push('/onboarding/name-your-wallet')}
         currentStep={3}
         maxStep={5}
       />
@@ -230,6 +253,181 @@ function CreatePassword(props: {
         <Button
           onClick={() => history.push('/onboarding/seedphrase-warning')}
           disabled={props.password !== confirmPassword || props.password.length < 8}
+        >
+          Next
+        </Button>
+      </OnboardingModalFooter>
+    </OnboardingModal>
+  )
+}
+
+function SeedWarning(props: {
+  isImporting: boolean;
+}): ReactElement {
+  const { isImporting } = props;
+  const history = useHistory();
+  const [accepted, setAccept] = useState(false);
+
+  const onNext = useCallback(() => {
+    if (props.isImporting) {
+      history.push('/onboarding/confirm-seedphrase')
+    } else {
+      history.push('/onboarding/reveal-seedphrase')
+    }
+  }, [props.isImporting]);
+
+  return (
+    <OnboardingModal>
+      <OnboardingModalHeader
+        backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
+        onBack={() => history.push('/onboarding/create-password')}
+        currentStep={4}
+        maxStep={5}
+      />
+      <OnboardingModalContent>
+        <b>{isImporting ? 'Import your recovery seed phrase' : 'Back up your recovery seed phrase'}</b>
+        <p>
+          <small>
+          {
+            isImporting
+              ? 'Entering your seed on any website is dangerous. You could lose all your funds if you accidentally visit a phishing website or if your computer is compromised.'
+              : 'Your seed phrase will be generated in the next screen. It will allow you to recover your wallet if lost, stolen, or compromised.'
+          }
+          </small>
+        </p>
+      </OnboardingModalContent>
+      <OnboardingModalFooter>
+        <div className="terms__checkbox">
+          <Checkbox
+            checked={accepted}
+            onChange={() => setAccept(!accepted)}
+          />
+          <small>
+            {
+              isImporting
+                ? 'I understand the risks, let me enter my seed phrase.'
+                : 'I understand that if I lose my seed phrase, I will no longer be able to access my wallet.'
+            }
+          </small>
+        </div>
+        <Button
+          onClick={onNext}
+          disabled={!accepted}
+        >
+          Next
+        </Button>
+      </OnboardingModalFooter>
+    </OnboardingModal>
+  )
+}
+
+function RevealSeedphrase(props: {
+  seedphrase: string;
+  setSeedphrase: (seedphrase: string) => void;
+}): ReactElement {
+  const history = useHistory();
+
+  useEffect(() => {
+    (async function onRevealSeedphraseMount() {
+      const mnemonic = await postMessage({
+        type: MessageTypes.GENERATE_NEW_MNEMONIC,
+      });
+      props.setSeedphrase(mnemonic);
+    })();
+
+  }, []);
+
+  return (
+    <OnboardingModal>
+      <OnboardingModalHeader
+        backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
+        onBack={() => history.push('/onboarding/seedphrase-warning')}
+        currentStep={5}
+        maxStep={5}
+      />
+      <OnboardingModalContent>
+        <b>Your Recovery Seed Phrase</b>
+        <p><small>Write down these 24 words on paper and keep it safe and secure. Do not email or screenshot your seed. <a href="https://en.bitcoinwiki.org/wiki/Mnemonic_phrase" target="_blank">Learn more</a></small></p>
+        <div className="reveal-seed">
+          {props.seedphrase.split(' ').map((seed, i) => {
+            return (
+              <div className="reveal-seed__seed">
+                <div className="reveal-seed__seed__index">{`${i+1}:`}</div>
+                <div className="reveal-seed__seed__word">{seed}</div>
+              </div>
+            )
+          })}
+        </div>
+      </OnboardingModalContent>
+      <OnboardingModalFooter>
+        <Button
+          onClick={() => history.push('/onboarding/confirm-seedphrase')}
+        >
+          Next
+        </Button>
+      </OnboardingModalFooter>
+    </OnboardingModal>
+  )
+}
+
+
+function ConfirmSeedphrase(props: {
+  seedphrase: string;
+  isImporting: boolean;
+}): ReactElement {
+  const history = useHistory();
+
+  const [enteredSeeds, setEnteredSeeds] = useState<string[]>([]);
+  const onEnterSeed = useCallback((word, i) => {
+    const newSeeds = enteredSeeds.map((seed, j) => {
+      if (i === j) return word;
+      return seed;
+    });
+    setEnteredSeeds(newSeeds);
+  }, [enteredSeeds.join(' ')]);
+
+  return (
+    <OnboardingModal>
+      <OnboardingModalHeader
+        backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
+        onBack={() => history.push('/onboarding/reveal-seedphrase')}
+        currentStep={5}
+        maxStep={5}
+      />
+      <OnboardingModalContent>
+        <b>
+          {
+            props.isImporting
+              ? 'Import your recovery phrase'
+              : 'Confirm your recovery phrase'
+          }
+        </b>
+        <p>
+          <small>
+            {
+              props.isImporting
+                ? 'Enter your 12- or 24-word seed phrase that was assigned to you when you created your previous wallet.'
+                : 'Enter your 24-word seed phrase from the previous screen.'
+            }
+          </small>
+        </p>
+        <div className="reveal-seed">
+          {enteredSeeds.map((seed, i) => {
+            return (
+              <div className="reveal-seed__seed">
+                <div className="reveal-seed__seed__index">{`${i+1}:`}</div>
+                <input
+                  className="reveal-seed__seed__input"
+                  onChange={e => onEnterSeed(e.target.value, i)}
+                />
+              </div>
+            )
+          })}
+        </div>
+      </OnboardingModalContent>
+      <OnboardingModalFooter>
+        <Button
+          onClick={() => history.push('/onboarding/opt-in-analytics')}
         >
           Next
         </Button>
