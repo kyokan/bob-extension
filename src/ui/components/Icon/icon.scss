@@ -27,6 +27,10 @@
     opacity: .5;
     cursor: default;
   }
+
+  &--clickable {
+    @extend %clickable;
+  }
 }
 
 button.icon {

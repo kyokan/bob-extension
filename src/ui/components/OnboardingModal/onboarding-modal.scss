@@ -47,6 +47,10 @@
     &--centered {
       align-items: center;
     }
+
+    .input-group + .input-group {
+      margin-top: 1rem;
+    }
   }
 
   &__footer {

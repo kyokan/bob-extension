@@ -13,7 +13,6 @@ import Checkbox from "@src/ui/components/Checkbox";
 import Icon from "@src/ui/components/Icon";
 import TermsOfUse from "@src/ui/pages/Onboarding/terms";
 import Input from "@src/ui/components/Input";
-import wallet from "@src/background/services/wallet";
 
 export default function Onboarding(): ReactElement {
   const [onboardingType, setOnboardingType] = useState<'create'|'import'|null>(null);
@@ -38,6 +37,12 @@ export default function Onboarding(): ReactElement {
           <NameYourWallet
             walletName={walletName}
             setWalletName={setWalletName}
+          />
+        </Route>
+        <Route path="/onboarding/create-password">
+          <CreatePassword
+            password={password}
+            setPassword={setPassword}
           />
         </Route>
         <Route>
@@ -165,8 +170,66 @@ function NameYourWallet(props: {
       </OnboardingModalContent>
       <OnboardingModalFooter>
         <Button
-          onClick={() => history.push('/onboarding/name-your-wallet')}
+          onClick={() => history.push('/onboarding/create-password')}
           disabled={!props.walletName || !!errorMessage}
+        >
+          Next
+        </Button>
+      </OnboardingModalFooter>
+    </OnboardingModal>
+  )
+}
+
+function CreatePassword(props: {
+  password: string;
+  setPassword: (password: string) => void;
+}): ReactElement {
+  const history = useHistory();
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [visible, setVisibility] = useState(false);
+
+  const onChangePassword = useCallback((e) => {
+    const value = e.target.value;
+    props.setPassword(value);
+  }, []);
+
+  const onSetConfirmPassword = useCallback((e) => {
+    const value = e.target.value;
+    setConfirmPassword(value);
+  }, []);
+
+  return (
+    <OnboardingModal>
+      <OnboardingModalHeader
+        backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
+        onBack={() => history.push('/onboarding/terms')}
+        currentStep={3}
+        maxStep={5}
+      />
+      <OnboardingModalContent>
+        <b>Set up a password</b>
+        <p><small>Your password must be at least 8 characters long.</small></p>
+        <Input
+          label="Set password"
+          onChange={onChangePassword}
+          value={props.password}
+          type={visible ? 'text' : 'password'}
+          fontAwesome={visible ? 'fa-eye' : 'fa-eye-slash'}
+          onIconClick={() => setVisibility(!visible)}
+        />
+        <Input
+          label="Confirm password"
+          onChange={onSetConfirmPassword}
+          value={confirmPassword}
+          type={visible ? 'text' : 'password'}
+          fontAwesome={visible ? 'fa-eye' : 'fa-eye-slash'}
+          onIconClick={() => setVisibility(!visible)}
+        />
+      </OnboardingModalContent>
+      <OnboardingModalFooter>
+        <Button
+          onClick={() => history.push('/onboarding/seedphrase-warning')}
+          disabled={props.password !== confirmPassword || props.password.length < 8}
         >
           Next
         </Button>

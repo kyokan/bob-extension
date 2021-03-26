@@ -16,7 +16,7 @@ export default function Input(props: Props) {
   const {
     fontAwesome,
     url,
-    size,
+    size = 1,
     onIconClick,
     label,
     errorMessage,

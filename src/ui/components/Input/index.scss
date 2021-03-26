@@ -42,10 +42,9 @@
     }
 
     .icon {
-      color: $white;
       opacity: .1;
       transition: opacity 150ms ease-in-out;
-      margin-right: .5rem;
+      margin-right: .75rem;
 
       &:hover {
         opacity: .2;
