@@ -1,0 +1,116 @@
+$white: #FFFFFF;
+$black: #000000;
+
+$primary-blue: #2580F8;
+$primary-text: rgba($black, .8);
+$secondary-text: rgba($black, .6);
+
+%flex {
+  display: flex;
+}
+
+%col-nowrap {
+  @extend %flex;
+  flex-flow: column nowrap;
+}
+
+%row-nowrap {
+  @extend %flex;
+  flex-flow: row nowrap;
+}
+
+%small-font {
+  font-size: .8125rem;
+  line-height: 1.3125;
+}
+
+%lite-font {
+  font-size: .875rem;
+  line-height: 1.3125;
+}
+
+%regular-font {
+  font-size: 1rem;
+  line-height: 1.3125;
+}
+
+%h1-font {
+  font-size: 2rem;
+  line-height: 1.3125;
+}
+
+%h2-font {
+  font-size: 1.5rem;
+  line-height: 1.3125;
+}
+
+%h3-font {
+  font-size: 1.17rem;
+  line-height: 1.3125;
+}
+
+%h5-font {
+  font-size: .83rem;
+  line-height: 1.3125;
+}
+
+%bold {
+  font-weight: 600;
+}
+
+%ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+%clickable {
+  cursor: pointer;
+  transition: 200ms ease-in-out;
+
+  &:hover {
+    opacity: .8;
+  }
+
+  &:active {
+    opacity: 1;
+  }
+}
+
+$breakpoint-tablet: 768px;
+
+table {
+  @extend %col-nowrap;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  @extend %bold;
+  @extend %lite-font;
+  flex: 0 0 auto;
+  background-color: $black;
+  color: rgba($white, .5);
+  text-transform: uppercase;
+}
+
+tr {
+  @extend %row-nowrap;
+
+  &:nth-of-type(odd) {
+    background-color: rgba($black, .1);
+  }
+}
+
+td {
+  align-items: flex-start;
+  flex: 1 1 auto;
+  padding: .75rem 1.5rem;
+}
+
+tbody {
+  flex: 1 1 auto;
+  td {
+    @extend %lite-font;
+  }
+}

@@ -1,0 +1,44 @@
+@import "./src/util/variables";
+
+.icon {
+  @extend %row-nowrap;
+  align-items: center;
+  justify-content: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  font-family: "Font Awesome 5 Free";
+  user-select: none;
+
+  &__text {
+    @extend %row-nowrap;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: $white;
+    font-weight: 400;
+    height: 80%;
+    width: 80%;
+    background-color: rgba(#000, .05);
+    border-radius: 50%;
+  }
+
+  &--disabled {
+    opacity: .5;
+    cursor: default;
+  }
+}
+
+button.icon {
+  cursor: pointer;
+  padding: 0 !important;
+  border: none;
+  outline: none;
+  background-color: transparent;
+
+  &:hover,
+  &:active,
+  &:focus {
+    background-color: transparent;
+  }
+}

@@ -1,0 +1,66 @@
+@import "./src/util/variables";
+
+.onboarding-modal {
+  @extend %col-nowrap;
+  margin: 0;
+  border-radius: 0;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+
+  &__header {
+    @extend %row-nowrap;
+    height: 1.125rem;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 1rem 1.25rem;
+
+    &__back {
+      @extend %lite-font;
+      @extend %clickable;
+      color: $primary-blue;
+    }
+
+    &__steps {
+      @extend %lite-font;
+      color: $primary-blue;
+      margin: 0 1rem;
+    }
+
+    &__actions {
+      @extend %row-nowrap;
+      flex: 1 1 auto;
+      justify-content: flex-end;
+
+      .icon {
+        @extend %clickable;
+      }
+    }
+  }
+
+  &__content {
+    @extend %col-nowrap;
+    flex: 1 1 auto;
+    overflow-y: auto;
+
+    &--centered {
+      align-items: center;
+    }
+  }
+
+  &__footer {
+    @extend %col-nowrap;
+    flex: 0 0 auto;
+    padding: 1rem 1.25rem;
+
+    .button {
+      @extend %row-nowrap;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .button + .button {
+      margin-top: .5rem;
+    }
+  }
+}

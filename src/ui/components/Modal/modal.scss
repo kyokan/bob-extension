@@ -1,0 +1,22 @@
+@import "../../../util/variables";
+
+.modal {
+  &__overlay {
+    position: fixed;
+    width: 357px;
+    height: 600px;
+    top: 0;
+    left: 0;
+    background-color: rgba($black, .7);
+    z-index: 100;
+    overflow: auto;
+  }
+
+  &__wrapper {
+    margin: 3rem auto;
+    background-color: $white;
+    border-radius: .5rem;
+    box-shadow: 0 2px 8px 4px rgba($black, .2);
+    z-index: 200;
+  }
+}

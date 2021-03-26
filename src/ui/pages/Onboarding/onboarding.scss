@@ -1,0 +1,18 @@
+@import "./src/util/variables";
+
+.welcome {
+  &__logo {
+    width: 4rem;
+    height: 4rem;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    margin-top: 1.5rem;
+  }
+
+  &__paragraph {
+    color: $secondary-text;
+    text-align: center;
+    padding: 0 1.25rem;
+  }
+}

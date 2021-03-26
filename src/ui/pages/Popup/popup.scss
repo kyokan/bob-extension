@@ -1,0 +1,24 @@
+body {
+  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: white;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color:  rgba(255, 255, 255, 0);
+}
+
+html, body {
+  font-size: 16px;
+  width: 357px;
+  height: 600px;
+}
+
+.popup {
+  width: 357px;
+  height: 600px;
+  display: flex;
+}

@@ -1,0 +1,78 @@
+@import "./src/util/variables";
+
+.button {
+  @extend %regular-font;
+  @extend %bold;
+  @extend %row-nowrap;
+  align-items: center;
+  width: fit-content;
+  cursor: pointer;
+  padding: .5rem 1rem;
+  border-radius: .25rem;
+  border: none;
+  user-select: none;
+  font-weight: 400;
+  outline: none;
+
+  .icon {
+    margin-right: .5rem;
+  }
+}
+
+.button--primary {
+  background-color: $primary-blue;
+  color: $white;
+  border: 2px solid $primary-blue;
+  transition: background-color 150ms ease-in-out;
+
+  &:hover {
+    background-color: lighten($primary-blue, 5);
+    border: 2px solid lighten($primary-blue, 5);
+  }
+
+  &:active {
+    background-color: darken($primary-blue, 5);
+    border: 2px solid darken($primary-blue, 5);
+  }
+
+  &:disabled {
+    &:hover,
+    &:active {
+      background-color: $primary-blue;
+      color: $white;
+      border: 2px solid $primary-blue;
+    }
+  }
+}
+
+.button--secondary {
+  box-sizing: border-box;
+  background-color: transparent;
+  color: $primary-blue;
+  border: 2px solid $primary-blue;
+  transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
+
+  &:hover {
+     background-color: rgba($primary-blue, .5);
+     color: $white;
+   }
+
+  &:active {
+    background-color: rgba($primary-blue, 8);
+    color: $white;
+  }
+
+  &:disabled {
+    &:hover,
+    &:active {
+      background-color: transparent;
+      color: $primary-blue;
+      border: 2px solid $primary-blue;
+    }
+  }
+}
+
+.button:disabled {
+  opacity: .5;
+  cursor: default;
+}

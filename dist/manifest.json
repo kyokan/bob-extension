@@ -16,5 +16,12 @@
         "48": "icon-48.png",
         "128": "icon-128.png"
     },
-    "permissions": ["tabs", "activeTab", "notifications", "http://*/", "https://*/"]
+    "permissions": [
+        "tabs",
+        "activeTab",
+        "notifications",
+        "http://*/",
+        "https://*/",
+        "fileSystem"
+    ]
 }

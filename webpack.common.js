@@ -2,8 +2,8 @@ const path = require("path");
 
 module.exports = {
     entry: {
-        backgroundPage: path.join(__dirname, "src/backgroundPage.ts"),
-        popup: path.join(__dirname, "src/popup/index.tsx"),
+        backgroundPage: path.join(__dirname, "src/background/backgroundPage.ts"),
+        popup: path.join(__dirname, "src/ui/popup.tsx"),
     },
     output: {
         path: path.join(__dirname, "dist/js"),
@@ -31,10 +31,24 @@ module.exports = {
                     },
                 ],
             },
+            {
+                test: /\.(gif|png|jpe?g|svg)$/i,
+                use: [
+                    'file-loader',
+                    {
+                        loader: 'image-webpack-loader',
+                        options: {
+                            publicPath: 'assets',
+                            bypassOnDebug: true, // webpack@1.x
+                            disable: true, // webpack@2.x and newer
+                        },
+                    },
+                ],
+            },
         ],
     },
     resolve: {
-        extensions: [".ts", ".tsx", ".js"],
+        extensions: [".ts", ".tsx", ".js",  '.png', '.svg'],
         alias: {
             "@src": path.resolve(__dirname, "src/"),
         },
