@@ -68,12 +68,12 @@
     }
 
     &__input {
+      @extend %regular-font;
       color: $primary-text;
       border: none;
       border-bottom: 1px dashed $border-gray;
       width: 0;
       flex: 1 1 auto;
-      padding: .1875rem;
       outline: none;
     }
   }

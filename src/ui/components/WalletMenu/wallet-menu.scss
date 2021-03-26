@@ -1,0 +1,53 @@
+@import "./src/util/variables";
+
+.wallet-menu {
+  border: 2px solid $border-gray;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+
+  &__menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: $white;
+    box-shadow: 0 2px 2px 1px rgba($black, .1);
+    width: 16rem;
+    padding: .5rem 0;
+
+    &__row {
+      @extend %row-nowrap;
+      align-items: center;
+      padding: .5rem 1rem;
+      cursor: pointer;
+      transition: background-color 200ms ease-in-out;
+
+      .identicon {
+        border: 1px solid $border-gray;
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+
+      .icon {
+        border: 1px solid transparent;
+        width: 1.5rem;
+        height: 1.5rem;
+        padding: .125rem;
+      }
+
+      &__name {
+        @extend %regular-font;
+        font-weight: 500;
+        margin-left: 1rem;
+      }
+
+      &:hover {
+        background-color: rgba($black, .035);
+      }
+
+      &:active {
+        background-color: rgba($black, .05);
+      }
+    }
+  }
+}

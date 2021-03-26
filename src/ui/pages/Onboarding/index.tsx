@@ -15,6 +15,7 @@ import TermsOfUse from "@src/ui/pages/Onboarding/terms";
 import Input from "@src/ui/components/Input";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
+import {useInitialized} from "@src/ui/ducks/wallet";
 
 export default function Onboarding(): ReactElement {
   const [onboardingType, setOnboardingType] = useState<'create'|'import'|null>(null);
@@ -22,6 +23,28 @@ export default function Onboarding(): ReactElement {
   const [seedphrase, setSeedphrase] = useState('');
   const [password, setPassword] = useState('');
   const [optIn, setOptIn] = useState(false);
+
+  const onCreateWallet = useCallback(async () => {
+    if (!walletName) throw new Error('Wallet name cannot be empty.');
+    if (!seedphrase) throw new Error('Invalid seedphrase.');
+    if (!password) throw new Error('Password cannot be empty.');
+
+    const resp = await postMessage({
+      type: MessageTypes.CREATE_NEW_WALLET,
+      payload: {
+        id: walletName,
+        mnemonic: seedphrase,
+        passphrase: password,
+      },
+    });
+
+    console.log(resp);
+  }, [
+    walletName,
+    seedphrase,
+    password,
+    optIn,
+  ]);
 
   return (
     <div className="onboarding">
@@ -66,7 +89,9 @@ export default function Onboarding(): ReactElement {
         </Route>
         <Route path="/onboarding/opt-in-analytics">
           <OptInAnalytics
-            isImporting={onboardingType === 'import'}
+            optIn={optIn}
+            setOptIn={setOptIn}
+            onCreateWallet={onCreateWallet}
           />
         </Route>
         <Route>
@@ -82,12 +107,16 @@ function WelcomeStep(props: {
   onImportWallet: () => void;
 }): ReactElement {
   const history = useHistory();
+  const initialized = useInitialized();
 
   return (
     <OnboardingModal
       onClose={() => null}
     >
-      <OnboardingModalHeader />
+      <OnboardingModalHeader
+        backBtn={initialized ? "Back to login" : undefined}
+        onBack={initialized ? () => history.push('/login') : undefined}
+      />
       <OnboardingModalContent center>
         <div
           className="welcome__logo"
@@ -474,15 +503,12 @@ function ConfirmSeedphrase(props: {
 }
 
 function OptInAnalytics(props: {
-  isImporting: boolean;
+  onCreateWallet: () => Promise<void>;
+  optIn: boolean;
+  setOptIn: (optIn: boolean) => void;
 }): ReactElement {
-  const { isImporting } = props;
   const history = useHistory();
-  const [accepted, setAccept] = useState(false);
-
-  const onNext = useCallback(() => {
-
-  }, [props.isImporting]);
+  const { optIn, setOptIn, onCreateWallet } = props;
 
   return (
     <OnboardingModal>
@@ -503,15 +529,15 @@ function OptInAnalytics(props: {
       <OnboardingModalFooter>
         <div className="terms__checkbox">
           <Checkbox
-            checked={accepted}
-            onChange={() => setAccept(!accepted)}
+            checked={optIn}
+            onChange={() => setOptIn(!optIn)}
           />
           <small>
             Yes, opt me in.
           </small>
         </div>
         <Button
-          onClick={onNext}
+          onClick={onCreateWallet}
         >
           Next
         </Button>

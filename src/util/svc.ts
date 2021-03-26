@@ -36,6 +36,7 @@ export class GenericService extends EventEmitter implements Service {
     console.log('emit event', {
       service: this._serviceName,
       eventName,
+      ...args,
     });
 
     return super.emit(eventName, ...args);

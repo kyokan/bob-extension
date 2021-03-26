@@ -1,0 +1,23 @@
+@import "./src/util/variables";
+
+.app-header {
+  @extend %row-nowrap;
+  height: 4rem;
+  width: 100%;
+  background-color: $header-gray;
+
+  &__l {
+    @extend %row-nowrap;
+    flex: 1 0 auto;
+    align-items: center;
+    padding: 0 1.25rem;
+  }
+
+  &__r {
+    @extend %row-nowrap;
+    justify-content: flex-end;
+    flex: 1 1 auto;
+    align-items: center;
+    padding: 0 1.25rem;
+  }
+}

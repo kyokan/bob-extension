@@ -1,0 +1,36 @@
+@import "./src/util/variables";
+
+.login {
+  @extend %col-nowrap;
+  flex: 1 1 auto;
+  align-items: center;
+  padding: 0 1.25rem;
+
+  &__content {
+    @extend %col-nowrap;
+    flex: 1 1 auto;
+    align-items: center;
+    width: 100%;
+    cursor: default;
+
+    &__logo {
+      margin: 2rem auto 1rem;
+    }
+
+    .input-group {
+      margin-top: 2rem;
+      width: 100%;
+    }
+  }
+
+  &__footer {
+    width: 100%;
+    padding: 0 1.25rem 1rem;
+
+    .button {
+      @extend %row-nowrap;
+      justify-content: center;
+      width: 100%;
+    }
+  }
+}

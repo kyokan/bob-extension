@@ -1,4 +1,4 @@
-import { browser } from "webextension-polyfill-ts";
+import {browser} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
@@ -20,6 +20,12 @@ function handleMessage(app: AppService, message: MessageAction) {
     switch (message.type) {
         case MessageTypes.GENERATE_NEW_MNEMONIC:
             return app.exec('wallet', 'generateNewMnemonic');
+        case MessageTypes.CREATE_NEW_WALLET:
+            return app.exec('wallet', 'createWallet', message.payload);
+        case MessageTypes.GET_WALLET_IDS:
+            return app.exec('wallet', 'getWalletIDs');
+        case MessageTypes.GET_WALLET_RECEIVE_ADDRESS:
+            return app.exec('wallet', 'getWalletReceiveAddress', message.payload);
         default:
             return null;
     }
