@@ -5,6 +5,9 @@ $primary-blue: #2580F8;
 $primary-text: rgba($black, .8);
 $secondary-text: rgba($black, .6);
 
+$border-gray: rgba($black, .1);
+$error-red: #EB5757;
+
 %flex {
   display: flex;
 }
@@ -113,4 +116,8 @@ tbody {
   td {
     @extend %lite-font;
   }
+}
+
+small {
+  color: $secondary-text;
 }

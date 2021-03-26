@@ -5,7 +5,7 @@ import c from "classnames";
 import "./onboarding-modal.scss";
 
 type Props = {
-  onClose: MouseEventHandler;
+  onClose?: MouseEventHandler;
   children: ReactNode | ReactNode[];
 }
 

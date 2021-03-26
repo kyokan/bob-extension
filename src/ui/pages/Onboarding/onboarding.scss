@@ -16,3 +16,24 @@
     padding: 0 1.25rem;
   }
 }
+
+.terms {
+  &__contentbox {
+    @extend %small-font;
+    cursor: text;
+    overflow-y: auto;
+    padding: .5rem 1rem;
+    background-color: rgba($black, .025);
+    color: rgba($black, .7)
+  }
+
+  &__checkbox {
+    @extend %row-nowrap;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    .checkbox {
+      margin-right: .5rem;
+    }
+  }
+}

@@ -5,7 +5,7 @@ import './modal.scss';
 let modalRoot: HTMLDivElement | null;
 
 type Props = {
-  onClose: MouseEventHandler;
+  onClose?: MouseEventHandler;
   className?: string;
   children: ReactNode | ReactNode[];
 }
