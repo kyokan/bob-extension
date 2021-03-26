@@ -24,7 +24,6 @@
     &__steps {
       @extend %lite-font;
       color: $primary-blue;
-      margin: 0 1rem;
     }
 
     &__actions {
@@ -34,6 +33,7 @@
 
       .icon {
         @extend %clickable;
+        margin-left: 1rem;
       }
     }
   }

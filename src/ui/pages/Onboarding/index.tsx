@@ -64,6 +64,11 @@ export default function Onboarding(): ReactElement {
             isImporting={onboardingType === 'import'}
           />
         </Route>
+        <Route path="/onboarding/opt-in-analytics">
+          <OptInAnalytics
+            isImporting={onboardingType === 'import'}
+          />
+        </Route>
         <Route>
           <Redirect to="/onboarding/welcome" />
         </Route>
@@ -126,7 +131,7 @@ function Terms(): ReactElement {
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/welcome')}
         currentStep={1}
-        maxStep={5}
+        maxStep={6}
       />
       <OnboardingModalContent>
         <b>Terms of use</b>
@@ -175,7 +180,7 @@ function NameYourWallet(props: {
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/terms')}
         currentStep={2}
-        maxStep={5}
+        maxStep={6}
       />
       <OnboardingModalContent>
         <b>Name your wallet</b>
@@ -227,7 +232,7 @@ function CreatePassword(props: {
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/name-your-wallet')}
         currentStep={3}
-        maxStep={5}
+        maxStep={6}
       />
       <OnboardingModalContent>
         <b>Set up a password</b>
@@ -282,7 +287,7 @@ function SeedWarning(props: {
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/create-password')}
         currentStep={4}
-        maxStep={5}
+        maxStep={6}
       />
       <OnboardingModalContent>
         <b>{isImporting ? 'Import your recovery seed phrase' : 'Back up your recovery seed phrase'}</b>
@@ -343,7 +348,7 @@ function RevealSeedphrase(props: {
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/seedphrase-warning')}
         currentStep={5}
-        maxStep={5}
+        maxStep={6}
       />
       <OnboardingModalContent>
         <b>Your Recovery Seed Phrase</b>
@@ -377,7 +382,8 @@ function ConfirmSeedphrase(props: {
 }): ReactElement {
   const history = useHistory();
 
-  const [enteredSeeds, setEnteredSeeds] = useState<string[]>([]);
+  const [enteredSeeds, setEnteredSeeds] = useState<string[]>(Array(24).fill(''));
+
   const onEnterSeed = useCallback((word, i) => {
     const newSeeds = enteredSeeds.map((seed, j) => {
       if (i === j) return word;
@@ -386,13 +392,30 @@ function ConfirmSeedphrase(props: {
     setEnteredSeeds(newSeeds);
   }, [enteredSeeds.join(' ')]);
 
+  const onBack = useCallback(() => {
+    if (props.isImporting) {
+      history.push('/onboarding/seedphrase-warning');
+    } else {
+      history.push('/onboarding/reveal-seedphrase');
+    }
+  }, [props.isImporting]);
+
+  let disabled = false;
+  const nonEmptySeeds = enteredSeeds.filter(s => !!s);
+
+  if (!props.isImporting && props.seedphrase !== enteredSeeds.join(' ')) {
+    disabled = true;
+  } else if (props.isImporting && nonEmptySeeds.length !== 12 && nonEmptySeeds.length !== 24) {
+    disabled = true;
+  }
+
   return (
     <OnboardingModal>
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
-        onBack={() => history.push('/onboarding/reveal-seedphrase')}
+        onBack={onBack}
         currentStep={5}
-        maxStep={5}
+        maxStep={6}
       />
       <OnboardingModalContent>
         <b>
@@ -406,19 +429,32 @@ function ConfirmSeedphrase(props: {
           <small>
             {
               props.isImporting
-                ? 'Enter your 12- or 24-word seed phrase that was assigned to you when you created your previous wallet.'
+                ? 'Enter your 12- or 24-word seed phrase to restore your wallet.'
                 : 'Enter your 24-word seed phrase from the previous screen.'
             }
           </small>
         </p>
         <div className="reveal-seed">
-          {enteredSeeds.map((seed, i) => {
+          {Array(24).fill('').map((_, i) => {
+            const seed = enteredSeeds[i];
             return (
               <div className="reveal-seed__seed">
                 <div className="reveal-seed__seed__index">{`${i+1}:`}</div>
                 <input
                   className="reveal-seed__seed__input"
+                  value={seed}
                   onChange={e => onEnterSeed(e.target.value, i)}
+                  onPaste={e => {
+                    e.preventDefault();
+                    const seeds = e.clipboardData.getData('Text').split(/\s+/);
+                    const newSeeds = enteredSeeds.slice();
+                    seeds.forEach((seed, j) => {
+                      if (i + j < 24) {
+                        newSeeds[i+j] = seed;
+                      }
+                    });
+                    setEnteredSeeds(newSeeds);
+                  }}
                 />
               </div>
             )
@@ -428,6 +464,54 @@ function ConfirmSeedphrase(props: {
       <OnboardingModalFooter>
         <Button
           onClick={() => history.push('/onboarding/opt-in-analytics')}
+          disabled={disabled}
+        >
+          Next
+        </Button>
+      </OnboardingModalFooter>
+    </OnboardingModal>
+  )
+}
+
+function OptInAnalytics(props: {
+  isImporting: boolean;
+}): ReactElement {
+  const { isImporting } = props;
+  const history = useHistory();
+  const [accepted, setAccept] = useState(false);
+
+  const onNext = useCallback(() => {
+
+  }, [props.isImporting]);
+
+  return (
+    <OnboardingModal>
+      <OnboardingModalHeader
+        backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
+        onBack={() => history.push('/onboarding/confirm-seedphrase')}
+        currentStep={6}
+        maxStep={6}
+      />
+      <OnboardingModalContent>
+        <b>Opt in to analytics</b>
+        <p>
+          <small>
+            Do you want to send anonymous usage data to Kyokan?
+          </small>
+        </p>
+      </OnboardingModalContent>
+      <OnboardingModalFooter>
+        <div className="terms__checkbox">
+          <Checkbox
+            checked={accepted}
+            onChange={() => setAccept(!accepted)}
+          />
+          <small>
+            Yes, opt me in.
+          </small>
+        </div>
+        <Button
+          onClick={onNext}
         >
           Next
         </Button>
