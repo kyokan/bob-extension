@@ -18,6 +18,10 @@ import MessageTypes from "@src/util/messageTypes";
 
 function handleMessage(app: AppService, message: MessageAction) {
     switch (message.type) {
+        case MessageTypes.GET_WALLET_STATE:
+            return app.exec('wallet', 'getState');
+        case MessageTypes.SELECT_WALLET:
+            return app.exec('wallet', 'selectWallet', message.payload);
         case MessageTypes.GENERATE_NEW_MNEMONIC:
             return app.exec('wallet', 'generateNewMnemonic');
         case MessageTypes.CREATE_NEW_WALLET:
@@ -26,6 +30,10 @@ function handleMessage(app: AppService, message: MessageAction) {
             return app.exec('wallet', 'getWalletIDs');
         case MessageTypes.GET_WALLET_RECEIVE_ADDRESS:
             return app.exec('wallet', 'getWalletReceiveAddress', message.payload);
+        case MessageTypes.UNLOCK_WALLET:
+            return app.exec('wallet', 'unlockWallet', message.payload);
+        case MessageTypes.LOCK_WALLET:
+            return app.exec('wallet', 'lockWallet');
         default:
             return null;
     }

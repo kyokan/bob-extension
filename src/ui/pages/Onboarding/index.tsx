@@ -15,7 +15,9 @@ import TermsOfUse from "@src/ui/pages/Onboarding/terms";
 import Input from "@src/ui/components/Input";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
-import {useInitialized} from "@src/ui/ducks/wallet";
+import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
+import {useDispatch} from "react-redux";
+import ErrorMessage from "@src/ui/components/ErrorMessage";
 
 export default function Onboarding(): ReactElement {
   const [onboardingType, setOnboardingType] = useState<'create'|'import'|null>(null);
@@ -23,22 +25,16 @@ export default function Onboarding(): ReactElement {
   const [seedphrase, setSeedphrase] = useState('');
   const [password, setPassword] = useState('');
   const [optIn, setOptIn] = useState(false);
+  const history = useHistory();
+  const dispatch = useDispatch();
 
   const onCreateWallet = useCallback(async () => {
-    if (!walletName) throw new Error('Wallet name cannot be empty.');
-    if (!seedphrase) throw new Error('Invalid seedphrase.');
-    if (!password) throw new Error('Password cannot be empty.');
-
-    const resp = await postMessage({
-      type: MessageTypes.CREATE_NEW_WALLET,
-      payload: {
-        id: walletName,
-        mnemonic: seedphrase,
-        passphrase: password,
-      },
-    });
-
-    console.log(resp);
+    await dispatch(createWallet({
+      walletName,
+      seedphrase,
+      password,
+    }));
+    history.push('/');
   }, [
     walletName,
     seedphrase,
@@ -114,8 +110,8 @@ function WelcomeStep(props: {
       onClose={() => null}
     >
       <OnboardingModalHeader
-        backBtn={initialized ? "Back to login" : undefined}
-        onBack={initialized ? () => history.push('/login') : undefined}
+        backBtn={initialized ? "Back" : undefined}
+        onBack={initialized ? () => history.push('/') : undefined}
       />
       <OnboardingModalContent center>
         <div
@@ -153,12 +149,14 @@ function WelcomeStep(props: {
 function Terms(): ReactElement {
   const history = useHistory();
   const [accepted, setAccept] = useState(false);
+  const initialized = useInitialized();
 
   return (
     <OnboardingModal>
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/welcome')}
+        onClose={initialized ? () => history.push('/') : undefined}
         currentStep={1}
         maxStep={6}
       />
@@ -192,6 +190,8 @@ function NameYourWallet(props: {
 }): ReactElement {
   const history = useHistory();
   const [errorMessage, setErrorMessage] = useState('');
+  const walletIDs = useWalletIDs();
+  const initialized = useInitialized();
 
   const onChange = useCallback((e) => {
     const value = e.target.value;
@@ -200,7 +200,12 @@ function NameYourWallet(props: {
 
     if (value && !(/^[A-Za-z0-9]+$/i.test(value))) {
       setErrorMessage('Can only contain letters and numbers');
+    } else if (walletIDs.includes(value)) {
+      setErrorMessage(`"${value}" already exists`);
+    } else if (value === 'primary') {
+      setErrorMessage('Cannot set wallet id to "primary"');
     }
+
   }, [props.walletName, errorMessage]);
 
   return (
@@ -208,6 +213,7 @@ function NameYourWallet(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/terms')}
+        onClose={initialized ? () => history.push('/') : undefined}
         currentStep={2}
         maxStep={6}
       />
@@ -240,6 +246,7 @@ function CreatePassword(props: {
   const history = useHistory();
   const [confirmPassword, setConfirmPassword] = useState('');
   const [visible, setVisibility] = useState(false);
+  const initialized = useInitialized();
 
   useEffect(() => {
     props.setPassword('');
@@ -260,6 +267,7 @@ function CreatePassword(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/name-your-wallet')}
+        onClose={initialized ? () => history.push('/') : undefined}
         currentStep={3}
         maxStep={6}
       />
@@ -301,6 +309,7 @@ function SeedWarning(props: {
   const { isImporting } = props;
   const history = useHistory();
   const [accepted, setAccept] = useState(false);
+  const initialized = useInitialized();
 
   const onNext = useCallback(() => {
     if (props.isImporting) {
@@ -315,6 +324,7 @@ function SeedWarning(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/create-password')}
+        onClose={initialized ? () => history.push('/') : undefined}
         currentStep={4}
         maxStep={6}
       />
@@ -360,6 +370,7 @@ function RevealSeedphrase(props: {
   setSeedphrase: (seedphrase: string) => void;
 }): ReactElement {
   const history = useHistory();
+  const initialized = useInitialized();
 
   useEffect(() => {
     (async function onRevealSeedphraseMount() {
@@ -376,6 +387,7 @@ function RevealSeedphrase(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/seedphrase-warning')}
+        onClose={initialized ? () => history.push('/') : undefined}
         currentStep={5}
         maxStep={6}
       />
@@ -384,8 +396,9 @@ function RevealSeedphrase(props: {
         <p><small>Write down these 24 words on paper and keep it safe and secure. Do not email or screenshot your seed. <a href="https://en.bitcoinwiki.org/wiki/Mnemonic_phrase" target="_blank">Learn more</a></small></p>
         <div className="reveal-seed">
           {props.seedphrase.split(' ').map((seed, i) => {
+            if (!seed) return null;
             return (
-              <div className="reveal-seed__seed">
+              <div key={i} className="reveal-seed__seed">
                 <div className="reveal-seed__seed__index">{`${i+1}:`}</div>
                 <div className="reveal-seed__seed__word">{seed}</div>
               </div>
@@ -410,6 +423,7 @@ function ConfirmSeedphrase(props: {
   isImporting: boolean;
 }): ReactElement {
   const history = useHistory();
+  const initialized = useInitialized();
 
   const [enteredSeeds, setEnteredSeeds] = useState<string[]>(Array(24).fill(''));
 
@@ -443,6 +457,7 @@ function ConfirmSeedphrase(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={onBack}
+        onClose={initialized ? () => history.push('/') : undefined}
         currentStep={5}
         maxStep={6}
       />
@@ -466,8 +481,9 @@ function ConfirmSeedphrase(props: {
         <div className="reveal-seed">
           {Array(24).fill('').map((_, i) => {
             const seed = enteredSeeds[i];
+
             return (
-              <div className="reveal-seed__seed">
+              <div key={i} className="reveal-seed__seed">
                 <div className="reveal-seed__seed__index">{`${i+1}:`}</div>
                 <input
                   className="reveal-seed__seed__input"
@@ -508,13 +524,27 @@ function OptInAnalytics(props: {
   setOptIn: (optIn: boolean) => void;
 }): ReactElement {
   const history = useHistory();
-  const { optIn, setOptIn, onCreateWallet } = props;
+  const { optIn, setOptIn } = props;
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(false);
+  const initialized = useInitialized();
+
+  const onCreateWallet = useCallback(async () => {
+    setLoading(true);
+    try {
+      await props.onCreateWallet();
+    } catch (e) {
+      setErrorMessage(e.message);
+    }
+    setLoading(false);
+  }, [props.onCreateWallet]);
 
   return (
     <OnboardingModal>
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/confirm-seedphrase')}
+        onClose={initialized ? () => history.push('/') : undefined}
         currentStep={6}
         maxStep={6}
       />
@@ -527,6 +557,7 @@ function OptInAnalytics(props: {
         </p>
       </OnboardingModalContent>
       <OnboardingModalFooter>
+        { errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         <div className="terms__checkbox">
           <Checkbox
             checked={optIn}
@@ -538,6 +569,8 @@ function OptInAnalytics(props: {
         </div>
         <Button
           onClick={onCreateWallet}
+          disabled={loading}
+          loading={loading}
         >
           Next
         </Button>

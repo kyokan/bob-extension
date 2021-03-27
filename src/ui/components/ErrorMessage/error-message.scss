@@ -1,0 +1,6 @@
+@import "./src/util/variables";
+
+.error-message {
+  color: $error-red;
+  margin: .125rem auto;
+}

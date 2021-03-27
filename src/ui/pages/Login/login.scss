@@ -24,8 +24,13 @@
   }
 
   &__footer {
+    @extend %col-nowrap;
     width: 100%;
     padding: 0 1.25rem 1rem;
+
+    .error-message {
+      text-align: center;
+    }
 
     .button {
       @extend %row-nowrap;

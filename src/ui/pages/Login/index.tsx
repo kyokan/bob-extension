@@ -1,10 +1,13 @@
-import React, {ReactElement, useState} from "react";
+import React, {ReactElement, useCallback, useState} from "react";
 import BobIcon from "../../../static/icons/bob-black-large.png";
 import "./login.scss";
 import Icon from "@src/ui/components/Icon";
 import Button from "@src/ui/components/Button";
 import Input from "@src/ui/components/Input";
-import {OnboardingModalContent} from "@src/ui/components/OnboardingModal";
+import {Loader} from "@src/ui/components/Loader";
+import {useDispatch} from "react-redux";
+import {unlockWallet} from "@src/ui/ducks/wallet";
+import ErrorMessage from "@src/ui/components/ErrorMessage";
 
 type Props = {
 
@@ -13,6 +16,21 @@ type Props = {
 export default function Login(props: Props): ReactElement {
   const [visible, setVisibility] = useState(false);
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const dispatch = useDispatch();
+
+  const onUnlockWallet = useCallback(async () => {
+    setLoading(true);
+    try {
+      await dispatch(unlockWallet(password));
+    } catch (e) {
+      setErrorMessage(e.message);
+    }
+
+    setLoading(false);
+  }, [password]);
+
   return (
     <div className="login">
       <div className="login__content">
@@ -24,7 +42,10 @@ export default function Login(props: Props): ReactElement {
         <b>Welcome back to Bob!</b>
         <Input
           label="Set password"
-          onChange={e => setPassword(e.target.value)}
+          onChange={e => {
+            setErrorMessage('');
+            setPassword(e.target.value);
+          }}
           value={password}
           type={visible ? 'text' : 'password'}
           fontAwesome={visible ? 'fa-eye' : 'fa-eye-slash'}
@@ -32,7 +53,12 @@ export default function Login(props: Props): ReactElement {
         />
       </div>
       <div className="login__footer">
-        <Button>
+        <ErrorMessage>{errorMessage}</ErrorMessage>
+        <Button
+          onClick={onUnlockWallet}
+          loading={loading}
+          disabled={loading}
+        >
           Unlock Wallet
         </Button>
       </div>

@@ -13,9 +13,16 @@
   user-select: none;
   font-weight: 400;
   outline: none;
+  position: relative;
+  height: 2.375rem;
 
   .icon {
     margin-right: .5rem;
+  }
+
+  &__loader {
+    width: 2rem;
+    height: 2rem;
   }
 }
 

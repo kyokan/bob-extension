@@ -58,6 +58,7 @@ export function OnboardingModalHeader(props: HeaderProps) {
           onClose && (
             <Icon
               fontAwesome="fa-times"
+              onClick={onClose}
               size={1.25}
             />
           )

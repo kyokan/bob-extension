@@ -1,6 +1,8 @@
 import React, {ButtonHTMLAttributes, ReactElement} from "react";
 import classNames from "classnames";
 import "./button.scss";
+import Icon from "@src/ui/components/Icon";
+import {Loader} from "@src/ui/components/Loader";
 
 export enum ButtonType {
   primary,
@@ -31,8 +33,8 @@ export default function Button (props: Props): ReactElement {
       })}
       {...btnProps}
     >
-      { loading && <div className="button__loader" /> }
-      {children}
+      { loading && <Loader className="button__loader" size={2} /> }
+      { !loading && children }
     </button>
   )
 }

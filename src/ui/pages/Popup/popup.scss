@@ -13,7 +13,7 @@ body {
 }
 
 html, body {
-  font-size: 15px;
+  font-size: 16px;
   width: 357px;
   height: 600px;
 }
@@ -23,4 +23,13 @@ html, body {
   width: 357px;
   height: 600px;
   display: flex;
+
+  &__loading {
+    @extend %col-nowrap;
+    background-color: $header-gray;
+    width: 357px;
+    height: 600px;
+    align-items: center;
+    justify-content: center;
+  }
 }

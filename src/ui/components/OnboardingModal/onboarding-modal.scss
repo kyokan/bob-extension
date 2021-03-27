@@ -58,6 +58,10 @@
     flex: 0 0 auto;
     padding: 1rem 1.25rem;
 
+    .error-message {
+      text-align: center;
+    }
+
     .button {
       @extend %row-nowrap;
       justify-content: center;

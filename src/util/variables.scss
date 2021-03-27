@@ -34,7 +34,7 @@ $error-red: #EB5757;
 }
 
 %regular-font {
-  font-size: 1rem;
+  font-size: .9375rem;
   line-height: 1.3125;
 }
 
@@ -55,6 +55,11 @@ $error-red: #EB5757;
 
 %h5-font {
   font-size: .83rem;
+  line-height: 1.3125;
+}
+
+%h4-font {
+  font-size: 1rem;
   line-height: 1.3125;
 }
 
