@@ -9,5 +9,6 @@ export type MessageAction = {
 }
 
 export default async function postMessage(message: MessageAction) {
-  return browser.runtime.sendMessage(message);
+  const res = await browser.runtime.sendMessage(message);
+  return res;
 }

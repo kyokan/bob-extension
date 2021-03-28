@@ -1,0 +1,64 @@
+@import "./src/util/variables";
+
+.home-action-btn {
+  @extend %col-nowrap;
+  @extend %clickable;
+  align-items: center;
+
+  .icon {
+    @extend %row-nowrap;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 50%;
+    padding: .125rem;
+    color: $white;
+  }
+
+  &--blue {
+    .icon {
+      background-color: $primary-blue;
+    }
+
+    small {
+      color: $primary-blue;
+    }
+  }
+
+  &--orange {
+    .icon {
+      background-color: $warning-orange;
+    }
+
+    small {
+      color: $warning-orange;
+    }
+  }
+
+  &--green {
+    .icon {
+      background-color: $success-green;
+    }
+
+    small {
+      color: $success-green;
+    }
+  }
+
+  &--disabled {
+    opacity: .5;
+    cursor: default;
+
+    &:hover,
+    &:active {
+      opacity: .5;
+    }
+  }
+
+  small {
+    margin-top: .125rem;
+    flex: 0 0 auto;
+  }
+}

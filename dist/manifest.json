@@ -9,7 +9,7 @@
     },
     "background": {
         "scripts": ["js/backgroundPage.js"],
-        "persistent": false
+        "persistent": true
     },
     "icons": {
         "16": "icon-16.png",
@@ -22,6 +22,9 @@
         "notifications",
         "http://*/",
         "https://*/",
-        "fileSystem"
+        "fileSystem",
+        "webRequest",
+        "storage",
+        "unlimitedStorage"
     ]
 }

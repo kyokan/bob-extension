@@ -9,6 +9,7 @@ import {ThunkDispatch} from "redux-thunk";
 enum ActionType {
   SET_WALLET_IDS = 'wallet/setWalletIDs',
   SET_WALLET_STATE = 'wallet/setWalletState',
+  SET_WALLET_BALANCE = 'wallet/setWalletBalance',
 }
 
 type Action = {
@@ -22,6 +23,11 @@ type State = {
   walletIDs: string[];
   currentWallet: string;
   locked: boolean;
+  tip: {
+    hash: string;
+    height: number;
+    time: number;
+  };
   balance: {
     unconfirmed: number;
     lockedUnconfirmed: number;
@@ -32,6 +38,11 @@ const initialState: State = {
   walletIDs: [],
   currentWallet: '',
   locked: true,
+  tip: {
+    hash: '',
+    height: -1,
+    time: -1,
+  },
   balance: {
     unconfirmed: 0,
     lockedUnconfirmed: 0,
@@ -56,7 +67,7 @@ export const createWallet = (opt: {
       passphrase: password,
     },
   });
-
+  await new Promise(r => setTimeout(r, 1000));
   await dispatch(fetchWallets());
   await dispatch(selectWallet(walletName));
   return;
@@ -64,7 +75,7 @@ export const createWallet = (opt: {
 
 export const lockWallet = () => async (dispatch: ThunkDispatch<AppRootState, any, Action>) => {
   await postMessage({ type: MessageTypes.LOCK_WALLET });
-  return dispatch(fetchWalletState());
+  await dispatch(fetchWalletState());
 };
 
 export const unlockWallet = (password: string) => async (dispatch: ThunkDispatch<AppRootState, any, Action>) => {
@@ -72,18 +83,29 @@ export const unlockWallet = (password: string) => async (dispatch: ThunkDispatch
     type: MessageTypes.UNLOCK_WALLET,
     payload: password,
   });
-  return dispatch(fetchWalletState());
+  await dispatch(fetchWalletState());
 };
 
 export const fetchWalletState = () => async (dispatch: Dispatch) => {
   const resp = await postMessage({ type: MessageTypes.GET_WALLET_STATE });
-  const {selectedID, locked} = resp;
+  const {selectedID, locked, tip} = resp;
   dispatch({
     type: ActionType.SET_WALLET_STATE,
     payload: {
       selectedID,
       locked,
+      tip,
     },
+  });
+};
+
+export const fetchWalletBalance = () => async (dispatch: Dispatch) => {
+  const balance = await postMessage({
+    type: MessageTypes.GET_WALLET_BALANCE,
+  });
+  dispatch({
+    type: ActionType.SET_WALLET_BALANCE,
+    payload: balance,
   });
 };
 
@@ -100,11 +122,19 @@ export const selectWallet = (id: string) => async (dispatch: ThunkDispatch<AppRo
     type: MessageTypes.SELECT_WALLET,
     payload: id,
   });
-  return dispatch(fetchWalletState());
+  await dispatch(fetchWalletState());
 };
 
 export default function wallet(state = initialState, action: Action): State {
   switch (action.type) {
+    case ActionType.SET_WALLET_BALANCE:
+      return {
+        ...state,
+        balance: {
+          unconfirmed: action.payload.unconfirmed,
+          lockedUnconfirmed: action.payload.lockedUnconfirmed,
+        },
+      };
     case ActionType.SET_WALLET_IDS:
       return {
         ...state,
@@ -115,6 +145,7 @@ export default function wallet(state = initialState, action: Action): State {
         ...state,
         currentWallet: action.payload.selectedID,
         locked: action.payload.locked,
+        tip: action.payload.tip,
       };
     default:
       return state;
@@ -138,6 +169,21 @@ export const useWalletState = () => {
     return {
       currentWallet: state.wallet.currentWallet,
       locked: state.wallet.locked,
+      tip: state.wallet.tip,
+    };
+  }, deepEqual);
+};
+
+export const useWalletBalance = () => {
+  return useSelector((state: AppRootState) => {
+    const {
+      unconfirmed,
+      lockedUnconfirmed,
+    } = state.wallet.balance;
+    return {
+      unconfirmed,
+      lockedUnconfirmed,
+      spendable: unconfirmed - lockedUnconfirmed,
     };
   }, deepEqual);
 };

@@ -4,7 +4,6 @@ import "./login.scss";
 import Icon from "@src/ui/components/Icon";
 import Button from "@src/ui/components/Button";
 import Input from "@src/ui/components/Input";
-import {Loader} from "@src/ui/components/Loader";
 import {useDispatch} from "react-redux";
 import {unlockWallet} from "@src/ui/ducks/wallet";
 import ErrorMessage from "@src/ui/components/ErrorMessage";
@@ -25,7 +24,7 @@ export default function Login(props: Props): ReactElement {
     try {
       await dispatch(unlockWallet(password));
     } catch (e) {
-      setErrorMessage(e.message);
+      setErrorMessage('Wrong password.');
     }
 
     setLoading(false);

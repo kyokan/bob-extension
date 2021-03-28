@@ -4,15 +4,23 @@ import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
 import SettingService from "@src/background/services/setting";
 import MessageTypes from "@src/util/messageTypes";
+import NodeService from "@src/background/services/node";
 
 (async function() {
     const app = new AppService();
-    app.add('wallet', new WalletService());
     app.add('setting', new SettingService());
+    app.add('node', new NodeService());
+    app.add('wallet', new WalletService());
     await app.start();
 
     browser.runtime.onMessage.addListener(async (request: any, sender: any) => {
-        return handleMessage(app, request);
+        try {
+            const res = await handleMessage(app, request);
+            return res;
+        } catch (e) {
+            console.log(e);
+            return e;
+        }
     });
 })();
 
@@ -30,10 +38,16 @@ function handleMessage(app: AppService, message: MessageAction) {
             return app.exec('wallet', 'getWalletIDs');
         case MessageTypes.GET_WALLET_RECEIVE_ADDRESS:
             return app.exec('wallet', 'getWalletReceiveAddress', message.payload);
+        case MessageTypes.GET_WALLET_BALANCE:
+            return app.exec('wallet', 'getWalletBalance', message.payload);
         case MessageTypes.UNLOCK_WALLET:
             return app.exec('wallet', 'unlockWallet', message.payload);
         case MessageTypes.LOCK_WALLET:
             return app.exec('wallet', 'lockWallet');
+        case MessageTypes.FULL_RESCAN:
+            return app.exec('wallet', 'fullRescan');
+        case MessageTypes.GET_LATEST_BLOCK:
+            return app.exec('node', 'getLatestBlock');
         default:
             return null;
     }

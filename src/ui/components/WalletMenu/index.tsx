@@ -76,7 +76,7 @@ export default function WalletMenu(): ReactElement {
               className="wallet-menu__menu__row"
               onClick={() => history.push('/onboarding')}
             >
-              <Icon fontAwesome="fa-plus" size={1.25} />
+              <Icon fontAwesome="fa-plus" size={1} />
               <div className="wallet-menu__menu__row__name">
                 Add New Wallet
               </div>
@@ -87,7 +87,7 @@ export default function WalletMenu(): ReactElement {
                   className="wallet-menu__menu__row"
                   onClick={() => dispatch(lockWallet())}
                 >
-                  <Icon fontAwesome="fa-lock" size={1.25} />
+                  <Icon fontAwesome="fa-lock" size={1} />
                   <div className="wallet-menu__menu__row__name">
                     Lock Wallet
                   </div>

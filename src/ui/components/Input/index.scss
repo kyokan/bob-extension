@@ -20,7 +20,7 @@
 
   &__label {
     @extend %small-font;
-    color: $secondary-text;
+    color: $label-text;
     padding: 0 .5rem .25rem;
   }
 

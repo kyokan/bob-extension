@@ -80,6 +80,7 @@ export default function Onboarding(): ReactElement {
         <Route path="/onboarding/confirm-seedphrase">
           <ConfirmSeedphrase
             seedphrase={seedphrase}
+            setSeedphrase={setSeedphrase}
             isImporting={onboardingType === 'import'}
           />
         </Route>
@@ -420,6 +421,7 @@ function RevealSeedphrase(props: {
 
 function ConfirmSeedphrase(props: {
   seedphrase: string;
+  setSeedphrase: (seedphrase: string) => void;
   isImporting: boolean;
 }): ReactElement {
   const history = useHistory();
@@ -444,7 +446,7 @@ function ConfirmSeedphrase(props: {
   }, [props.isImporting]);
 
   let disabled = false;
-  const nonEmptySeeds = enteredSeeds.filter(s => !!s);
+  const nonEmptySeeds = props.seedphrase.split(' ').filter(s => !!s);
 
   if (!props.isImporting && props.seedphrase !== enteredSeeds.join(' ')) {
     disabled = true;
@@ -499,6 +501,10 @@ function ConfirmSeedphrase(props: {
                       }
                     });
                     setEnteredSeeds(newSeeds);
+
+                    if (props.isImporting) {
+                      props.setSeedphrase(newSeeds.join(' '));
+                    }
                   }}
                 />
               </div>

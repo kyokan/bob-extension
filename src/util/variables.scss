@@ -4,10 +4,13 @@ $black: #000000;
 $primary-blue: #2580F8;
 $primary-text: rgba($black, .8);
 $secondary-text: rgba($black, .6);
+$label-text: rgba($black, .25);
 
 $header-gray: rgba($black, .05);
 $border-gray: rgba($black, .1);
-$error-red: #EB5757;
+$error-red: #f52525;
+$success-green: #2ED272;
+$warning-orange: #ffa31a;
 
 %flex {
   display: flex;

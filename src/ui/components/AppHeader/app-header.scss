@@ -5,6 +5,23 @@
   height: 4rem;
   width: 100%;
   background-color: $header-gray;
+  border-bottom: 2px solid $header-gray;
+  position: relative;
+
+  &__bob-icon--moving {
+    display: none;
+  }
+
+  &__bob-move-icon {
+    position: absolute;
+    top: .6875rem;
+    left: 1.1875rem;
+    display: none;
+
+    &--moving {
+      display: block;
+    }
+  }
 
   &__l {
     @extend %row-nowrap;

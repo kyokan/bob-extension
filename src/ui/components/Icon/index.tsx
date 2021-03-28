@@ -29,7 +29,7 @@ export default class Icon extends Component<Props> {
             'icon--clickable': onClick,
           })}
           style={{
-            backgroundImage: `url(js/${url})`,
+            backgroundImage: url ? `url(js/${url})` : undefined,
             width: !fontAwesome ? `${size}rem` : undefined,
             height: !fontAwesome ? `${size}rem` : undefined,
             fontSize: fontAwesome && `${size}rem`,

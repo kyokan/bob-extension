@@ -13,6 +13,8 @@ import Login from "@src/ui/pages/Login";
 import {Redirect, Route, Switch} from "react-router";
 import BobMoveIcon from "@src/static/icons/bob-moves.gif";
 import Icon from "@src/ui/components/Icon";
+import Home from "@src/ui/pages/Home";
+import {fetchLatestBlock} from "@src/ui/ducks/node";
 
 export default function Popup (): ReactElement {
   const dispatch = useDispatch();
@@ -25,6 +27,7 @@ export default function Popup (): ReactElement {
       const now = Date.now();
       await dispatch(fetchWallets());
       await dispatch(fetchWalletState());
+      await dispatch(fetchLatestBlock());
       await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
       setLoading(false);
     })();
@@ -60,6 +63,9 @@ export default function Popup (): ReactElement {
         <Switch>
           <Route path="/onboarding">
             <Onboarding />
+          </Route>
+          <Route path="/">
+            <Home />
           </Route>
           <Route>
             <Redirect to="/" />

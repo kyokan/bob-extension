@@ -1,0 +1,87 @@
+@import "./src/util/variables";
+
+.home {
+  @extend %col-nowrap;
+  height: 100%;
+
+  &__top {
+    @extend %row-nowrap;
+    padding: 1.25rem;
+    cursor: default;
+    flex: 0 0 auto;
+  }
+
+  .identicon {
+    height: 4.125rem;
+    width: 4.125rem;
+    border: 2px solid $header-gray;
+    border-radius: 50%;
+  }
+
+  &__account-info {
+    @extend %col-nowrap;
+    padding: .125rem .5rem;
+
+    &__label {
+      color: $label-text;
+      font-weight: 500;
+      text-transform: uppercase;
+
+    }
+
+    &__spendable {
+      @extend %h2-font;
+      font-weight: 600;
+    }
+
+    &__locked {
+      color: $success-green;
+      height: 1.125rem;
+    }
+  }
+
+  &__actions {
+    @extend %row-nowrap;
+    padding: .25rem 2rem 1rem;
+    overflow-x: auto;
+    flex: 0 0 auto;
+
+    .home-action-btn {
+      flex: 0 0 auto;
+      padding-right: 1.25rem;
+    }
+  }
+
+  &__list {
+    @extend %col-nowrap;
+    flex: 1 1 auto;
+    height: 0;
+    cursor: default;
+    margin-top: .5rem;
+
+    &__header {
+      @extend %row-nowrap;
+      border-bottom: 1px solid $border-gray;
+
+      &__tab {
+        @extend %row-nowrap;
+        @extend %clickable;
+        flex: 1 1 auto;
+        align-items: center;
+        justify-content: center;
+        color: $label-text;
+        font-weight: 600;
+        padding: .5rem 1rem;
+
+        &--selected {
+          color: $black;
+        }
+      }
+    }
+
+    &__content {
+      flex: 1 1 auto;
+      height: 0;
+    }
+  }
+}
