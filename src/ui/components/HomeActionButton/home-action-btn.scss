@@ -48,12 +48,12 @@
   }
 
   &--disabled {
-    opacity: .5;
+    opacity: .25;
     cursor: default;
 
     &:hover,
     &:active {
-      opacity: .5;
+      opacity: .25;
     }
   }
 

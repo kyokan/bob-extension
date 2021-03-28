@@ -4,11 +4,13 @@ import thunk from "redux-thunk";
 import app from "@src/ui/ducks/app";
 import wallet from "@src/ui/ducks/wallet";
 import node from "@src/ui/ducks/node";
+import transactions from "@src/ui/ducks/transactions";
 
 const rootReducer = combineReducers({
   app,
   wallet,
   node,
+  transactions,
 });
 
 export type AppRootState = ReturnType<typeof rootReducer>;

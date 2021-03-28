@@ -1,8 +1,10 @@
 import {GenericService} from "@src/util/svc";
-
-const entryCache: {[key: string]: any} = {};
+const bdb = require('bdb');
+const DB = require('bdb/lib/DB');
+import {get, put} from '@src/util/db';
 
 export default class NodeService extends GenericService {
+  store: typeof DB;
 
   async getHeaders(): Promise<any> {
     const { apiHost, apiKey } = await this.exec('setting', 'getAPI');
@@ -74,6 +76,26 @@ export default class NodeService extends GenericService {
     return await resp.json();
   }
 
+  async getNameByHash(hash: string) {
+    const cachedEntry = await get(this.store, `namehash-${hash}`);
+    if (cachedEntry) return cachedEntry;
+
+    const { apiHost } = await this.exec('setting', 'getAPI');
+    const headers = await this.getHeaders();
+    const resp = await fetch(apiHost, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        method: 'getnamebyhash',
+        params: [hash],
+      }),
+    });
+
+    const name = await resp.json();
+    await put(this.store, `namehash-${hash}`, name);
+    return name;
+  }
+
   async getNameInfo(tld: string) {
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
@@ -130,6 +152,9 @@ export default class NodeService extends GenericService {
   }
 
   async getBlockEntry(height: number) {
+    const cachedEntry = await get(this.store, `entry-${height}`);
+    if (cachedEntry) return cachedEntry;
+
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
 
@@ -138,15 +163,18 @@ export default class NodeService extends GenericService {
       headers: headers,
     });
 
-    return await resp.json();
+    const blockEntry = await resp.json();
+
+    await put(this.store, `entry-${height}`, blockEntry);
+
+    return blockEntry;
   }
 
-  async getAllBlockEntries(startHeight = 0, endHeight = 10000, entries: any[] = []): Promise<any[]> {
-    const response = entryCache[endHeight] || await this.getBlockEntries(startHeight, endHeight);
+  async getAllBlockEntries(startHeight = 0, endHeight = 1000, entries: any[] = []): Promise<any[]> {
+    const response = await this.getBlockEntries(startHeight, endHeight);
     entries = entries.concat(response);
-    if (response.length === 10000) {
-      entryCache[endHeight] = response;
-      return await this.getAllBlockEntries(startHeight + 10000, endHeight + 10000, entries);
+    if (response.length === 1000) {
+      return await this.getAllBlockEntries(startHeight + 1000, endHeight + 1000, entries);
     }
     return entries;
   }
@@ -166,7 +194,8 @@ export default class NodeService extends GenericService {
   }
 
   async start() {
-
+    this.store = bdb.create('/node-store');
+    await this.store.open();
   }
 
   async stop() {

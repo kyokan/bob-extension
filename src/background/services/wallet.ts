@@ -8,6 +8,7 @@ const ChainEntry = require("hsd/lib/blockchain/chainentry");
 const BN = require('bcrypto/lib/bn.js');
 const bdb = require('bdb');
 const DB = require('bdb/lib/DB');
+const common = require('hsd/lib/wallet/common');
 import {get, put} from '@src/util/db';
 
 export default class WalletService extends GenericService {
@@ -88,6 +89,32 @@ export default class WalletService extends GenericService {
     const wallet = await this.wdb.get(walletId);
     const balance = await wallet.getBalance();
     return wallet.getJSON(false, balance).balance;
+  };
+
+  getTransactions = async (id?: string) => {
+    const walletId = id || this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    let txs = await wallet.getHistory('default');
+    const latestBlock = await this.exec('node', 'getLatestBlock');
+
+    common.sortTX(txs);
+    txs = txs.sort((a: any, b: any) => {
+      if (a.height > b.height) return -1;
+      if (b.height > a.height) return 1;
+      if (a.index > b.index) return -1;
+      if (b.index > a.index) return 1;
+      return 0;
+    });
+
+    const details = await wallet.toDetails(txs);
+
+    const result = [];
+
+    for (const item of details) {
+      result.push(item.getJSON(this.network, latestBlock.height));
+    }
+
+    return result;
   };
 
   createWallet = async (options: {

@@ -1,4 +1,4 @@
-import React, {ReactElement, useEffect, useState} from "react";
+import React, {ReactElement, useEffect, useState, useRef, useCallback} from "react";
 import {fetchWalletBalance, useCurrentWallet, useWalletBalance} from "@src/ui/ducks/wallet";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
@@ -9,6 +9,9 @@ import "./home.scss";
 import {ReceiveButton, RedeemButton, RevealButton, SendButton} from "@src/ui/components/HomeActionButton";
 import classNames from "classnames";
 import {setBobMoving} from "@src/ui/ducks/app";
+import {fetchTransactions} from "@src/ui/ducks/transactions";
+import Transactions from "@src/ui/components/Transactions";
+import debounce from 'lodash.debounce';
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
@@ -16,11 +19,18 @@ export default function Home(): ReactElement {
   const [tab, setTab] = useState<'domains'|'activities'>('activities');
   const { spendable, lockedUnconfirmed } = useWalletBalance();
   const [currentAddress, setCurrentAddress] = useState('');
+  const listElement = useRef<HTMLDivElement>(null);
+  const [fixHeader, setFixHeader] = useState(false);
 
   useEffect(() => {
     (async function onHomeMount() {
       try {
         dispatch(setBobMoving(true));
+        await dispatch(fetchWalletBalance());
+        await dispatch(fetchTransactions());
+        await postMessage({
+          type: MessageTypes.FULL_RESCAN,
+        });
         const address = await postMessage({
           type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
           payload: {
@@ -29,10 +39,6 @@ export default function Home(): ReactElement {
           },
         });
         setCurrentAddress(address);
-        await dispatch(fetchWalletBalance());
-        await postMessage({
-          type: MessageTypes.FULL_RESCAN,
-        });
       } catch (e) {
         console.error(e);
       }
@@ -41,8 +47,24 @@ export default function Home(): ReactElement {
     })();
   }, [currentWallet]);
 
+  const _onScroll = useCallback(e => {
+    if (!listElement.current) return;
+    const {y} = listElement.current.getBoundingClientRect();
+    if (y <= 66) {
+      setFixHeader(true);
+    } else {
+      setFixHeader(false);
+    }
+  }, [listElement]);
+  const onScroll = debounce(_onScroll, 5, { leading: true });
+
   return (
-    <div className="home">
+    <div
+      className={classNames('home', {
+        'home--fixed-header': fixHeader,
+      })}
+      onScroll={onScroll}
+    >
       <div className="home__top">
         <Identicon value={currentAddress} />
         <div className="home__account-info">
@@ -53,7 +75,7 @@ export default function Home(): ReactElement {
             {`${formatNumber(fromDollaryDoos(spendable))} HNS`}
           </div>
           <small className="home__account-info__locked">
-            {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(spendable))} HNS locked up`}
+            {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(lockedUnconfirmed))} HNS locked up`}
           </small>
         </div>
       </div>
@@ -63,7 +85,10 @@ export default function Home(): ReactElement {
         <RevealButton />
         <RedeemButton />
       </div>
-      <div className="home__list">
+      <div
+        className="home__list"
+        ref={listElement}
+      >
         <div className="home__list__header">
           <div
             className={classNames("home__list__header__tab", {
@@ -83,7 +108,7 @@ export default function Home(): ReactElement {
           </div>
         </div>
         <div className="home__list__content">
-
+          {tab === 'activities' ? <Transactions/> : null}
         </div>
       </div>
     </div>

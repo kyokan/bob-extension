@@ -42,10 +42,14 @@ function handleMessage(app: AppService, message: MessageAction) {
             return app.exec('wallet', 'getWalletBalance', message.payload);
         case MessageTypes.UNLOCK_WALLET:
             return app.exec('wallet', 'unlockWallet', message.payload);
+        case MessageTypes.GET_TRANSACTIONS:
+            return app.exec('wallet', 'getTransactions');
         case MessageTypes.LOCK_WALLET:
             return app.exec('wallet', 'lockWallet');
         case MessageTypes.FULL_RESCAN:
             return app.exec('wallet', 'fullRescan');
+        case MessageTypes.GET_NAME_BY_HASH:
+            return app.exec('node', 'getNameByHash', message.payload);
         case MessageTypes.GET_LATEST_BLOCK:
             return app.exec('node', 'getLatestBlock');
         default:

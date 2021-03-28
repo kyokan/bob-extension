@@ -10,9 +10,11 @@ enum MessageTypes {
   UNLOCK_WALLET = 'unlock_wallet',
   LOCK_WALLET = 'lock_wallet',
   FULL_RESCAN = 'full_rescan',
+  GET_TRANSACTIONS = 'get_transactions',
 
   // node
   GET_LATEST_BLOCK = 'get_latest_block',
+  GET_NAME_BY_HASH = 'get_name_by_hash',
 }
 
 export default MessageTypes;
