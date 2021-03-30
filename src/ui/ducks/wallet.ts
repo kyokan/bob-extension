@@ -6,7 +6,7 @@ import deepEqual from "fast-deep-equal";
 import {AppRootState} from "@src/ui/store/configureAppStore";
 import {ThunkDispatch} from "redux-thunk";
 
-enum ActionType {
+export enum ActionType {
   SET_WALLET_IDS = 'wallet/setWalletIDs',
   SET_WALLET_STATE = 'wallet/setWalletState',
   SET_WALLET_BALANCE = 'wallet/setWalletBalance',
@@ -23,6 +23,7 @@ type State = {
   walletIDs: string[];
   currentWallet: string;
   locked: boolean;
+  rescanning: boolean;
   tip: {
     hash: string;
     height: number;
@@ -38,6 +39,7 @@ const initialState: State = {
   walletIDs: [],
   currentWallet: '',
   locked: true,
+  rescanning: false,
   tip: {
     hash: '',
     height: -1,
@@ -88,14 +90,9 @@ export const unlockWallet = (password: string) => async (dispatch: ThunkDispatch
 
 export const fetchWalletState = () => async (dispatch: Dispatch) => {
   const resp = await postMessage({ type: MessageTypes.GET_WALLET_STATE });
-  const {selectedID, locked, tip} = resp;
   dispatch({
     type: ActionType.SET_WALLET_STATE,
-    payload: {
-      selectedID,
-      locked,
-      tip,
-    },
+    payload: resp,
   });
 };
 
@@ -146,6 +143,7 @@ export default function wallet(state = initialState, action: Action): State {
         currentWallet: action.payload.selectedID,
         locked: action.payload.locked,
         tip: action.payload.tip,
+        rescanning: action.payload.rescanning,
       };
     default:
       return state;
@@ -170,6 +168,7 @@ export const useWalletState = () => {
       currentWallet: state.wallet.currentWallet,
       locked: state.wallet.locked,
       tip: state.wallet.tip,
+      rescanning: state.wallet.rescanning,
     };
   }, deepEqual);
 };

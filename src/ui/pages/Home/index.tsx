@@ -25,11 +25,10 @@ export default function Home(): ReactElement {
   useEffect(() => {
     (async function onHomeMount() {
       try {
-        dispatch(setBobMoving(true));
         await dispatch(fetchWalletBalance());
         await dispatch(fetchTransactions());
         await postMessage({
-          type: MessageTypes.FULL_RESCAN,
+          type: MessageTypes.CHECK_FOR_RESCAN,
         });
         const address = await postMessage({
           type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
@@ -42,8 +41,6 @@ export default function Home(): ReactElement {
       } catch (e) {
         console.error(e);
       }
-
-      dispatch(setBobMoving(false));
     })();
   }, [currentWallet]);
 

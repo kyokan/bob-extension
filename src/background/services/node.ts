@@ -14,7 +14,7 @@ export default class NodeService extends GenericService {
       'Authorization': apiKey && 'Basic ' + Buffer.from(`x:${apiKey}`).toString('base64'),
     };
 
-    if (!isLocalhost) {
+    if (true || !isLocalhost) {
       headers['Content-Type'] = 'application/json';
     }
     return headers;
@@ -63,7 +63,6 @@ export default class NodeService extends GenericService {
   async getBlock(blockHash: string) {
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
-
     const resp = await fetch(apiHost, {
       method: 'POST',
       headers: headers,
@@ -71,6 +70,17 @@ export default class NodeService extends GenericService {
         method: 'getblock',
         params: [blockHash],
       }),
+    });
+
+    return await resp.json();
+  }
+
+  async getBlockByHeight(blockHeight: number) {
+    const { apiHost } = await this.exec('setting', 'getAPI');
+    const headers = await this.getHeaders();
+    const resp = await fetch(`${apiHost}/block/${blockHeight}`, {
+      method: 'GET',
+      headers: headers,
     });
 
     return await resp.json();
@@ -132,25 +142,6 @@ export default class NodeService extends GenericService {
     return await resp.json();
   }
 
-  async getBlockEntries(startHeight: number, endHeight: number) {
-    const { apiHost } = await this.exec('setting', 'getAPI');
-    const headers = await this.getHeaders();
-    const blocks = [];
-
-    for (let i = startHeight; i < endHeight; i++) {
-      blocks.push(i);
-    }
-    const resp = await fetch(`${apiHost}/entry`, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({
-        blocks,
-      }),
-    });
-
-    return await resp.json();
-  }
-
   async getBlockEntry(height: number) {
     const cachedEntry = await get(this.store, `entry-${height}`);
     if (cachedEntry) return cachedEntry;
@@ -168,15 +159,6 @@ export default class NodeService extends GenericService {
     await put(this.store, `entry-${height}`, blockEntry);
 
     return blockEntry;
-  }
-
-  async getAllBlockEntries(startHeight = 0, endHeight = 1000, entries: any[] = []): Promise<any[]> {
-    const response = await this.getBlockEntries(startHeight, endHeight);
-    entries = entries.concat(response);
-    if (response.length === 1000) {
-      return await this.getAllBlockEntries(startHeight + 1000, endHeight + 1000, entries);
-    }
-    return entries;
   }
 
   async getTXByAddresses(addresses: string[]) {

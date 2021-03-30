@@ -10,6 +10,7 @@ enum MessageTypes {
   UNLOCK_WALLET = 'unlock_wallet',
   LOCK_WALLET = 'lock_wallet',
   FULL_RESCAN = 'full_rescan',
+  CHECK_FOR_RESCAN = 'check_for_rescan',
   GET_TRANSACTIONS = 'get_transactions',
 
   // node

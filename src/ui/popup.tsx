@@ -6,9 +6,15 @@ import {Provider} from "react-redux";
 import configureAppStore from "@src/ui/store/configureAppStore";
 import {MemoryRouter} from "react-router";
 
+const store = configureAppStore();
+
+chrome.runtime.onMessage.addListener((action) => {
+  store.dispatch(action);
+});
+
 browser.tabs.query({ active: true, currentWindow: true }).then(() => {
   ReactDOM.render(
-    <Provider store={configureAppStore()}>
+    <Provider store={store}>
       <MemoryRouter>
         <Popup />
       </MemoryRouter>
