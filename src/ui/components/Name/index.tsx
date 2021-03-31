@@ -15,27 +15,32 @@ export default function Name(props: Props): ReactElement {
 
   useEffect(() => {
     (async function onNameMount() {
-      const {result} = await postMessage({
-        type: MessageTypes.GET_NAME_BY_HASH,
-        payload: hash,
-      });
+      let value = name;
+
+      if (!value) {
+        const {result} = await postMessage({
+          type: MessageTypes.GET_NAME_BY_HASH,
+          payload: hash,
+        });
+        value = result;
+      }
 
       try {
-        const unicode = punycode.toUnicode(result);
+        const unicode = punycode.toUnicode(value as string);
 
-        if (unicode !== result) {
-          setDomain(`${unicode}/ (${result})`);
+        if (unicode !== value) {
+          setDomain(`${unicode}/ (${value})`);
           return;
         }
       } catch(e) {}
 
-      setDomain(`${result}/`);
+      setDomain(`${value}/`);
     })();
-  }, [hash]);
+  }, [hash, name]);
 
   return (
-    <div className="name" title={domain || name}>
-      {domain || name}
+    <div className="name" title={domain}>
+      {domain}
     </div>
   )
 }

@@ -29,13 +29,13 @@ export default class NodeService extends GenericService {
 
   getLatestBlock = async () => {
     const blockchanInfo = await this.getBlockchainInfo();
-    const block = await this.getBlock(blockchanInfo!.result!.bestblockhash);
+    const block = await this.getBlockByHeight(blockchanInfo!.result!.blocks);
 
     const {
       hash,
       height,
       time,
-    } = block.result || {};
+    } = block || {};
 
     return {
       hash,

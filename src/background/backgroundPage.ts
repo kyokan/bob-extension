@@ -43,13 +43,15 @@ function handleMessage(app: AppService, message: MessageAction) {
         case MessageTypes.UNLOCK_WALLET:
             return app.exec('wallet', 'unlockWallet', message.payload);
         case MessageTypes.GET_TRANSACTIONS:
-            return app.exec('wallet', 'getTransactions');
+            return app.exec('wallet', 'getTransactions', message.payload);
         case MessageTypes.LOCK_WALLET:
             return app.exec('wallet', 'lockWallet');
         case MessageTypes.CHECK_FOR_RESCAN:
             return app.exec('wallet', 'checkForRescan');
         case MessageTypes.FULL_RESCAN:
             return app.exec('wallet', 'fullRescan');
+        case MessageTypes.GET_DOMAIN_NAMES:
+            return app.exec('wallet', 'getDomainNames', message.payload);
         case MessageTypes.GET_NAME_BY_HASH:
             return app.exec('node', 'getNameByHash', message.payload);
         case MessageTypes.GET_LATEST_BLOCK:

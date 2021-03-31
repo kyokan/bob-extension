@@ -8,6 +8,8 @@ import deepEqual from "fast-deep-equal";
 
 export enum ActionType {
   SET_TRANSACTIONS = 'transaction/setTransactions',
+  APPEND_TRANSACTIONS = 'transaction/appendTransactions',
+  SET_FETCHING = 'transaction/setFetching',
 }
 
 type Action = {
@@ -22,11 +24,15 @@ type State = {
   map: {
     [txHash: string]: Transaction;
   };
+  offset: number;
+  fetching: boolean;
 };
 
 const initialState: State = {
   order: [],
   map: {},
+  offset: 0,
+  fetching: false,
 };
 
 export type Transaction = {
@@ -64,24 +70,39 @@ export const fetchTransactions = () => async (dispatch: Dispatch) => {
   const transactions = await postMessage({ type: MessageTypes.GET_TRANSACTIONS });
   dispatch({
     type: ActionType.SET_TRANSACTIONS,
-    payload: transactions.map((tx: any) => ({
-      block: tx.block,
-      confirmations: tx.confirmations,
-      date: new Date(tx.date),
-      fee: tx.fee,
-      hash: tx.hash,
-      height: tx.height,
-      inputs: tx.inputs,
-      mdate: new Date(tx.mdate),
-      mtime: new Date(tx.mtime * 1000),
-      outputs: tx.outputs,
-      rate: tx.rate,
-      size: tx.size,
-      time: new Date(tx.time * 1000),
-      tx: tx.tx,
-      virutalSize: tx.virutalSize,
-    })),
+    payload: transactions.map(inflateTX),
   });
+};
+
+export const fetchMoreTransactions = () => async (dispatch: Dispatch, getState: () => AppRootState) => {
+  const {
+    transactions: {
+      fetching,
+      offset,
+    }
+  } = getState();
+
+  if (fetching) return;
+  dispatch(setFetching(true));
+  const transactions = await postMessage({
+    type: MessageTypes.GET_TRANSACTIONS,
+    payload: {
+      offset: offset,
+    },
+  });
+
+  dispatch({
+    type: ActionType.APPEND_TRANSACTIONS,
+    payload: transactions.map(inflateTX),
+  });
+  dispatch(setFetching(false));
+};
+
+export const setFetching = (fetching: boolean) => {
+  return {
+    type: ActionType.SET_FETCHING,
+    payload: fetching,
+  }
 };
 
 export const setTransactions = (transactions: any[]) => {
@@ -93,6 +114,11 @@ export const setTransactions = (transactions: any[]) => {
 
 export default function transactions(state = initialState, action: Action): State {
   switch (action.type) {
+    case ActionType.SET_FETCHING:
+      return {
+        ...state,
+        fetching: action.payload,
+      };
     case ActionType.SET_TRANSACTIONS:
       return {
         ...state,
@@ -101,6 +127,22 @@ export default function transactions(state = initialState, action: Action): Stat
           map[tx.hash] = tx;
           return map;
         }, {}),
+      };
+    case ActionType.APPEND_TRANSACTIONS:
+      return {
+        ...state,
+        order: [
+          ...state.order,
+          ...action.payload.map((tx: Transaction) => tx.hash),
+        ],
+        map: {
+          ...state.map,
+          ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
+            map[tx.hash] = tx;
+            return map;
+          }, {}),
+        },
+        offset: action.payload.length ? state.offset + 1 : state.offset,
       };
     default:
       return state;
@@ -118,3 +160,23 @@ export const useTXByHash = (hash: string): Transaction | undefined => {
     return state.transactions.map[hash];
   }, deepEqual)
 };
+
+function inflateTX(tx: any) {
+  return {
+    block: tx.block,
+    confirmations: tx.confirmations,
+    date: new Date(tx.date),
+    fee: tx.fee,
+    hash: tx.hash,
+    height: tx.height,
+    inputs: tx.inputs,
+    mdate: new Date(tx.mdate),
+    mtime: new Date(tx.mtime * 1000),
+    outputs: tx.outputs,
+    rate: tx.rate,
+    size: tx.size,
+    time: new Date(tx.time * 1000),
+    tx: tx.tx,
+    virutalSize: tx.virutalSize,
+  };
+}

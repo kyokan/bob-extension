@@ -66,6 +66,12 @@ export const useHandshakeInfo = () => {
   }, deepEqual);
 };
 
+export const useCurrentBlockHeight = () => {
+  return useSelector((state: AppRootState): number => {
+    return state.node.height;
+  }, deepEqual);
+};
+
 export const useCurrentBlocktime = () => {
   return useSelector((state: AppRootState): Date => {
     const {time} = state.node;

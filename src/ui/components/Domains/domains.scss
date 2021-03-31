@@ -1,0 +1,46 @@
+@import "./src/util/variables";
+
+.domains {
+  @extend %col-nowrap;
+
+  .domain + .domain {
+    border-top: 1px solid $border-gray;
+  }
+}
+
+.domain {
+  @extend %row-nowrap;
+  align-items: center;
+  padding: 1rem 1.25rem;
+
+  &__info {
+    @extend %col-nowrap;
+    flex: 1 0 auto;
+
+    &__name {
+      @extend %lite-font;
+      font-weight: 600;
+    }
+
+    &__expiry {
+      @extend %small-font;
+      color: $secondary-text;
+    }
+  }
+
+  &__actions {
+    @extend %col-nowrap;
+    flex: 0 0 auto;
+    height: 100%;
+
+    &__value {
+      @extend %regular-font;
+      flex: 1 1 auto;
+      font-weight: 600;
+    }
+
+    &__action {
+      flex: 1 1 auto;
+    }
+  }
+}

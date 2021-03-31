@@ -9,27 +9,28 @@ import "./home.scss";
 import {ReceiveButton, RedeemButton, RevealButton, SendButton} from "@src/ui/components/HomeActionButton";
 import classNames from "classnames";
 import {setBobMoving} from "@src/ui/ducks/app";
-import {fetchTransactions} from "@src/ui/ducks/transactions";
+import {fetchMoreTransactions, fetchTransactions} from "@src/ui/ducks/transactions";
 import Transactions from "@src/ui/components/Transactions";
 import debounce from 'lodash.debounce';
+import {fetchDomainNames} from "@src/ui/ducks/domains";
+import Domains from "@src/ui/components/Domains";
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
   const currentWallet = useCurrentWallet();
-  const [tab, setTab] = useState<'domains'|'activities'>('activities');
+  const [tab, setTab] = useState<'domains'|'activity'>('activity');
   const { spendable, lockedUnconfirmed } = useWalletBalance();
   const [currentAddress, setCurrentAddress] = useState('');
   const listElement = useRef<HTMLDivElement>(null);
+  const pageElement = useRef<HTMLDivElement>(null);
   const [fixHeader, setFixHeader] = useState(false);
 
   useEffect(() => {
     (async function onHomeMount() {
       try {
-        await postMessage({
-          type: MessageTypes.CHECK_FOR_RESCAN,
-        });
         await dispatch(fetchWalletBalance());
         await dispatch(fetchTransactions());
+        await dispatch(fetchDomainNames());
         const address = await postMessage({
           type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
           payload: {
@@ -44,15 +45,28 @@ export default function Home(): ReactElement {
     })();
   }, [currentWallet]);
 
-  const _onScroll = useCallback(e => {
-    if (!listElement.current) return;
+  const _onScroll = useCallback(async e => {
+    if (!listElement.current || !pageElement.current) return;
+
     const {y} = listElement.current.getBoundingClientRect();
     if (y <= 66) {
       setFixHeader(true);
     } else {
       setFixHeader(false);
     }
-  }, [listElement]);
+
+   if ((pageElement.current.scrollTop / pageElement.current.scrollHeight) > .5) {
+     if (tab === 'activity') {
+       await dispatch(fetchMoreTransactions());
+     } else {
+
+     }
+   }
+  }, [
+    listElement,
+    pageElement,
+    tab,
+  ]);
   const onScroll = debounce(_onScroll, 5, { leading: true });
 
   return (
@@ -60,6 +74,7 @@ export default function Home(): ReactElement {
       className={classNames('home', {
         'home--fixed-header': fixHeader,
       })}
+      ref={pageElement}
       onScroll={onScroll}
     >
       <div className="home__top">
@@ -97,15 +112,15 @@ export default function Home(): ReactElement {
           </div>
           <div
             className={classNames("home__list__header__tab", {
-              'home__list__header__tab--selected': tab === 'activities',
+              'home__list__header__tab--selected': tab === 'activity',
             })}
-            onClick={() => setTab('activities')}
+            onClick={() => setTab('activity')}
           >
-            Activities
+            Activity
           </div>
         </div>
         <div className="home__list__content">
-          {tab === 'activities' ? <Transactions/> : null}
+          {tab === 'activity' ? <Transactions /> : <Domains />}
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ enum MessageTypes {
   FULL_RESCAN = 'full_rescan',
   CHECK_FOR_RESCAN = 'check_for_rescan',
   GET_TRANSACTIONS = 'get_transactions',
+  GET_DOMAIN_NAMES = 'get_domain_names',
 
   // node
   GET_LATEST_BLOCK = 'get_latest_block',

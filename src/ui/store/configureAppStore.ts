@@ -5,12 +5,14 @@ import app from "@src/ui/ducks/app";
 import wallet from "@src/ui/ducks/wallet";
 import node from "@src/ui/ducks/node";
 import transactions from "@src/ui/ducks/transactions";
+import domains from "@src/ui/ducks/domains";
 
 const rootReducer = combineReducers({
   app,
   wallet,
   node,
   transactions,
+  domains,
 });
 
 export type AppRootState = ReturnType<typeof rootReducer>;
