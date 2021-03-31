@@ -25,11 +25,11 @@ export default function Home(): ReactElement {
   useEffect(() => {
     (async function onHomeMount() {
       try {
-        await dispatch(fetchWalletBalance());
-        await dispatch(fetchTransactions());
         await postMessage({
           type: MessageTypes.CHECK_FOR_RESCAN,
         });
+        await dispatch(fetchWalletBalance());
+        await dispatch(fetchTransactions());
         const address = await postMessage({
           type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
           payload: {

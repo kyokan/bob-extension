@@ -6,7 +6,7 @@ import {useSelector} from "react-redux";
 import {AppRootState} from "@src/ui/store/configureAppStore";
 import deepEqual from "fast-deep-equal";
 
-enum ActionType {
+export enum ActionType {
   SET_TRANSACTIONS = 'transaction/setTransactions',
 }
 
@@ -82,6 +82,13 @@ export const fetchTransactions = () => async (dispatch: Dispatch) => {
       virutalSize: tx.virutalSize,
     })),
   });
+};
+
+export const setTransactions = (transactions: any[]) => {
+  return {
+    type: ActionType.SET_TRANSACTIONS,
+    payload: transactions,
+  }
 };
 
 export default function transactions(state = initialState, action: Action): State {

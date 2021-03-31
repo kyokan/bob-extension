@@ -8,11 +8,11 @@ const ChainEntry = require("hsd/lib/blockchain/chainentry");
 const BN = require('bcrypto/lib/bn.js');
 const bdb = require('bdb');
 const DB = require('bdb/lib/DB');
-const common = require('hsd/lib/wallet/common');
 import {get, put} from '@src/util/db';
 import pushMessage from "@src/util/pushMessage";
-import {ActionType as WalletActionType} from "@src/ui/ducks/wallet";
+import {ActionType as WalletActionType, setWalletBalance} from "@src/ui/ducks/wallet";
 import {ActionType as AppActionType} from "@src/ui/ducks/app";
+import {setTransactions} from "@src/ui/ducks/transactions";
 
 export default class WalletService extends GenericService {
   network: typeof Network;
@@ -21,11 +21,15 @@ export default class WalletService extends GenericService {
 
   store: typeof DB;
 
+  transactions?: any[] | null;
+
   selectedID: string;
 
   locked: boolean;
 
   rescanning: boolean;
+
+  checkStatusTimeout?: any;
 
   constructor() {
     super();
@@ -90,7 +94,11 @@ export default class WalletService extends GenericService {
     if (this.selectedID !== id) {
       const wallet = await this.wdb.get(id);
       await wallet.lock();
+      this.transactions = null;
       this.locked = true;
+      await this.pushState();
+      await pushMessage(setWalletBalance(await this.getWalletBalance()));
+      await pushMessage(setTransactions([]));
     }
 
     this.selectedID = id;
@@ -116,28 +124,43 @@ export default class WalletService extends GenericService {
   getTransactions = async (offset = 0, limit = 50, id?: string) => {
     const walletId = id || this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    let txs = await wallet.getHistory('default');
     const latestBlock = await this.exec('node', 'getLatestBlock');
 
-    txs = txs.sort((a: any, b: any) => {
-      if (a.height > b.height) return -1;
-      if (b.height > a.height) return 1;
-      if (a.index > b.index) return -1;
-      if (b.index > a.index) return 1;
-      return 0;
+    await pushMessage({
+      type: AppActionType.SET_BOB_MOVING,
+      payload: true,
     });
 
-    txs = txs.slice(offset * limit, (offset * limit) + limit);
+    let result;
+    if (this.transactions) {
+      result = this.transactions;
+    } else {
+      let txs = await wallet.getHistory('default');
 
-    const details = await wallet.toDetails(txs);
+      txs = txs.sort((a: any, b: any) => {
+        if (a.height > b.height) return -1;
+        if (b.height > a.height) return 1;
+        if (a.index > b.index) return -1;
+        if (b.index > a.index) return 1;
+        return 0;
+      });
 
-    const result = [];
+      const details = await wallet.toDetails(txs);
 
-    for (const item of details) {
-      result.push(item.getJSON(this.network, latestBlock.height));
+      result = [];
+
+      for (const item of details) {
+        result.push(item.getJSON(this.network, latestBlock.height));
+      }
+
+      this.transactions = result;
     }
 
-    return result;
+    await pushMessage({
+      type: AppActionType.SET_BOB_MOVING,
+      payload: false,
+    });
+    return result.slice(offset * limit, (offset * limit) + limit);
   };
 
   createWallet = async (options: {
@@ -226,7 +249,7 @@ export default class WalletService extends GenericService {
     this.wdb.rescanning = false;
   };
 
-  getAllReceiveTXs = async (startDepth = 0, endDepth = 2500, transactions: any[] = []): Promise<any[]> => {
+  getAllReceiveTXs = async (startDepth = 0, endDepth = 1000, transactions: any[] = []): Promise<any[]> => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const account = await wallet.getAccount('default');
@@ -234,17 +257,22 @@ export default class WalletService extends GenericService {
 
     await this.pushBobMessage('Looking for transactions...');
 
-    const b = this.wdb.db.batch();
+    let b;
     for (let i = startDepth; i < endDepth; i++) {
       const key = account.deriveReceive(i)
       const receive = key.getAddress().toString();
       const path = key.toPath();
       if (!await this.wdb.hasPath(account.wid, path.hash)) {
+        b = b || this.wdb.db.batch();
         await this.wdb.savePath(b, account.wid, path);
       }
       addresses.push(receive);
     }
-    await b.write();
+
+    if (b) {
+      await b.write();
+    }
+
     const newTXs = await this.exec('node', 'getTXByAddresses', addresses);
 
     if (!newTXs.length) {
@@ -252,10 +280,10 @@ export default class WalletService extends GenericService {
     }
 
     transactions = transactions.concat(newTXs);
-    return await this.getAllReceiveTXs(startDepth + 2500, endDepth + 2500, transactions);
+    return await this.getAllReceiveTXs(startDepth + 1000, endDepth + 1000, transactions);
   };
 
-  getAllChangeTXs = async (startDepth = 0, endDepth = 2500, transactions: any[] = []): Promise<any[]> => {
+  getAllChangeTXs = async (startDepth = 0, endDepth = 1000, transactions: any[] = []): Promise<any[]> => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const account = await wallet.getAccount('default');
@@ -263,17 +291,20 @@ export default class WalletService extends GenericService {
 
     await this.pushBobMessage('Looking for transactions...');
 
-    const b = this.wdb.db.batch();
+    let b;
     for (let i = startDepth; i < endDepth; i++) {
       const key = account.deriveChange(i);
       const change = key.getAddress().toString();
       const path = key.toPath();
       if (!await this.wdb.hasPath(account.wid, path.hash)) {
+        b = b || this.wdb.db.batch();
         await this.wdb.savePath(b, account.wid, path);
       }
       addresses.push(change);
     }
-    await b.write();
+    if (b) {
+      await b.write();
+    }
     const newTXs = await this.exec('node', 'getTXByAddresses', addresses);
 
     if (!newTXs.length) {
@@ -281,28 +312,81 @@ export default class WalletService extends GenericService {
     }
 
     transactions = transactions.concat(newTXs);
-    return await this.getAllChangeTXs(startDepth + 2500, endDepth + 2500, transactions);
+    return await this.getAllChangeTXs(startDepth + 1000, endDepth + 1000, transactions);
   };
 
   fullRescan = async () => {
     await this.pushBobMessage('Looking for transactions...');
     const latestBlockEnd = await this.exec('node', 'getLatestBlock');
-    const receiveTXs = await this.getAllChangeTXs();
-    const changeTXs = await this.getAllReceiveTXs();
+    const changeTXs = await this.getAllChangeTXs();
+    const receiveTXs = await this.getAllReceiveTXs();
     const transactions: any[] = receiveTXs.concat(changeTXs);
     await this.wdb.watch();
     await this.insertTransactions(transactions);
-    await put(this.store,'latestBlock', latestBlockEnd);
+    await put(this.store,`latest_block_${this.selectedID}`, latestBlockEnd);
     return;
   };
 
   processBlock = async (blockHeight: number) => {
-    const {txs, hash, height, time} = await this.exec('node', 'getBlockByHeight', blockHeight);
-    await this.insertTransactions(txs.map((tx: any) => ({ ...tx, height })));
-    await put(this.store,'latestBlock', {
-      hash,
-      height,
-      time,
+    const {
+      txs: transactions,
+      ...entryOption
+    } = await this.exec('node', 'getBlockByHeight', blockHeight);
+
+    this.wdb.rescanning = true;
+    let retries = 0;
+
+    for (let i = 0; i < transactions.length; i++) {
+      const wallet = await this.wdb.get(this.selectedID);
+      const txHashBuf = Buffer.from(transactions[i].hash, 'hex');
+
+      if (await this.wdb.testFilter(txHashBuf)) {
+        continue;
+      }
+
+      const wtx = await wallet.getTX(txHashBuf);
+
+      if (wtx) {
+        continue;
+      }
+
+      const unlock = await this.wdb.txLock.lock();
+      try {
+        const tx = mapOneTx(transactions[i]);
+        await this.pushBobMessage(`Processing block # ${entryOption.height}....`);
+        const entry = new ChainEntry({
+          ...entryOption,
+          version: Number(entryOption.version),
+          hash: Buffer.from(entryOption.hash, 'hex'),
+          prevBlock: Buffer.from(entryOption.prevBlock, 'hex'),
+          merkleRoot: Buffer.from(entryOption.merkleRoot, 'hex'),
+          witnessRoot: Buffer.from(entryOption.witnessRoot, 'hex'),
+          treeRoot: Buffer.from(entryOption.treeRoot, 'hex'),
+          reservedRoot: Buffer.from(entryOption.reservedRoot, 'hex'),
+          extraNonce: Buffer.from(entryOption.extraNonce, 'hex'),
+          mask: Buffer.from(entryOption.mask, 'hex'),
+          chainwork: entryOption.chainwork && BN.from(entryOption.chainwork, 16, 'be'),
+        });
+        await this.wdb._addTX(tx, entry);
+        await new Promise(r => setTimeout(r, 2));
+        retries = 0;
+      } catch (e) {
+        retries++;
+        await new Promise(r => setTimeout(r, 10));
+        if (retries > 1000) {
+          throw e;
+        }
+        i = i - 1;
+      } finally {
+        await unlock();
+      }
+    }
+
+    this.wdb.rescanning = false;
+    await put(this.store,`latest_block_${this.selectedID}`, {
+      hash: entryOption.hash,
+      height: entryOption.height,
+      time: entryOption.time,
     });
   };
 
@@ -312,10 +396,13 @@ export default class WalletService extends GenericService {
     }
   };
 
-  async checkForRescan() {
+  checkForRescan = async () => {
+    if (!this.selectedID) return;
+
     await this.pushBobMessage('Checking status...');
     const latestBlockNow = await this.exec('node', 'getLatestBlock');
-    const latestBlockLast = await get(this.store, 'latestBlock');
+    const latestBlockLast = await get(this.store, `latest_block_${this.selectedID}`);
+
     if (latestBlockLast && latestBlockLast.height >= latestBlockNow.height) {
       await this.pushBobMessage('I am synchronized.');
       return;
@@ -324,7 +411,7 @@ export default class WalletService extends GenericService {
     this.rescanning = true;
     await this.pushState();
 
-    if (latestBlockNow.height - latestBlockLast.height <= 100) {
+    if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
       await this.rescanBlocks(latestBlockLast.height + 1, latestBlockNow.height);
       await this.checkForRescan();
     } else {
@@ -337,7 +424,7 @@ export default class WalletService extends GenericService {
       this.rescanning = false;
       await this.pushState();
     }, 500);
-  }
+  };
 
   async start() {
     this.network = Network.get('main');
@@ -356,17 +443,19 @@ export default class WalletService extends GenericService {
     await this.wdb.open();
     await this.store.open();
 
-    console.log(this.wdb.filter);
     if (!this.selectedID) {
       const walletIDs = await this.getWalletIDs();
       this.selectedID = walletIDs.filter(id => id !== 'primary')[0];
     }
+
+    this.checkStatusTimeout = setInterval(this.checkForRescan, 60000);
   }
 
   async stop() {
-
+    if (this.checkStatusTimeout) {
+      clearInterval(this.checkStatusTimeout);
+    }
   }
-
 }
 
 function mapOneTx(txOptions: any) {

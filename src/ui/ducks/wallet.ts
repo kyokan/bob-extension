@@ -5,6 +5,7 @@ import {useSelector} from "react-redux";
 import deepEqual from "fast-deep-equal";
 import {AppRootState} from "@src/ui/store/configureAppStore";
 import {ThunkDispatch} from "redux-thunk";
+import {number} from "@storybook/addon-knobs";
 
 export enum ActionType {
   SET_WALLET_IDS = 'wallet/setWalletIDs',
@@ -100,10 +101,14 @@ export const fetchWalletBalance = () => async (dispatch: Dispatch) => {
   const balance = await postMessage({
     type: MessageTypes.GET_WALLET_BALANCE,
   });
-  dispatch({
+  dispatch(setWalletBalance(balance));
+};
+
+export const setWalletBalance = (balance: {unconfirmed: number; lockedUnconfirmed: number}) => {
+  return {
     type: ActionType.SET_WALLET_BALANCE,
     payload: balance,
-  });
+  };
 };
 
 export const fetchWallets = () => async (dispatch: Dispatch) => {

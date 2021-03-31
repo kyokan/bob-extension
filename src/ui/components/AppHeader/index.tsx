@@ -11,6 +11,7 @@ import {useWalletState} from "@src/ui/ducks/wallet";
 export default function AppHeader(): ReactElement {
   const {rescanning} = useWalletState();
   const bobMessage = useBobMessage();
+  const bobMoving = useBobMoving();
   const [isShowing, setShowing] = useState(false);
 
   return (
@@ -18,7 +19,7 @@ export default function AppHeader(): ReactElement {
       <div className="app-header__l">
         <Icon
           className={classNames('app-header__bob-icon', {
-            'app-header__bob-icon--moving': rescanning,
+            'app-header__bob-icon--moving': rescanning || bobMoving,
           })}
           url={BobIcon}
           onClick={() => setShowing(!isShowing)}
@@ -26,9 +27,10 @@ export default function AppHeader(): ReactElement {
         />
         <Icon
           className={classNames('app-header__bob-move-icon', {
-            'app-header__bob-move-icon--moving': rescanning,
+            'app-header__bob-move-icon--moving': rescanning || bobMoving,
           })}
           url={BobMoveIcon}
+          onClick={() => setShowing(!isShowing)}
           size={2.625}
         />
         {
