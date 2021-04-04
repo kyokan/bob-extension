@@ -16,10 +16,9 @@ import NodeService from "@src/background/services/node";
     browser.runtime.onMessage.addListener(async (request: any, sender: any) => {
         try {
             const res = await handleMessage(app, request);
-            return res;
+            return [null, res];
         } catch (e) {
-            console.log(e);
-            return e.message;
+            return [e.message, null];
         }
     });
 })();
@@ -44,8 +43,12 @@ function handleMessage(app: AppService, message: MessageAction) {
             return app.exec('wallet', 'unlockWallet', message.payload);
         case MessageTypes.ADD_TX_QUEUE:
             return app.exec('wallet', 'addTxToQueue', message.payload);
+        case MessageTypes.SUBMIT_TX:
+            return app.exec('wallet', 'submitTx', message.payload);
         case MessageTypes.UPDATE_TX_QUEUE:
             return app.exec('wallet', 'updateTxQueue');
+        case MessageTypes.GET_PENDING_TRANSACTIONS:
+            return app.exec('wallet', 'getPendingTransactions');
         case MessageTypes.GET_TRANSACTIONS:
             return app.exec('wallet', 'getTransactions', message.payload);
         case MessageTypes.LOCK_WALLET:

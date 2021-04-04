@@ -4,6 +4,7 @@ const WalletDB = require("hsd/lib/wallet/walletdb");
 const Network = require("hsd/lib/protocol/network");
 const Covenant = require("hsd/lib/primitives/covenant");
 const TX = require("hsd/lib/primitives/tx");
+const common = require("hsd/lib/wallet/common");
 const ChainEntry = require("hsd/lib/blockchain/chainentry");
 const BN = require('bcrypto/lib/bn.js');
 const bdb = require('bdb');
@@ -12,7 +13,7 @@ import {get, put} from '@src/util/db';
 import pushMessage from "@src/util/pushMessage";
 import {ActionType as WalletActionType, setWalletBalance} from "@src/ui/ducks/wallet";
 import {ActionType as AppActionType} from "@src/ui/ducks/app";
-import {setTransactions} from "@src/ui/ducks/transactions";
+import {setTransactions, Transaction} from "@src/ui/ducks/transactions";
 import {setDomainNames} from "@src/ui/ducks/domains";
 import {ActionType} from "@src/ui/ducks/pendingTXs";
 
@@ -126,6 +127,28 @@ export default class WalletService extends GenericService {
     const wallet = await this.wdb.get(walletId);
     const balance = await wallet.getBalance();
     return wallet.getJSON(false, balance).balance;
+  };
+
+  getPendingTransactions = async (id: string) => {
+    const walletId = id || this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const wtxs = await wallet.getPending();
+    const txs = [];
+
+    for (const wtx of wtxs) {
+      if (!wtx.tx.isCoinbase())
+        txs.push(wtx.tx);
+    }
+
+    const sorted = common.sortDeps(txs);
+
+    console.log(sorted)
+    for (const tx of sorted) {
+      console.log(tx.toHex());
+      await this.exec('node', 'sendRawTransaction', tx.toHex());
+    }
+
+    return txs;
   };
 
   getTransactions = async (opts?: {offset: number, limit: number, id?: string}) => {
@@ -246,6 +269,23 @@ export default class WalletService extends GenericService {
     }
     await put(this.store,`tx_queue_${this.selectedID}`, txQueue);
     await this.updateTxQueue();
+  };
+
+  removeTxFromQueue = async (txJSON: any) => {
+    let txQueue = (await get(this.store,`tx_queue_${this.selectedID}`)) || [];
+    txQueue = txQueue.filter((tx: any) => tx.hash !== txJSON.hash);
+    await put(this.store,`tx_queue_${this.selectedID}`, txQueue);
+    await this.updateTxQueue();
+  };
+
+  submitTx = async (opts: {txJSON: Transaction; password: string}) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    this.wdb.height = 2017;
+    const mtx = await wallet.createTX(opts.txJSON);
+    const tx = await wallet.sendMTX(mtx, 'asdfasdf');
+    await this.removeTxFromQueue(opts.txJSON);
+    return tx.getJSON(this.network);
   };
 
   updateTxQueue = async () => {

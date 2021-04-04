@@ -2,12 +2,7 @@ import React, {ReactElement, useEffect, useState} from "react";
 import "./popup.scss";
 import Onboarding from "@src/ui/pages/Onboarding";
 import {useDispatch} from "react-redux";
-import {
-  fetchWallets,
-  fetchWalletState,
-  useInitialized,
-  useWalletState
-} from "@src/ui/ducks/wallet";
+import {fetchWallets, fetchWalletState, useInitialized, useWalletState} from "@src/ui/ducks/wallet";
 import AppHeader from "@src/ui/components/AppHeader";
 import Login from "@src/ui/pages/Login";
 import {Redirect, Route, Switch} from "react-router";
@@ -21,6 +16,7 @@ import pushMessage from "@src/util/pushMessage";
 import MessageTypes from "@src/util/messageTypes";
 import {usePendingTXs} from "@src/ui/ducks/pendingTXs";
 import ConfirmTx from "@src/ui/pages/ConfirmTx";
+import postMessage from "@src/util/postMessage";
 
 export default function Popup (): ReactElement {
   const dispatch = useDispatch();
@@ -32,12 +28,14 @@ export default function Popup (): ReactElement {
   useEffect(() => {
     (async () => {
       const now = Date.now();
+      console.log(await postMessage({ type: MessageTypes.CHECK_FOR_RESCAN }));
       await dispatch(fetchWallets());
       await dispatch(fetchWalletState());
       await dispatch(fetchLatestBlock());
       await pushMessage({
         type: MessageTypes.UPDATE_TX_QUEUE,
       });
+      console.log(await postMessage({ type: MessageTypes.GET_PENDING_TRANSACTIONS }));
       await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
       setLoading(false);
     })();

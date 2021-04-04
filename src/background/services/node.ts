@@ -75,6 +75,22 @@ export default class NodeService extends GenericService {
     return await resp.json();
   }
 
+  async sendRawTransaction (txJSON: any) {
+    const { apiHost } = await this.exec('setting', 'getAPI');
+    const headers = await this.getHeaders();
+
+    const resp = await fetch(apiHost, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        method: 'sendrawtransaction',
+        params: [txJSON],
+      }),
+    });
+
+    return await resp.json();
+  }
+
   async getBlock(blockHash: string) {
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();

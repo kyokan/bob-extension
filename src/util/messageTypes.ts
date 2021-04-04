@@ -13,9 +13,11 @@ enum MessageTypes {
   FULL_RESCAN = 'full_rescan',
   CHECK_FOR_RESCAN = 'check_for_rescan',
   GET_TRANSACTIONS = 'get_transactions',
+  GET_PENDING_TRANSACTIONS = 'get_pending_transactions',
   GET_DOMAIN_NAMES = 'get_domain_names',
   CREATE_TX = 'create_tx',
   UPDATE_TX_QUEUE = 'update_tx_queue',
+  SUBMIT_TX = 'submit_tx',
 
   // node
   GET_LATEST_BLOCK = 'get_latest_block',

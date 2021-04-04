@@ -1,4 +1,4 @@
-import React, {ReactElement, ReactNode, useState} from "react";
+import React, {ReactElement, ReactNode, useCallback, useState} from "react";
 import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} from "@src/ui/components/RegularView";
 import {useHistory} from "react-router";
 import {usePendingTXByHash, usePendingTXs} from "@src/ui/ducks/pendingTXs";
@@ -7,14 +7,22 @@ import {getTXAction, getTXNameHash, getTXRecipient, getTXValue} from "@src/util/
 import {Transaction} from "@src/ui/ducks/transactions";
 import Input from "@src/ui/components/Input";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
+import postMessage from "@src/util/postMessage";
+import MessageTypes from "@src/util/messageTypes";
 
 export default function ConfirmTx(): ReactElement {
   const history = useHistory();
   const pendingTXHashes = usePendingTXs();
   const [currentIndex, setCurrentIndex] = useState(0);
   const pendingTx = usePendingTXByHash(pendingTXHashes[currentIndex]);
-
   const action = getTXAction(pendingTx);
+
+  const submitTx = useCallback((txJSON: Transaction) => {
+    return postMessage({
+      type: MessageTypes.SUBMIT_TX,
+      payload: {txJSON},
+    })
+  }, []);
 
   return (
     <RegularView className="confirm-tx">
@@ -33,7 +41,9 @@ export default function ConfirmTx(): ReactElement {
         >
           Reject
         </Button>
-        <Button>
+        <Button
+          onClick={() => submitTx(pendingTx)}
+        >
           Confirm
         </Button>
       </RegularViewFooter>
@@ -55,6 +65,7 @@ function renderConfirmContent(pendingTx: Transaction): ReactNode {
             label="Recipient Address"
             value={recipientAddress}
             spellCheck={false}
+            disabled
           />
           <Input
             label="Amount"
