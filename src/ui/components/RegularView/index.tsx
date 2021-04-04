@@ -1,14 +1,16 @@
 import React, {MouseEventHandler, ReactElement, ReactNode} from "react";
 import Icon from "@src/ui/components/Icon";
 import "./regular-view.scss";
+import classNames from "classnames";
 
 type Props = {
   children: ReactNode | ReactNode[];
+  className?: string;
 }
 
 export function RegularView(props: Props): ReactElement {
   return (
-    <div className="regular-view">
+    <div className={classNames("regular-view", props.className)}>
       {props.children}
     </div>
   );

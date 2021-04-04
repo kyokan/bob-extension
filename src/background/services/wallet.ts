@@ -114,9 +114,9 @@ export default class WalletService extends GenericService {
   };
 
   getWalletReceiveAddress = async (options: {id: string; depth: number}) => {
-    const wallet = await this.wdb.get(options.id);
+    const wallet = await this.wdb.get(options.id || this.selectedID);
     const account = await wallet.getAccount('default');
-    return account.deriveReceive(options.depth).getAddress().toString();
+    return account.deriveReceive(options.depth > -1 ? options.depth : account.receiveDepth - 1).getAddress().toString();
   };
 
   getWalletBalance = async (id?: string) => {

@@ -1,0 +1,9 @@
+@import "./src/util/variables";
+
+.receive {
+  &__qr-code {
+    margin: 0 auto 2rem;
+    padding: 1rem;
+    box-shadow: 0 2px 2px 0 rgba($black, .1);
+  }
+}
