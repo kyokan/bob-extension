@@ -1,4 +1,4 @@
-import React, {ReactElement, useCallback, useEffect, useState} from "react";
+import React, {ReactElement, useCallback, useState} from "react";
 import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} from "@src/ui/components/RegularView";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import Input from "@src/ui/components/Input";
@@ -11,9 +11,6 @@ import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import {fromDollaryDoos, toDollaryDoos} from "@src/util/number";
 import {useWalletBalance} from "@src/ui/ducks/wallet";
-
-const MTX = require('hsd/lib/primitives/mtx');
-const Output = require('hsd/lib/primitives/output');
 
 const FEE_TYPE_TO_OPT: {[k: string]: number} = {
   slow: 0.01,
@@ -29,6 +26,7 @@ export default function SendTx(): ReactElement {
   const [address, setAddress] = useState('');
   const [addressInputErr, setAddressInputErr] = useState('');
   const {spendable} = useWalletBalance();
+  const [updating, setUpdating] = useState(false);
 
   const onChangeFeeOption = useCallback((e) => {
     _setFeeType(e.target.value);
@@ -56,8 +54,32 @@ export default function SendTx(): ReactElement {
         }],
       }
     });
-    setAmount(+fromDollaryDoos(spendable - tx.fee));
+    setAmount(+fromDollaryDoos(spendable - tx.fee, 6));
   }, [address, fee, amount, spendable]);
+
+  const addTX = useCallback(async () => {
+    setUpdating(true);
+    try {
+      const tx = await postMessage({
+        type: MessageTypes.CREATE_TX,
+        payload: {
+          rate: +toDollaryDoos(fee),
+          outputs: [{
+            value: +toDollaryDoos(amount || 0),
+            address: address,
+          }],
+        }
+      });
+      await postMessage({
+        type: MessageTypes.ADD_TX_QUEUE,
+        payload: tx,
+      });
+      history.push('/');
+    } catch (e) {
+      console.error(e);
+    }
+    setUpdating(false);
+  }, [address, fee, amount]);
 
   return (
     <RegularView>
@@ -113,7 +135,9 @@ export default function SendTx(): ReactElement {
           Cancel
         </Button>
         <Button
-          disabled={!amount || amount < 0 || !isValidAddress(address)}
+          disabled={updating || !amount || amount < 0 || !isValidAddress(address)}
+          onClick={addTX}
+          loading={updating}
         >
           Next
         </Button>

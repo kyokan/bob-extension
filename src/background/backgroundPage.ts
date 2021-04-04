@@ -19,7 +19,7 @@ import NodeService from "@src/background/services/node";
             return res;
         } catch (e) {
             console.log(e);
-            return e;
+            return e.message;
         }
     });
 })();
@@ -42,6 +42,10 @@ function handleMessage(app: AppService, message: MessageAction) {
             return app.exec('wallet', 'getWalletBalance', message.payload);
         case MessageTypes.UNLOCK_WALLET:
             return app.exec('wallet', 'unlockWallet', message.payload);
+        case MessageTypes.ADD_TX_QUEUE:
+            return app.exec('wallet', 'addTxToQueue', message.payload);
+        case MessageTypes.UPDATE_TX_QUEUE:
+            return app.exec('wallet', 'updateTxQueue');
         case MessageTypes.GET_TRANSACTIONS:
             return app.exec('wallet', 'getTransactions', message.payload);
         case MessageTypes.LOCK_WALLET:

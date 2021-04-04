@@ -17,12 +17,17 @@ import Home from "@src/ui/pages/Home";
 import {fetchLatestBlock} from "@src/ui/ducks/node";
 import SendTx from "@src/ui/pages/SendTx";
 import ReceiveTx from "@src/ui/pages/ReceiveTx";
+import pushMessage from "@src/util/pushMessage";
+import MessageTypes from "@src/util/messageTypes";
+import {usePendingTXs} from "@src/ui/ducks/pendingTXs";
+import ConfirmTx from "@src/ui/pages/ConfirmTx";
 
 export default function Popup (): ReactElement {
   const dispatch = useDispatch();
   const initialized = useInitialized();
   const { locked } = useWalletState();
   const [loading, setLoading] = useState(true);
+  const pendingTXHashes = usePendingTXs();
 
   useEffect(() => {
     (async () => {
@@ -30,6 +35,9 @@ export default function Popup (): ReactElement {
       await dispatch(fetchWallets());
       await dispatch(fetchWalletState());
       await dispatch(fetchLatestBlock());
+      await pushMessage({
+        type: MessageTypes.UPDATE_TX_QUEUE,
+      });
       await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
       setLoading(false);
     })();
@@ -40,6 +48,15 @@ export default function Popup (): ReactElement {
       <div className="popup__loading">
         <Icon url={BobMoveIcon} size={4} />
         <small>Initializing...</small>
+      </div>
+    );
+  }
+
+  if (initialized && !locked && pendingTXHashes.length) {
+    return (
+      <div className="popup">
+        <AppHeader/>
+        <ConfirmTx />
       </div>
     );
   }

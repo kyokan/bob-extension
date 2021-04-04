@@ -12,15 +12,15 @@ export const toDollaryDoos = (raw: number) => {
 };
 
 export const formatNumber = (num: number | string): string  => {
-  if (typeof num === 'number') {
-    num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
+  const numText = typeof num === 'string' ? num : num.toString();
+  const [first, decimals] = numText.split('.');
+  const realNum = first.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+
+  if (decimals) {
+    return `${realNum}.${decimals}`;
   }
 
-  if (typeof num === 'string') {
-    return num.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
-  }
-
-  return '';
+  return realNum;
 };
 
 export const heightToMoment = (blockHeight: number) => {

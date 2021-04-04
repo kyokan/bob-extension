@@ -14,6 +14,7 @@ import {ActionType as WalletActionType, setWalletBalance} from "@src/ui/ducks/wa
 import {ActionType as AppActionType} from "@src/ui/ducks/app";
 import {setTransactions} from "@src/ui/ducks/transactions";
 import {setDomainNames} from "@src/ui/ducks/domains";
+import {ActionType} from "@src/ui/ducks/pendingTXs";
 
 export default class WalletService extends GenericService {
   network: typeof Network;
@@ -104,6 +105,7 @@ export default class WalletService extends GenericService {
       await pushMessage(setWalletBalance(await this.getWalletBalance()));
       await pushMessage(setTransactions([]));
       await pushMessage(setDomainNames([]));
+      await this.updateTxQueue();
     }
 
     this.selectedID = id;
@@ -235,6 +237,31 @@ export default class WalletService extends GenericService {
     this.wdb.height = 2017;
     const createdTx = await wallet.createTX(txOptions);
     return createdTx.toJSON();
+  };
+
+  addTxToQueue = async (txJSON: any) => {
+    const txQueue = (await get(this.store,`tx_queue_${this.selectedID}`)) || [];
+    if (!txQueue.filter((tx: any) => tx.hash === txJSON.hash)[0]) {
+      txQueue.push(txJSON);
+    }
+    await put(this.store,`tx_queue_${this.selectedID}`, txQueue);
+    await this.updateTxQueue();
+  };
+
+  updateTxQueue = async () => {
+    if (this.selectedID) {
+      const txQueue = await get(this.store,`tx_queue_${this.selectedID}`);
+      await pushMessage({
+        type: ActionType.SET_PENDING_TXS,
+        payload: txQueue || [],
+      });
+      return;
+    }
+
+    await pushMessage({
+      type: ActionType.SET_PENDING_TXS,
+      payload: [],
+    });
   };
 
   insertTransactions = async (transactions: any[]) => {

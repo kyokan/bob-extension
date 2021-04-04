@@ -6,6 +6,7 @@ import wallet from "@src/ui/ducks/wallet";
 import node from "@src/ui/ducks/node";
 import transactions from "@src/ui/ducks/transactions";
 import domains from "@src/ui/ducks/domains";
+import pendingTXs from "@src/ui/ducks/pendingTXs";
 
 const rootReducer = combineReducers({
   app,
@@ -13,6 +14,7 @@ const rootReducer = combineReducers({
   node,
   transactions,
   domains,
+  pendingTXs,
 });
 
 export type AppRootState = ReturnType<typeof rootReducer>;

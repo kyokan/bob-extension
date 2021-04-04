@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from "react";
-import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} from "@src/ui/components/RegularView";
+import {RegularView, RegularViewContent, RegularViewHeader} from "@src/ui/components/RegularView";
 import {useHistory} from "react-router";
-import Button, {ButtonType} from "@src/ui/components/Button";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import Input from "@src/ui/components/Input";
