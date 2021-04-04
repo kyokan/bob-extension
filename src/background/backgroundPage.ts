@@ -52,8 +52,12 @@ function handleMessage(app: AppService, message: MessageAction) {
             return app.exec('wallet', 'fullRescan');
         case MessageTypes.GET_DOMAIN_NAMES:
             return app.exec('wallet', 'getDomainNames', message.payload);
+        case MessageTypes.CREATE_TX:
+            return app.exec('wallet', 'createTx', message.payload);
         case MessageTypes.GET_NAME_BY_HASH:
             return app.exec('node', 'getNameByHash', message.payload);
+        case MessageTypes.ESTIMATE_SMART_FEE:
+            return app.exec('node', 'estimateSmartFee', message.payload);
         case MessageTypes.GET_LATEST_BLOCK:
             return app.exec('node', 'getLatestBlock');
         default:

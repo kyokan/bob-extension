@@ -229,6 +229,14 @@ export default class WalletService extends GenericService {
     return wallet.getJSON(false, balance);
   };
 
+  createTx = async (txOptions: any) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    this.wdb.height = 2017;
+    const createdTx = await wallet.createTX(txOptions);
+    return createdTx.toJSON();
+  };
+
   insertTransactions = async (transactions: any[]) => {
     try {
       // await this.wdb.deepClean();
@@ -504,6 +512,7 @@ export default class WalletService extends GenericService {
       this.selectedID = walletIDs.filter(id => id !== 'primary')[0];
     }
 
+    this.checkForRescan();
     this.checkStatusTimeout = setInterval(this.checkForRescan, 60000);
   }
 

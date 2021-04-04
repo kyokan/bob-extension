@@ -8,7 +8,6 @@ import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import "./home.scss";
 import {ReceiveButton, RedeemButton, RevealButton, SendButton} from "@src/ui/components/HomeActionButton";
 import classNames from "classnames";
-import {setBobMoving} from "@src/ui/ducks/app";
 import {fetchMoreTransactions, fetchTransactions} from "@src/ui/ducks/transactions";
 import Transactions from "@src/ui/components/Transactions";
 import debounce from 'lodash.debounce';

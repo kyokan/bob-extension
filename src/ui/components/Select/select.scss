@@ -1,0 +1,39 @@
+@import "./src/util/variables";
+
+.select-group {
+  @extend %col-nowrap;
+
+  &__label {
+    @extend %small-font;
+    color: $label-text;
+    padding: 0 .5rem .25rem;
+    cursor: default;
+  }
+
+  &__error-message {
+    @extend %small-font;
+    color: $error-red;
+    padding: .25rem .5rem 0;
+  }
+}
+
+select {
+  @extend %regular-font;
+  padding: .375rem .5rem;
+  cursor: pointer;
+  outline: none;
+  background-color: rgba($black, .025);
+  color: $primary-text;
+  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  border: 1px solid transparent;
+  border-radius: .125rem;
+
+  &:focus-within {
+    background-color: rgba($black, .035);
+    border: 1px solid $primary-blue;
+  }
+}
+
+option {
+
+}

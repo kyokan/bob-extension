@@ -15,6 +15,7 @@ import BobMoveIcon from "@src/static/icons/bob-moves.gif";
 import Icon from "@src/ui/components/Icon";
 import Home from "@src/ui/pages/Home";
 import {fetchLatestBlock} from "@src/ui/ducks/node";
+import SendTx from "@src/ui/pages/SendTx";
 
 export default function Popup (): ReactElement {
   const dispatch = useDispatch();
@@ -63,6 +64,9 @@ export default function Popup (): ReactElement {
         <Switch>
           <Route path="/onboarding">
             <Onboarding />
+          </Route>
+          <Route path="/send">
+            <SendTx />
           </Route>
           <Route path="/">
             <Home />

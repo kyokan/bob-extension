@@ -1,0 +1,44 @@
+@import "./src/util/variables";
+
+.regular-view {
+  @extend %col-nowrap;
+  flex: 1 1 auto;
+
+  &__header {
+    @extend %row-nowrap;
+    padding: 1rem 1.25rem;
+
+    &__l {
+      @extend %h3-font;
+      font-weight: 600;
+      flex: 1 1 auto;
+    }
+
+    &__r {
+      @extend %row-nowrap;
+      justify-content: flex-end;
+      flex: 1 1 auto;
+    }
+  }
+
+  &__content {
+    @extend %col-nowrap;
+    padding: 1rem 1.25rem;
+    flex: 1 1 auto;
+    height: 0;
+  }
+
+  &__footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid $border-gray;
+
+    .button {
+      @extend %row-nowrap;
+      justify-content: center;
+      width: 100%;
+    }
+  }
+}

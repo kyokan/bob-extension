@@ -22,6 +22,7 @@
     @extend %small-font;
     color: $label-text;
     padding: 0 .5rem .25rem;
+    cursor: default;
   }
 
   &__error-message {

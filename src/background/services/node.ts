@@ -27,6 +27,21 @@ export default class NodeService extends GenericService {
     return `${protocol}//x:${apiKey}@${url}`;
   }
 
+  estimateSmartFee = async (opt: number) => {
+    const { apiHost } = await this.exec('setting', 'getAPI');
+    const headers = await this.getHeaders();
+    const resp = await fetch(apiHost, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        method: 'estimatesmartfee',
+        params: [opt],
+      }),
+    });
+
+    return await resp.json();
+  };
+
   getLatestBlock = async () => {
     const blockchanInfo = await this.getBlockchainInfo();
     const block = await this.getBlockByHeight(blockchanInfo!.result!.blocks);

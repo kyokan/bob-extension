@@ -13,10 +13,12 @@ enum MessageTypes {
   CHECK_FOR_RESCAN = 'check_for_rescan',
   GET_TRANSACTIONS = 'get_transactions',
   GET_DOMAIN_NAMES = 'get_domain_names',
+  CREATE_TX = 'create_tx',
 
   // node
   GET_LATEST_BLOCK = 'get_latest_block',
   GET_NAME_BY_HASH = 'get_name_by_hash',
+  ESTIMATE_SMART_FEE = 'estimate_smart_fee',
 }
 
 export default MessageTypes;
