@@ -13,6 +13,10 @@
   &::placeholder {
     color: rgba($white, .2);
   }
+
+  &:disabled {
+    cursor: default;
+  }
 }
 
 .input-group {

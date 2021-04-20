@@ -17,6 +17,7 @@ import Name from "@src/ui/components/Name";
 import {getTXAction, getTXNameHash, getTXValue} from "@src/util/transaction";
 import {Loader} from "@src/ui/components/Loader";
 import {useDispatch} from "react-redux";
+import {fetchTXQueue} from "@src/ui/ducks/queue";
 
 export default function Transactions(): ReactElement {
   const offset = useTXOffset();
@@ -25,6 +26,10 @@ export default function Transactions(): ReactElement {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    (async () => {
+      await dispatch(fetchTXQueue());
+    })();
+
     return () => {
       dispatch(setOffset(20));
     }

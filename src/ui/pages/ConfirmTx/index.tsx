@@ -1,7 +1,7 @@
 import React, {ReactElement, ReactNode, useCallback, useState} from "react";
 import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} from "@src/ui/components/RegularView";
 import {useHistory} from "react-router";
-import {usePendingTXByHash, usePendingTXs} from "@src/ui/ducks/pendingTXs";
+import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import {getTXAction, getTXNameHash, getTXRecipient, getTXValue} from "@src/util/transaction";
 import {Transaction} from "@src/ui/ducks/transactions";
@@ -9,13 +9,22 @@ import Input from "@src/ui/components/Input";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
+import "./confirm-tx.scss";
+import UpdateTx from "@src/ui/pages/UpdateTx";
+
+const actionToTitle: {
+  [k: string]: string;
+} = {
+  SEND: 'Confirm Send',
+};
 
 export default function ConfirmTx(): ReactElement {
   const history = useHistory();
-  const pendingTXHashes = usePendingTXs();
+  const pendingTXHashes = useTXQueue();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const pendingTx = usePendingTXByHash(pendingTXHashes[currentIndex]);
+  const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
   const action = getTXAction(pendingTx);
+  const [isUpdating, setUpdating] = useState(false);
 
   const submitTx = useCallback((txJSON: Transaction) => {
     return postMessage({
@@ -24,13 +33,29 @@ export default function ConfirmTx(): ReactElement {
     })
   }, []);
 
+  const removeTx = useCallback((txJSON: Transaction) => {
+    return postMessage({
+      type: MessageTypes.REMOVE_TX_FROM_QUEUE,
+      payload: txJSON,
+    })
+  }, []);
+
+  if (isUpdating) {
+    return (
+      <UpdateTx
+        hash={pendingTx.hash}
+        onCancel={() => setUpdating(false)}
+      />
+    );
+  }
+
   return (
     <RegularView className="confirm-tx">
       <RegularViewHeader
-        onClose={() => null}
+        onClose={() => setUpdating(true)}
         actionText="Edit"
       >
-        {`Confirm ${action}`}
+        {actionToTitle[action]}
       </RegularViewHeader>
       <RegularViewContent>
         {renderConfirmContent(pendingTx)}
@@ -38,6 +63,7 @@ export default function ConfirmTx(): ReactElement {
       <RegularViewFooter>
         <Button
           btnType={ButtonType.secondary}
+          onClick={() => removeTx(pendingTx)}
         >
           Reject
         </Button>
@@ -70,14 +96,20 @@ function renderConfirmContent(pendingTx: Transaction): ReactNode {
           <Input
             label="Amount"
             value={fromDollaryDoos(Math.abs(value), 6)}
+            disabled
           />
           <Input
             label="Estimated Fee"
             value={fromDollaryDoos(pendingTx.fee, 6)}
+            disabled
           />
-          <div>
-            <div>Total:</div>
-            <div>{formatNumber(fromDollaryDoos(Math.abs(value) + pendingTx.fee, 6))}</div>
+          <div className="confirm-tx__total-group">
+            <div className="confirm-tx__total-group__label">
+              Total:
+            </div>
+            <div className="confirm-tx__total-group__amount">
+              {formatNumber(fromDollaryDoos(Math.abs(value) + pendingTx.fee, 6))} HNS
+            </div>
           </div>
         </>
       );

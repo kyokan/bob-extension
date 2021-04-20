@@ -21,7 +21,10 @@ enum MessageTypes {
   GET_NAME_NONCE = 'get_name_nonce',
   CREATE_TX = 'create_tx',
   UPDATE_TX_QUEUE = 'update_tx_queue',
+  GET_TX_QUEUE = 'get_tx_queue',
   SUBMIT_TX = 'submit_tx',
+  UPDATE_TX_FROM_QUEUE = 'updateTxFromQueue',
+  REMOVE_TX_FROM_QUEUE = 'removeTxFromQueue',
 
   // node
   GET_LATEST_BLOCK = 'get_latest_block',

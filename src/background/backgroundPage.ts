@@ -52,8 +52,14 @@ function handleMessage(app: AppService, message: MessageAction) {
             return app.exec('wallet', 'addTxToQueue', message.payload);
         case MessageTypes.SUBMIT_TX:
             return app.exec('wallet', 'submitTx', message.payload);
+        case MessageTypes.UPDATE_TX_FROM_QUEUE:
+            return app.exec('wallet', 'updateTxFromQueue', message.payload);
+        case MessageTypes.REMOVE_TX_FROM_QUEUE:
+            return app.exec('wallet', 'removeTxFromQueue', message.payload);
         case MessageTypes.UPDATE_TX_QUEUE:
             return app.exec('wallet', 'updateTxQueue');
+        case MessageTypes.GET_TX_QUEUE:
+            return app.exec('wallet', 'getTxQueue');
         case MessageTypes.GET_PENDING_TRANSACTIONS:
             return app.exec('wallet', 'getPendingTransactions');
         case MessageTypes.GET_NAME_NONCE:

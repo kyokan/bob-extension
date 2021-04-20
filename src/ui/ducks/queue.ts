@@ -2,9 +2,12 @@ import {Transaction} from "@src/ui/ducks/transactions";
 import {useSelector} from "react-redux";
 import {AppRootState} from "@src/ui/store/configureAppStore";
 import deepEqual from "fast-deep-equal";
+import {Dispatch} from "redux";
+import MessageTypes from "@src/util/messageTypes";
+import postMessage from "@src/util/postMessage";
 
 export enum ActionType {
-  SET_PENDING_TXS = 'pendingTXs/setPendingTXs',
+  SET_TX_QUEUE = 'queue/setTXQueue',
 }
 
 type Action = {
@@ -26,9 +29,19 @@ const initialState: State = {
   map: {},
 };
 
-export default function pendingTXs(state = initialState, action: Action): State {
+export const setTXQueue = (transactions: Transaction[]) => ({
+  type: ActionType.SET_TX_QUEUE,
+  payload: transactions,
+});
+
+export const fetchTXQueue = () => async (dispatch: Dispatch) => {
+  const txQueue = await postMessage({ type: MessageTypes.GET_TX_QUEUE });
+  dispatch(setTXQueue(txQueue));
+};
+
+export default function queue(state = initialState, action: Action): State {
   switch (action.type) {
-    case ActionType.SET_PENDING_TXS:
+    case ActionType.SET_TX_QUEUE:
       return {
         ...state,
         order: action.payload.map((tx: Transaction) => tx.hash),
@@ -42,14 +55,14 @@ export default function pendingTXs(state = initialState, action: Action): State 
   }
 }
 
-export const usePendingTXs = () => {
+export const useTXQueue = () => {
   return useSelector((state: AppRootState) => {
-    return state.pendingTXs.order;
+    return state.queue.order;
   }, deepEqual);
 };
 
-export const usePendingTXByHash = (hash: string) => {
+export const useQueuedTXByHash = (hash: string) => {
   return useSelector((state: AppRootState) => {
-    return state.pendingTXs.map[hash];
+    return state.queue.map[hash];
   }, deepEqual);
 };

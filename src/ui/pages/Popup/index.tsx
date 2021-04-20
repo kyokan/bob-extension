@@ -13,28 +13,24 @@ import {fetchLatestBlock} from "@src/ui/ducks/node";
 import SendTx from "@src/ui/pages/SendTx";
 import ReceiveTx from "@src/ui/pages/ReceiveTx";
 import MessageTypes from "@src/util/messageTypes";
-import {usePendingTXs} from "@src/ui/ducks/pendingTXs";
 import ConfirmTx from "@src/ui/pages/ConfirmTx";
 import postMessage from "@src/util/postMessage";
+import {useTXQueue} from "@src/ui/ducks/queue";
 
 export default function Popup (): ReactElement {
   const dispatch = useDispatch();
   const initialized = useInitialized();
   const { locked, currentWallet } = useWalletState();
   const [loading, setLoading] = useState(true);
-  const pendingTXHashes = usePendingTXs();
+  const queuedTXHashes = useTXQueue();
 
   useEffect(() => {
     (async () => {
       try {
         const now = Date.now();
-
         await dispatch(fetchWallets());
         await dispatch(fetchWalletState());
         await dispatch(fetchLatestBlock());
-        await postMessage({
-          type: MessageTypes.UPDATE_TX_QUEUE,
-        });
         await postMessage({ type: MessageTypes.GET_PENDING_TRANSACTIONS });
         await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
         setLoading(false);
@@ -59,7 +55,7 @@ export default function Popup (): ReactElement {
     );
   }
 
-  if (initialized && !locked && pendingTXHashes.length) {
+  if (initialized && !locked && queuedTXHashes.length) {
     return (
       <div className="popup">
         <AppHeader/>

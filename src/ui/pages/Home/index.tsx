@@ -15,7 +15,6 @@ import {
   useTXOffset
 } from "@src/ui/ducks/transactions";
 import Transactions from "@src/ui/components/Transactions";
-import debounce from 'lodash.debounce';
 import {
   fetchDomainNames,
   useDomainOffset,
@@ -23,6 +22,7 @@ import {
   setOffset as setDomainOffset,
 } from "@src/ui/ducks/domains";
 import Domains from "@src/ui/components/Domains";
+import {fetchTXQueue} from "@src/ui/ducks/queue";
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
@@ -58,6 +58,7 @@ export default function Home(): ReactElement {
           },
         });
         setCurrentAddress(address);
+        await dispatch(fetchTXQueue());
         dispatch(fetchTransactions());
         dispatch(fetchDomainNames());
       } catch (e) {
@@ -95,8 +96,6 @@ export default function Home(): ReactElement {
     txOffset,
     domainOffset,
   ]);
-
-  // const onScroll = debounce(_onScroll, 5, { leading: true });
 
   return (
     <div
