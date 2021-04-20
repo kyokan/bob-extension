@@ -16,10 +16,36 @@
   @extend %row-nowrap;
   align-items: center;
   padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: background-color 150ms ease-in-out;
+
+  &:hover {
+    background-color: rgba($black, .05);
+  }
+
+  &:active {
+    background-color: rgba($black, .075);
+  }
 
   &--pending {
     opacity: .5;
-    background-color: $border-gray;
+    background-color: rgba($black, .05);
+
+    &:hover {
+      background-color: rgba($black, .075);
+    }
+
+    &:active {
+      background-color: rgba($black, .1);
+    }
+  }
+
+  &__empty {
+    text-align: center;
+    margin: 1rem auto;
+    @extend %regular-font;
+    font-weight: 700;
+    color: $border-gray;
   }
 
   &__icon {

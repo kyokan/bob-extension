@@ -5,6 +5,7 @@
   border-radius: 50%;
   position: relative;
   cursor: pointer;
+  z-index: 300;
 
   &__overlay {
     position: fixed;

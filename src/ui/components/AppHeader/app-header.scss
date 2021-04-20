@@ -2,6 +2,7 @@
 
 .app-header {
   @extend %row-nowrap;
+  flex: 0 0 auto;
   height: 4rem;
   width: 100%;
   background-color: $header-gray;

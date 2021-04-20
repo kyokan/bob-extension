@@ -32,6 +32,7 @@ export default function Domains(): ReactElement {
     <div className="domains">
       {domains.map((name) => <DomainRow key={name} name={name} />)}
       {fetching && <Loader size={3} />}
+      {!domains.length && !fetching && <div className="domains__empty">No domains</div>}
     </div>
   );
 }

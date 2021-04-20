@@ -1,4 +1,4 @@
-import React, {ReactElement, useEffect, useState} from "react";
+import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import moment from "moment";
 import {
   fetchPendingTransactions,
@@ -29,7 +29,7 @@ export default function Transactions(): ReactElement {
   useEffect(() => {
     (async () => {
       await dispatch(fetchTXQueue());
-      // await dispatch(fetchPendingTransactions());
+      await dispatch(fetchPendingTransactions());
     })();
 
     return () => {
@@ -85,11 +85,17 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
   const action = getTXAction(tx);
   const nameHash = getTXNameHash(tx);
   const pending = !tx.height || tx.height < 0;
+  const openExplorer = useCallback(() => {
+    window.open(`https://e.hnsfans.com/tx/${tx.hash}`, '_blank');
+  }, [tx.hash]);
 
   return (
-    <div className={classNames("transaction", {
-      'transaction--pending': pending,
-    })}>
+    <div
+      className={classNames("transaction", {
+        'transaction--pending': pending,
+      })}
+      onClick={openExplorer}
+    >
       <div className="transaction__icon">
         <Icon
           fontAwesome={ActionToFA[action] || 'fa-handshake'}

@@ -10,6 +10,14 @@
   .loader {
     margin: 1rem auto;
   }
+
+  &__empty {
+    text-align: center;
+    margin: 1rem auto;
+    @extend %regular-font;
+    font-weight: 700;
+    color: $border-gray;
+  }
 }
 
 .domain {

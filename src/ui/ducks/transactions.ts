@@ -109,7 +109,6 @@ export const setOffset = (offset: number) => {
 export const resetTransactions = () => async (dispatch: Dispatch) => {
   await postMessage({ type: MessageTypes.RESET_TRANSACTIONS, payload: getTxNonce });
   getTxNonce = await postMessage({ type: MessageTypes.GET_TX_NONCE });
-  dispatch(setTransactions([]));
   dispatch(setOffset(20));
 };
 
@@ -137,11 +136,11 @@ export default function transactions(state = initialState, action: Action): Stat
     case ActionType.SET_PENDING_TRANSACTIONS:
       return {
         ...state,
-        pending: action.payload.map((tx: Transaction) => tx.hash),
-        map: action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-          map[tx.hash] = tx;
-          return map;
-        }, {}),
+        // pending: action.payload.map((tx: Transaction) => tx.hash),
+        // map: action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
+        //   map[tx.hash] = tx;
+        //   return map;
+        // }, {}),
       };
     case ActionType.SET_TRANSACTIONS:
       return {
@@ -164,16 +163,31 @@ function handleAppendTransactions(state: State, action: Action): State {
     return state;
   }
 
+  const newOrder: string[] = state.order.slice();
+
+  action.payload
+    .forEach((tx: Transaction) => {
+      const existing = state.map[tx.hash];
+
+      if (!existing && tx.height > 0) {
+        newOrder.push(tx.hash);
+      } else if (!existing && (!tx.height || tx.height < 0)) {
+        newOrder.unshift(tx.hash);
+      }
+    });
+
   return {
     ...state,
-    order: [
-      ...state.order,
-      ...action.payload.map((tx: Transaction) => tx.hash),
-    ],
+    order: newOrder,
     map: {
       ...state.map,
       ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-        map[tx.hash] = tx;
+        const existing = state.map[tx.hash];
+
+        if (!existing || !existing.height || existing.height < 0) {
+          map[tx.hash] = tx;
+        }
+
         return map;
       }, {}),
     },

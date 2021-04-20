@@ -537,9 +537,9 @@ export default class WalletService extends GenericService {
 
       const wtx = await wallet.getTX(txHashBuf);
 
-      if (wtx) {
-        continue;
-      }
+      // if (wtx) {
+      //   continue;
+      // }
 
       const unlock = await this.wdb.txLock.lock();
       try {
@@ -601,8 +601,10 @@ export default class WalletService extends GenericService {
     } else if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
       await this.rescanBlocks(latestBlockLast.height + 1, latestBlockNow.height);
       await this.checkForRescan();
+      this.getTransactions({ nonce: this._getTxNonce });
     } else {
       await this.fullRescan();
+      this.getTransactions({ nonce: this._getTxNonce });
     }
 
     await this.pushBobMessage(`I am synchonized.`);
