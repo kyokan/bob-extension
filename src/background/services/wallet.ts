@@ -14,7 +14,7 @@ import pushMessage from "@src/util/pushMessage";
 import {ActionType as WalletActionType, setWalletBalance} from "@src/ui/ducks/wallet";
 import {ActionType as AppActionType} from "@src/ui/ducks/app";
 import {setTransactions, Transaction} from "@src/ui/ducks/transactions";
-import {setDomainNames} from "@src/ui/ducks/domains";
+import {ActionTypes, setDomainNames} from "@src/ui/ducks/domains";
 import {ActionType as PendingTXActionType } from "@src/ui/ducks/pendingTXs";
 import {ActionType as TXActionType } from "@src/ui/ducks/transactions";
 
@@ -37,14 +37,17 @@ export default class WalletService extends GenericService {
 
   checkStatusTimeout?: any;
 
-  getTxNonce: number;
+  _getTxNonce: number;
+
+  _getNameNonce: number;
 
   constructor() {
     super();
     this.selectedID = '';
     this.locked = true;
     this.rescanning = false;
-    this.getTxNonce = 0;
+    this._getTxNonce = 0;
+    this._getNameNonce = 0;
   }
 
   lockWallet = async () => {
@@ -154,11 +157,19 @@ export default class WalletService extends GenericService {
   };
 
   getTXNonce = () => {
-    return this.getTxNonce;
+    return this._getTxNonce;
+  };
+
+  getNameNonce = () => {
+    return this._getNameNonce;
   };
 
   resetTransactions = async () => {
-    this.getTxNonce++;
+    this._getTxNonce++;
+  };
+
+  resetNames = async () => {
+    this._getNameNonce++;
   };
 
   getTransactions = async (opts?: {id?: string, nonce: number}) => {
@@ -168,17 +179,14 @@ export default class WalletService extends GenericService {
     } = opts || {};
     const walletId = id || this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    await pushMessage({
-      type: AppActionType.SET_BOB_MOVING,
-      payload: true,
-    });
+
     const latestBlock = await this.exec('node', 'getLatestBlock');
 
     await this.pushBobMessage('Loading transactions...');
 
     let txs = await wallet.getHistory('default');
 
-    this.getTxNonce = nonce;
+    this._getTxNonce = nonce;
 
     txs = txs.sort((a: any, b: any) => {
       if (a.height > b.height) return -1;
@@ -189,11 +197,7 @@ export default class WalletService extends GenericService {
     });
 
     for (let i = 0; i < txs.length; i = i + 250) {
-      if (nonce !== this.getTxNonce) {
-        await pushMessage({
-          type: AppActionType.SET_BOB_MOVING,
-          payload: false,
-        });
+      if (nonce !== this._getTxNonce) {
         return false;
       }
       await this.pushBobMessage('Loading transactions...');
@@ -214,35 +218,43 @@ export default class WalletService extends GenericService {
       });
     }
 
-    await pushMessage({
-      type: AppActionType.SET_BOB_MOVING,
-      payload: false,
-    });
-
     await this.pushBobMessage('Welcome back!');
 
     return true;
   };
 
-  getDomainNames = async (opts?: {offset: number, limit: number, id?: string}) => {
+  getDomainNames = async (opts?: {id?: string, nonce: number}) => {
     const {
-      offset = 0,
-      limit = 20,
       id,
+      nonce = 0,
     } = opts || {};
     const walletId = id || this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    let result;
 
-    if (this.domains) {
-      result = this.domains;
-    } else {
-      let domains = await wallet.getNames();
-      const {height} = await this.exec('node', 'getLatestBlock');
-      domains = Object.keys(domains).map((name: string) => domains[name]);
-      result = [];
-      for (let i = 0; i < domains.length; i++) {
-        const domain = domains[i];
+    let domains = await wallet.getNames();
+
+    const {height} = await this.exec('node', 'getLatestBlock');
+
+    this._getNameNonce = nonce;
+
+    domains = Object.keys(domains).map((name: string) => domains[name]);
+
+
+    domains = domains.sort((a: any, b: any) => {
+      if (a.renewal > b.renewal) return 1;
+      if (b.renewal > a.renewal) return -1;
+      return 0;
+    });
+
+    for (let i = 0; i < domains.length; i = i + 250) {
+      if (nonce !== this._getNameNonce) {
+        return false;
+      }
+      const partials = domains.slice(i, i + 250);
+      const result = [];
+
+      for (let j = 0; j < partials.length; j++) {
+        const domain = partials[j];
         const {owner} = domain;
         const state = domain.state(height, this.network);
 
@@ -251,22 +263,22 @@ export default class WalletService extends GenericService {
         }
 
         const coin = await wallet.getCoin(owner.hash, owner.index);
+
         if (coin) {
           result.push(domain);
         }
       }
 
-      domains = domains.sort((a: any, b: any) => {
-        if (a.renewal > b.renewal) return 1;
-        if (b.renewal > a.renewal) return -1;
-        return 0;
+      await pushMessage({
+        type: ActionTypes.APPEND_DOMAIN_NAMES,
+        payload: result,
+        meta: {
+          nonce,
+        },
       });
-
-      this.domains = result;
     }
 
-
-    return result.slice(offset * limit, (offset * limit) + limit);
+    return true;
   };
 
   createWallet = async (options: {

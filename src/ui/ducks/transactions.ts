@@ -183,23 +183,3 @@ export const useTXByHash = (hash: string): Transaction | undefined => {
     return state.transactions.map[hash];
   }, deepEqual)
 };
-
-function inflateTX(tx: any) {
-  return {
-    block: tx.block,
-    confirmations: tx.confirmations,
-    date: new Date(tx.date),
-    fee: tx.fee,
-    hash: tx.hash,
-    height: tx.height,
-    inputs: tx.inputs,
-    mdate: new Date(tx.mdate),
-    mtime: new Date(tx.mtime * 1000),
-    outputs: tx.outputs,
-    rate: tx.rate,
-    size: tx.size,
-    time: new Date(tx.time * 1000),
-    tx: tx.tx,
-    virutalSize: tx.virutalSize,
-  };
-}

@@ -1,17 +1,37 @@
-import React, {ReactElement} from "react";
+import React, {ReactElement, useEffect} from "react";
 import "./domains.scss";
-import {useDomainByName, useDomainNames} from "@src/ui/ducks/domains";
-import {formatNumber, fromDollaryDoos, heightToMoment} from "@src/util/number";
+import {
+  resetDomains,
+  setOffset,
+  useDomainByName,
+  useDomainFetching,
+  useDomainNames,
+  useDomainOffset
+} from "@src/ui/ducks/domains";
+import {heightToMoment} from "@src/util/number";
 import Name from "@src/ui/components/Name";
+import {useDispatch} from "react-redux";
+import {Loader} from "@src/ui/components/Loader";
 const Network = require("hsd/lib/protocol/network");
 
 const network = Network.get('main');
 
 export default function Domains(): ReactElement {
-  const domains = useDomainNames();
+  const offset = useDomainOffset();
+  const domains = useDomainNames(offset);
+  const fetching = useDomainFetching();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    return () => {
+      dispatch(setOffset(20));
+    }
+  }, []);
+
   return (
     <div className="domains">
       {domains.map((name) => <DomainRow key={name} name={name} />)}
+      {fetching && <Loader size={3} />}
     </div>
   );
 }

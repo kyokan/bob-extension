@@ -6,6 +6,10 @@
   .domain + .domain {
     border-top: 1px solid $border-gray;
   }
+
+  .loader {
+    margin: 1rem auto;
+  }
 }
 
 .domain {

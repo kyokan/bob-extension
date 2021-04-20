@@ -11,18 +11,23 @@ import classNames from "classnames";
 import {
   fetchTransactions,
   resetTransactions,
-  setOffset,
-  setTransactions,
+  setOffset as setTXOffset,
   useTXOffset
 } from "@src/ui/ducks/transactions";
 import Transactions from "@src/ui/components/Transactions";
 import debounce from 'lodash.debounce';
-import {fetchDomainNames} from "@src/ui/ducks/domains";
+import {
+  fetchDomainNames,
+  useDomainOffset,
+  resetDomains,
+  setOffset as setDomainOffset,
+} from "@src/ui/ducks/domains";
 import Domains from "@src/ui/components/Domains";
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
   const txOffset = useTXOffset();
+  const domainOffset = useDomainOffset();
   const currentWallet = useCurrentWallet();
   const [tab, setTab] = useState<'domains'|'activity'>('activity');
   const { spendable, lockedUnconfirmed } = useWalletBalance();
@@ -35,6 +40,7 @@ export default function Home(): ReactElement {
     return () => {
       (async function onHomeUnmount() {
         dispatch(resetTransactions());
+        dispatch(resetDomains());
       })();
     }
   }, []);
@@ -43,8 +49,7 @@ export default function Home(): ReactElement {
     (async function onHomeMount() {
       try {
         await dispatch(fetchWalletBalance());
-        await dispatch(fetchTransactions());
-        await dispatch(fetchDomainNames());
+
         const address = await postMessage({
           type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
           payload: {
@@ -53,6 +58,8 @@ export default function Home(): ReactElement {
           },
         });
         setCurrentAddress(address);
+        dispatch(fetchTransactions());
+        dispatch(fetchDomainNames());
       } catch (e) {
         console.error(e);
       }
@@ -76,9 +83,9 @@ export default function Home(): ReactElement {
     } = pageElement.current;
     if (((scrollTop + offsetHeight) / scrollHeight) > .8) {
       if (tab === 'activity') {
-        dispatch(setOffset(txOffset + 20));
+        dispatch(setTXOffset(txOffset + 20));
       } else {
-
+        dispatch(setDomainOffset(domainOffset + 20));
       }
     }
   }, [
@@ -86,8 +93,10 @@ export default function Home(): ReactElement {
     pageElement,
     tab,
     txOffset,
+    domainOffset,
   ]);
-  const onScroll = debounce(_onScroll, 5, { leading: true });
+
+  // const onScroll = debounce(_onScroll, 5, { leading: true });
 
   return (
     <div
@@ -95,7 +104,7 @@ export default function Home(): ReactElement {
         'home--fixed-header': fixHeader,
       })}
       ref={pageElement}
-      onScroll={onScroll}
+      onScroll={_onScroll}
     >
       <div className="home__top">
         <Identicon value={currentAddress} />

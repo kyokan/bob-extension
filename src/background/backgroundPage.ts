@@ -25,6 +25,7 @@ import NodeService from "@src/background/services/node";
     browser.runtime.onConnect.addListener(port => {
         port.onDisconnect.addListener(async () =>  {
             await app.exec('wallet', 'resetTransactions', -1);
+            await app.exec('wallet', 'resetNames', -1);
         });
     })
 })();
@@ -55,12 +56,16 @@ function handleMessage(app: AppService, message: MessageAction) {
             return app.exec('wallet', 'updateTxQueue');
         case MessageTypes.GET_PENDING_TRANSACTIONS:
             return app.exec('wallet', 'getPendingTransactions');
+        case MessageTypes.GET_NAME_NONCE:
+            return app.exec('wallet', 'getNameNonce');
         case MessageTypes.GET_TX_NONCE:
             return app.exec('wallet', 'getTXNonce');
         case MessageTypes.GET_TRANSACTIONS:
             return app.exec('wallet', 'getTransactions', message.payload);
         case MessageTypes.RESET_TRANSACTIONS:
             return app.exec('wallet', 'resetTransactions');
+        case MessageTypes.RESET_DOMAINS:
+            return app.exec('wallet', 'resetNames');
         case MessageTypes.LOCK_WALLET:
             return app.exec('wallet', 'lockWallet');
         case MessageTypes.CHECK_FOR_RESCAN:
