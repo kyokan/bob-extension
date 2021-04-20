@@ -12,7 +12,6 @@ import Home from "@src/ui/pages/Home";
 import {fetchLatestBlock} from "@src/ui/ducks/node";
 import SendTx from "@src/ui/pages/SendTx";
 import ReceiveTx from "@src/ui/pages/ReceiveTx";
-import pushMessage from "@src/util/pushMessage";
 import MessageTypes from "@src/util/messageTypes";
 import {usePendingTXs} from "@src/ui/ducks/pendingTXs";
 import ConfirmTx from "@src/ui/pages/ConfirmTx";
@@ -21,25 +20,35 @@ import postMessage from "@src/util/postMessage";
 export default function Popup (): ReactElement {
   const dispatch = useDispatch();
   const initialized = useInitialized();
-  const { locked } = useWalletState();
+  const { locked, currentWallet } = useWalletState();
   const [loading, setLoading] = useState(true);
   const pendingTXHashes = usePendingTXs();
 
   useEffect(() => {
     (async () => {
-      const now = Date.now();
-      console.log(await postMessage({ type: MessageTypes.CHECK_FOR_RESCAN }));
-      await dispatch(fetchWallets());
-      await dispatch(fetchWalletState());
-      await dispatch(fetchLatestBlock());
-      await pushMessage({
-        type: MessageTypes.UPDATE_TX_QUEUE,
-      });
-      console.log(await postMessage({ type: MessageTypes.GET_PENDING_TRANSACTIONS }));
-      await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
-      setLoading(false);
+      try {
+        const now = Date.now();
+
+        await dispatch(fetchWallets());
+        await dispatch(fetchWalletState());
+        await dispatch(fetchLatestBlock());
+        await postMessage({
+          type: MessageTypes.UPDATE_TX_QUEUE,
+        });
+        await postMessage({ type: MessageTypes.GET_PENDING_TRANSACTIONS });
+        await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
+        setLoading(false);
+      } catch (e) {
+        console.error(e)
+      }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!locked && currentWallet) {
+      postMessage({ type: MessageTypes.CHECK_FOR_RESCAN });
+    }
+  }, [currentWallet, locked]);
 
   if (loading) {
     return (

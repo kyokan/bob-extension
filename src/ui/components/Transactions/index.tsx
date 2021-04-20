@@ -1,19 +1,40 @@
-import React, {ReactElement} from "react";
+import React, {ReactElement, useEffect} from "react";
 import moment from "moment";
-import {Transaction, useTXByHash, useTXOrder} from "@src/ui/ducks/transactions";
+import {
+  setFetching,
+  setOffset,
+  Transaction,
+  useTXByHash,
+  useTXFetching,
+  useTXOffset,
+  useTXOrder
+} from "@src/ui/ducks/transactions";
 import Icon from "@src/ui/components/Icon";
 import "./transactions.scss";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import classNames from "classnames";
 import Name from "@src/ui/components/Name";
 import {getTXAction, getTXNameHash, getTXValue} from "@src/util/transaction";
+import {Loader} from "@src/ui/components/Loader";
+import {useDispatch} from "react-redux";
 
 export default function Transactions(): ReactElement {
-  const order = useTXOrder();
+  const offset = useTXOffset();
+  const order = useTXOrder(offset);
+  const fetching = useTXFetching();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    return () => {
+      dispatch(setOffset(20));
+    }
+  }, []);
 
   return (
     <div className="transactions">
       {order.map(txHash => <TransactionRow key={txHash} hash={txHash} />)}
+      {!order.length && !fetching && <div className="transactions__empty">No transactions</div>}
+      {fetching && <Loader size={3} />}
     </div>
   );
 }

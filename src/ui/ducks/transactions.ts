@@ -1,15 +1,16 @@
-import {Dispatch} from "redux";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import {Covenant} from "@src/util/covenant";
 import {useSelector} from "react-redux";
 import {AppRootState} from "@src/ui/store/configureAppStore";
 import deepEqual from "fast-deep-equal";
+import {Dispatch} from "redux";
 
 export enum ActionType {
   SET_TRANSACTIONS = 'transaction/setTransactions',
   APPEND_TRANSACTIONS = 'transaction/appendTransactions',
   SET_FETCHING = 'transaction/setFetching',
+  SET_OFFSET = 'transaction/setOffset',
 }
 
 type Action = {
@@ -31,7 +32,7 @@ type State = {
 const initialState: State = {
   order: [],
   map: {},
-  offset: 0,
+  offset: 20,
   fetching: false,
 };
 
@@ -66,34 +67,16 @@ export type TxOutput = {
   }
 }
 
+let getTxNonce = 0;
+
 export const fetchTransactions = () => async (dispatch: Dispatch) => {
-  const transactions = await postMessage({ type: MessageTypes.GET_TRANSACTIONS });
-  dispatch({
-    type: ActionType.SET_TRANSACTIONS,
-    payload: transactions.map(inflateTX),
-  });
-};
-
-export const fetchMoreTransactions = () => async (dispatch: Dispatch, getState: () => AppRootState) => {
-  const {
-    transactions: {
-      fetching,
-      offset,
-    }
-  } = getState();
-
-  if (fetching) return;
   dispatch(setFetching(true));
-  const transactions = await postMessage({
+  getTxNonce = await postMessage({ type: MessageTypes.GET_TX_NONCE });
+  await postMessage({
     type: MessageTypes.GET_TRANSACTIONS,
     payload: {
-      offset: offset,
+      nonce: getTxNonce,
     },
-  });
-
-  dispatch({
-    type: ActionType.APPEND_TRANSACTIONS,
-    payload: transactions.map(inflateTX),
   });
   dispatch(setFetching(false));
 };
@@ -103,6 +86,20 @@ export const setFetching = (fetching: boolean) => {
     type: ActionType.SET_FETCHING,
     payload: fetching,
   }
+};
+
+export const setOffset = (offset: number) => {
+  return {
+    type: ActionType.SET_OFFSET,
+    payload: offset,
+  }
+};
+
+export const resetTransactions = () => async (dispatch: Dispatch) => {
+  await postMessage({ type: MessageTypes.RESET_TRANSACTIONS, payload: getTxNonce });
+  getTxNonce = await postMessage({ type: MessageTypes.GET_TX_NONCE });
+  dispatch(setTransactions([]));
+  dispatch(setOffset(20));
 };
 
 export const setTransactions = (transactions: any[]) => {
@@ -119,6 +116,13 @@ export default function transactions(state = initialState, action: Action): Stat
         ...state,
         fetching: action.payload,
       };
+    case ActionType.SET_OFFSET:
+      return {
+        ...state,
+        offset: action.payload > state.order.length
+          ? Math.max(20, state.order.length)
+          : action.payload,
+      };
     case ActionType.SET_TRANSACTIONS:
       return {
         ...state,
@@ -129,29 +133,48 @@ export default function transactions(state = initialState, action: Action): Stat
         }, {}),
       };
     case ActionType.APPEND_TRANSACTIONS:
-      return {
-        ...state,
-        order: [
-          ...state.order,
-          ...action.payload.map((tx: Transaction) => tx.hash),
-        ],
-        map: {
-          ...state.map,
-          ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-            map[tx.hash] = tx;
-            return map;
-          }, {}),
-        },
-        offset: action.payload.length ? state.offset + 1 : state.offset,
-      };
+      return handleAppendTransactions(state, action);
     default:
       return state;
   }
 }
 
-export const useTXOrder = (): string[] => {
+function handleAppendTransactions(state: State, action: Action): State {
+  if (getTxNonce !== action.meta.nonce) {
+    return state;
+  }
+
+  return {
+    ...state,
+    order: [
+      ...state.order,
+      ...action.payload.map((tx: Transaction) => tx.hash),
+    ],
+    map: {
+      ...state.map,
+      ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
+        map[tx.hash] = tx;
+        return map;
+      }, {}),
+    },
+  };
+}
+
+export const useTXOrder = (offset: number): string[] => {
   return useSelector((state: AppRootState) => {
-    return state.transactions.order;
+    return state.transactions.order.slice(0, offset);
+  }, deepEqual)
+};
+
+export const useTXOffset = (): number => {
+  return useSelector((state: AppRootState) => {
+    return state.transactions.offset;
+  }, deepEqual)
+};
+
+export const useTXFetching = (): boolean => {
+  return useSelector((state: AppRootState) => {
+    return state.transactions.fetching;
   }, deepEqual)
 };
 

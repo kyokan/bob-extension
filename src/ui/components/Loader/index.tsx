@@ -1,5 +1,6 @@
 import React, {ReactElement} from "react";
 import LoadingIcon from "@src/static/icons/loader.svg";
+import LoadingLightGrayIcon from "@src/static/icons/loader-lightgray.svg";
 import "./index.scss";
 
 type Props = {
@@ -13,7 +14,7 @@ export function Loader(props: Props): ReactElement {
     <div
       className={`loader ${className}`}
       style={{
-        backgroundImage: `url(js/${LoadingIcon})`,
+        backgroundImage: `url(js/${LoadingLightGrayIcon})`,
         height: `${size}rem`,
         width: `${size}rem`,
       }}

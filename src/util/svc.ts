@@ -32,60 +32,20 @@ export class GenericService extends EventEmitter implements Service {
     this._services = services;
   }
 
-  emit (eventName: string, ...args: any[]): boolean {
-    console.log('emit event', {
-      service: this._serviceName,
-      eventName,
-      ...args,
-    });
+  async exec<returnType = any>(serviceName: string, methodName: string, ...params: any[]): Promise<returnType> {
+    return new Promise(async (resolve, reject) => {
+      const service = this._services[serviceName];
+      // @ts-ignore
+      const method = service[methodName];
 
-    return super.emit(eventName, ...args);
-  }
-
-  listen(serviceName: string, eventName: string, cb: (...arg: any[]) => void): () => void {
-    const svc = this._services[serviceName];
-
-    if (!svc) {
-      throw new Error(`cannot found service ${serviceName}`);
-    }
-
-    const wrappedCallback = async (...args: any[]) => {
       try {
-        await cb.apply(this, args);
-        console.log('handled event', {
-          service: this._serviceName,
-          from: serviceName,
-          eventName,
-        });
+        const response = await method.apply(service, params);
+        console.log({ serviceName, methodName, response })
+        resolve(response);
       } catch (e) {
-        console.error(e);
+        console.error(e, { serviceName, methodName });
+        reject(e);
       }
-    };
-
-    svc.addListener(eventName, wrappedCallback);
-
-    return () => {
-      this.removeListener(eventName, wrappedCallback);
-    }
-  }
-
-  async exec<returnType = any>(service: string, method: string, ...params: any[]): Promise<returnType> {
-    const nonce = this.nonce++;
-    return new Promise((resolve, reject) => {
-      this.once(`response-${nonce}`, ([err, resp]) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(resp);
-      });
-
-      this.emit('execute', {
-        service,
-        method,
-        params,
-        nonce,
-      });
     });
   }
 
@@ -103,30 +63,12 @@ export class AppService extends GenericService {
   constructor() {
     super();
     this.services = {};
-    this.on('execute', (msg) => this.handleExecute(msg, this));
     this.setServiceName('app', this.services);
   }
-
-  private async handleExecute (msg: ServiceMessage, origin: GenericService) {
-    const target = this.services[msg.service] || {};
-
-    // @ts-ignore
-    const method = target[msg.method];
-    try {
-      const resp = await method.apply(target, msg.params);
-      origin.emit(`response-${msg.nonce}`, [null, resp]);
-    } catch (err) {
-      origin.emit(`response-${msg.nonce}`, [
-        err,
-        null,
-      ]);
-    }
-  };
 
   add(serviceName: string, service: GenericService): AppService {
     this.services[serviceName] = service;
     service.setServiceName(serviceName, this.services);
-    service.on('execute', (msg) => this.handleExecute(msg, service));
     return this;
   }
 

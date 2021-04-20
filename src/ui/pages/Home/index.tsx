@@ -1,4 +1,4 @@
-import React, {ReactElement, useEffect, useState, useRef, useCallback} from "react";
+import React, {ReactElement, useCallback, useEffect, useRef, useState} from "react";
 import {fetchWalletBalance, useCurrentWallet, useWalletBalance} from "@src/ui/ducks/wallet";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
@@ -8,7 +8,13 @@ import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import "./home.scss";
 import {ReceiveButton, RedeemButton, RevealButton, SendButton} from "@src/ui/components/HomeActionButton";
 import classNames from "classnames";
-import {fetchMoreTransactions, fetchTransactions} from "@src/ui/ducks/transactions";
+import {
+  fetchTransactions,
+  resetTransactions,
+  setOffset,
+  setTransactions,
+  useTXOffset
+} from "@src/ui/ducks/transactions";
 import Transactions from "@src/ui/components/Transactions";
 import debounce from 'lodash.debounce';
 import {fetchDomainNames} from "@src/ui/ducks/domains";
@@ -16,6 +22,7 @@ import Domains from "@src/ui/components/Domains";
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
+  const txOffset = useTXOffset();
   const currentWallet = useCurrentWallet();
   const [tab, setTab] = useState<'domains'|'activity'>('activity');
   const { spendable, lockedUnconfirmed } = useWalletBalance();
@@ -23,6 +30,14 @@ export default function Home(): ReactElement {
   const listElement = useRef<HTMLDivElement>(null);
   const pageElement = useRef<HTMLDivElement>(null);
   const [fixHeader, setFixHeader] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      (async function onHomeUnmount() {
+        dispatch(resetTransactions());
+      })();
+    }
+  }, []);
 
   useEffect(() => {
     (async function onHomeMount() {
@@ -48,23 +63,29 @@ export default function Home(): ReactElement {
     if (!listElement.current || !pageElement.current) return;
 
     const {y} = listElement.current.getBoundingClientRect();
-    if (y <= 66) {
+    if (y <= 60) {
       setFixHeader(true);
     } else {
       setFixHeader(false);
     }
 
-   if ((pageElement.current.scrollTop / pageElement.current.scrollHeight) > .5) {
-     if (tab === 'activity') {
-       await dispatch(fetchMoreTransactions());
-     } else {
+    const {
+      scrollTop,
+      scrollHeight,
+      offsetHeight,
+    } = pageElement.current;
+    if (((scrollTop + offsetHeight) / scrollHeight) > .8) {
+      if (tab === 'activity') {
+        dispatch(setOffset(txOffset + 20));
+      } else {
 
-     }
-   }
+      }
+    }
   }, [
     listElement,
     pageElement,
     tab,
+    txOffset,
   ]);
   const onScroll = debounce(_onScroll, 5, { leading: true });
 

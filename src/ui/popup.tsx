@@ -13,6 +13,7 @@ chrome.runtime.onMessage.addListener((action) => {
 });
 
 browser.tabs.query({ active: true, currentWindow: true }).then(() => {
+  browser.runtime.connect();
   ReactDOM.render(
     <Provider store={store}>
       <MemoryRouter>

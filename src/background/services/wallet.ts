@@ -15,7 +15,8 @@ import {ActionType as WalletActionType, setWalletBalance} from "@src/ui/ducks/wa
 import {ActionType as AppActionType} from "@src/ui/ducks/app";
 import {setTransactions, Transaction} from "@src/ui/ducks/transactions";
 import {setDomainNames} from "@src/ui/ducks/domains";
-import {ActionType} from "@src/ui/ducks/pendingTXs";
+import {ActionType as PendingTXActionType } from "@src/ui/ducks/pendingTXs";
+import {ActionType as TXActionType } from "@src/ui/ducks/transactions";
 
 export default class WalletService extends GenericService {
   network: typeof Network;
@@ -36,11 +37,14 @@ export default class WalletService extends GenericService {
 
   checkStatusTimeout?: any;
 
+  getTxNonce: number;
+
   constructor() {
     super();
     this.selectedID = '';
     this.locked = true;
     this.rescanning = false;
+    this.getTxNonce = 0;
   }
 
   lockWallet = async () => {
@@ -142,53 +146,72 @@ export default class WalletService extends GenericService {
 
     const sorted = common.sortDeps(txs);
 
-    console.log(sorted)
     for (const tx of sorted) {
-      console.log(tx.toHex());
       await this.exec('node', 'sendRawTransaction', tx.toHex());
     }
 
     return txs;
   };
 
-  getTransactions = async (opts?: {offset: number, limit: number, id?: string}) => {
+  getTXNonce = () => {
+    return this.getTxNonce;
+  };
+
+  resetTransactions = async () => {
+    this.getTxNonce++;
+  };
+
+  getTransactions = async (opts?: {id?: string, nonce: number}) => {
     const {
-      offset = 0,
-      limit = 20,
       id,
+      nonce = 0,
     } = opts || {};
     const walletId = id || this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    const latestBlock = await this.exec('node', 'getLatestBlock');
-
     await pushMessage({
       type: AppActionType.SET_BOB_MOVING,
       payload: true,
     });
+    const latestBlock = await this.exec('node', 'getLatestBlock');
 
-    let result;
-    if (this.transactions) {
-      result = this.transactions;
-    } else {
-      let txs = await wallet.getHistory('default');
+    await this.pushBobMessage('Loading transactions...');
 
-      txs = txs.sort((a: any, b: any) => {
-        if (a.height > b.height) return -1;
-        if (b.height > a.height) return 1;
-        if (a.index > b.index) return -1;
-        if (b.index > a.index) return 1;
-        return 0;
-      });
+    let txs = await wallet.getHistory('default');
 
-      const details = await wallet.toDetails(txs);
+    this.getTxNonce = nonce;
 
-      result = [];
+    txs = txs.sort((a: any, b: any) => {
+      if (a.height > b.height) return -1;
+      if (b.height > a.height) return 1;
+      if (a.index > b.index) return -1;
+      if (b.index > a.index) return 1;
+      return 0;
+    });
+
+    for (let i = 0; i < txs.length; i = i + 250) {
+      if (nonce !== this.getTxNonce) {
+        await pushMessage({
+          type: AppActionType.SET_BOB_MOVING,
+          payload: false,
+        });
+        return false;
+      }
+      await this.pushBobMessage('Loading transactions...');
+      const details = await wallet.toDetails(txs.slice(i, i + 250));
+
+      const result = [];
 
       for (const item of details) {
         result.push(item.getJSON(this.network, latestBlock.height));
       }
 
-      this.transactions = result;
+      await pushMessage({
+        type: TXActionType.APPEND_TRANSACTIONS,
+        payload: result,
+        meta: {
+          nonce: nonce,
+        },
+      });
     }
 
     await pushMessage({
@@ -196,7 +219,9 @@ export default class WalletService extends GenericService {
       payload: false,
     });
 
-    return result.slice(offset * limit, (offset * limit) + limit);
+    await this.pushBobMessage('Welcome back!');
+
+    return true;
   };
 
   getDomainNames = async (opts?: {offset: number, limit: number, id?: string}) => {
@@ -292,14 +317,14 @@ export default class WalletService extends GenericService {
     if (this.selectedID) {
       const txQueue = await get(this.store,`tx_queue_${this.selectedID}`);
       await pushMessage({
-        type: ActionType.SET_PENDING_TXS,
+        type: PendingTXActionType.SET_PENDING_TXS,
         payload: txQueue || [],
       });
       return;
     }
 
     await pushMessage({
-      type: ActionType.SET_PENDING_TXS,
+      type: PendingTXActionType.SET_PENDING_TXS,
       payload: [],
     });
   };
@@ -528,7 +553,9 @@ export default class WalletService extends GenericService {
   };
 
   checkForRescan = async () => {
-    if (!this.selectedID) return;
+    if (!this.selectedID || this.rescanning) return;
+
+    this.rescanning = true;
 
     await this.pushBobMessage('Checking status...');
     const latestBlockNow = await this.exec('node', 'getLatestBlock');
@@ -536,13 +563,7 @@ export default class WalletService extends GenericService {
 
     if (latestBlockLast && latestBlockLast.height >= latestBlockNow.height) {
       await this.pushBobMessage('I am synchronized.');
-      return;
-    }
-
-    this.rescanning = true;
-    await this.pushState();
-
-    if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
+    } else if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
       await this.rescanBlocks(latestBlockLast.height + 1, latestBlockNow.height);
       await this.checkForRescan();
     } else {
