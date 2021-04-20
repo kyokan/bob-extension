@@ -31,7 +31,6 @@ export default function Popup (): ReactElement {
         await dispatch(fetchWallets());
         await dispatch(fetchWalletState());
         await dispatch(fetchLatestBlock());
-        await postMessage({ type: MessageTypes.GET_PENDING_TRANSACTIONS });
         await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
         setLoading(false);
       } catch (e) {

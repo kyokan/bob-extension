@@ -17,6 +17,11 @@
   align-items: center;
   padding: 1rem 1.25rem;
 
+  &--pending {
+    opacity: .5;
+    background-color: $border-gray;
+  }
+
   &__icon {
     @extend %row-nowrap;
     flex: 0 0 auto;

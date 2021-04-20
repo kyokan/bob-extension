@@ -189,6 +189,9 @@ export default class WalletService extends GenericService {
     this._getTxNonce = nonce;
 
     txs = txs.sort((a: any, b: any) => {
+      if (a.height === -1 && b.height === -1) return -1;
+      if (a.height === -1) return -1;
+      if (b.height === -1) return 1;
       if (a.height > b.height) return -1;
       if (b.height > a.height) return 1;
       if (a.index > b.index) return -1;

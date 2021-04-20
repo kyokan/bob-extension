@@ -4,13 +4,14 @@ import {useHistory} from "react-router";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import {getTXAction, getTXNameHash, getTXRecipient, getTXValue} from "@src/util/transaction";
-import {Transaction} from "@src/ui/ducks/transactions";
+import {fetchPendingTransactions, Transaction} from "@src/ui/ducks/transactions";
 import Input from "@src/ui/components/Input";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import "./confirm-tx.scss";
 import UpdateTx from "@src/ui/pages/UpdateTx";
+import {useDispatch} from "react-redux";
 
 const actionToTitle: {
   [k: string]: string;
@@ -19,18 +20,19 @@ const actionToTitle: {
 };
 
 export default function ConfirmTx(): ReactElement {
-  const history = useHistory();
   const pendingTXHashes = useTXQueue();
   const [currentIndex, setCurrentIndex] = useState(0);
   const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
   const action = getTXAction(pendingTx);
   const [isUpdating, setUpdating] = useState(false);
+  const dispatch = useDispatch();
 
-  const submitTx = useCallback((txJSON: Transaction) => {
-    return postMessage({
+  const submitTx = useCallback(async (txJSON: Transaction) => {
+    await postMessage({
       type: MessageTypes.SUBMIT_TX,
       payload: {txJSON},
-    })
+    });
+    await dispatch(fetchPendingTransactions());
   }, []);
 
   const removeTx = useCallback((txJSON: Transaction) => {

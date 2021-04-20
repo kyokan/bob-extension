@@ -1,9 +1,9 @@
-import React, {ReactElement, useEffect} from "react";
+import React, {ReactElement, useEffect, useState} from "react";
 import moment from "moment";
 import {
-  setFetching,
+  fetchPendingTransactions,
   setOffset,
-  Transaction,
+  Transaction, usePendingTXs,
   useTXByHash,
   useTXFetching,
   useTXOffset,
@@ -22,12 +22,14 @@ import {fetchTXQueue} from "@src/ui/ducks/queue";
 export default function Transactions(): ReactElement {
   const offset = useTXOffset();
   const order = useTXOrder(offset);
+  const pending = usePendingTXs();
   const fetching = useTXFetching();
   const dispatch = useDispatch();
 
   useEffect(() => {
     (async () => {
       await dispatch(fetchTXQueue());
+      // await dispatch(fetchPendingTransactions());
     })();
 
     return () => {
@@ -37,6 +39,7 @@ export default function Transactions(): ReactElement {
 
   return (
     <div className="transactions">
+      {/*{pending.map(txHash => <TransactionRow key={txHash} hash={txHash} />)}*/}
       {order.map(txHash => <TransactionRow key={txHash} hash={txHash} />)}
       {!order.length && !fetching && <div className="transactions__empty">No transactions</div>}
       {fetching && <Loader size={3} />}
@@ -81,9 +84,12 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
   const value = getTXValue(tx);
   const action = getTXAction(tx);
   const nameHash = getTXNameHash(tx);
+  const pending = !tx.height || tx.height < 0;
 
   return (
-    <div className="transaction">
+    <div className={classNames("transaction", {
+      'transaction--pending': pending,
+    })}>
       <div className="transaction__icon">
         <Icon
           fontAwesome={ActionToFA[action] || 'fa-handshake'}
@@ -100,7 +106,11 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
           )}
         </div>
         <div className="transaction__body__date">
-          {moment(tx.date).format('YYYY-MM-DD HH:mm:ss')}
+          {
+            pending
+              ? moment((tx as any).mdate).format('YYYY-MM-DD HH:mm:ss')
+              : moment(tx.date).format('YYYY-MM-DD HH:mm:ss')
+          }
         </div>
       </div>
       <div className="transaction__value">

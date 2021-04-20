@@ -7,6 +7,7 @@ import deepEqual from "fast-deep-equal";
 import {Dispatch} from "redux";
 
 export enum ActionType {
+  SET_PENDING_TRANSACTIONS = 'transaction/setPendingTransactions',
   SET_TRANSACTIONS = 'transaction/setTransactions',
   APPEND_TRANSACTIONS = 'transaction/appendTransactions',
   SET_FETCHING = 'transaction/setFetching',
@@ -21,6 +22,7 @@ type Action = {
 };
 
 type State = {
+  pending: string[];
   order: string[];
   map: {
     [txHash: string]: Transaction;
@@ -30,6 +32,7 @@ type State = {
 };
 
 const initialState: State = {
+  pending: [],
   order: [],
   map: {},
   offset: 20,
@@ -81,6 +84,14 @@ export const fetchTransactions = () => async (dispatch: Dispatch) => {
   dispatch(setFetching(false));
 };
 
+export const fetchPendingTransactions = () => async (dispatch: Dispatch) => {
+  const pendingTXs = await postMessage({ type: MessageTypes.GET_PENDING_TRANSACTIONS });
+  dispatch({
+    type: ActionType.SET_PENDING_TRANSACTIONS,
+    payload: pendingTXs,
+  });
+};
+
 export const setFetching = (fetching: boolean) => {
   return {
     type: ActionType.SET_FETCHING,
@@ -123,6 +134,15 @@ export default function transactions(state = initialState, action: Action): Stat
           ? Math.max(20, state.order.length)
           : action.payload,
       };
+    case ActionType.SET_PENDING_TRANSACTIONS:
+      return {
+        ...state,
+        pending: action.payload.map((tx: Transaction) => tx.hash),
+        map: action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
+          map[tx.hash] = tx;
+          return map;
+        }, {}),
+      };
     case ActionType.SET_TRANSACTIONS:
       return {
         ...state,
@@ -159,6 +179,12 @@ function handleAppendTransactions(state: State, action: Action): State {
     },
   };
 }
+
+export const usePendingTXs = (): string[] => {
+  return useSelector((state: AppRootState) => {
+    return state.transactions.pending;
+  }, deepEqual)
+};
 
 export const useTXOrder = (offset: number): string[] => {
   return useSelector((state: AppRootState) => {
