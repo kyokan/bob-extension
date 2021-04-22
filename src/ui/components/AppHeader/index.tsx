@@ -34,7 +34,7 @@ export default function AppHeader(): ReactElement {
           size={2.625}
         />
         {
-          (isShowing || rescanning) && (
+          (isShowing) && (
             <div className="app-header__speech-bubble">
               {bobMessage || 'Welcome back!'}
             </div>

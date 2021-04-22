@@ -91,22 +91,10 @@ export default class NodeService extends GenericService {
     return await resp.json();
   }
 
-  async getBlock(blockHash: string) {
-    const { apiHost } = await this.exec('setting', 'getAPI');
-    const headers = await this.getHeaders();
-    const resp = await fetch(apiHost, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({
-        method: 'getblock',
-        params: [blockHash],
-      }),
-    });
-
-    return await resp.json();
-  }
-
   async getBlockByHeight(blockHeight: number) {
+    const cachedEntry = await get(this.store, `block-${blockHeight}`);
+    if (cachedEntry) return cachedEntry;
+
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
     const resp = await fetch(`${apiHost}/block/${blockHeight}`, {
@@ -114,7 +102,11 @@ export default class NodeService extends GenericService {
       headers: headers,
     });
 
-    return await resp.json();
+    const block = await resp.json();
+
+    await put(this.store, `block-${blockHeight}`, block);
+
+    return block;
   }
 
   async getNameByHash(hash: string) {

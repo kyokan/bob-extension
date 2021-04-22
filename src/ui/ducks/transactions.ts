@@ -134,14 +134,7 @@ export default function transactions(state = initialState, action: Action): Stat
           : action.payload,
       };
     case ActionType.SET_PENDING_TRANSACTIONS:
-      return {
-        ...state,
-        // pending: action.payload.map((tx: Transaction) => tx.hash),
-        // map: action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-        //   map[tx.hash] = tx;
-        //   return map;
-        // }, {}),
-      };
+      return handleTransactions(state, action);
     case ActionType.SET_TRANSACTIONS:
       return {
         ...state,
@@ -158,11 +151,7 @@ export default function transactions(state = initialState, action: Action): Stat
   }
 }
 
-function handleAppendTransactions(state: State, action: Action): State {
-  if (getTxNonce !== action.meta.nonce) {
-    return state;
-  }
-
+function handleTransactions(state: State, action: Action): State {
   const newOrder: string[] = state.order.slice();
 
   action.payload
@@ -192,6 +181,14 @@ function handleAppendTransactions(state: State, action: Action): State {
       }, {}),
     },
   };
+}
+
+function handleAppendTransactions(state: State, action: Action): State {
+  if (getTxNonce !== action.meta.nonce) {
+    return state;
+  }
+
+  return handleTransactions(state, action);
 }
 
 export const usePendingTXs = (): string[] => {

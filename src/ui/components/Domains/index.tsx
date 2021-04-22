@@ -1,7 +1,6 @@
 import React, {ReactElement, useEffect} from "react";
 import "./domains.scss";
 import {
-  resetDomains,
   setOffset,
   useDomainByName,
   useDomainFetching,
@@ -14,7 +13,6 @@ import {useDispatch} from "react-redux";
 import {Loader} from "@src/ui/components/Loader";
 const Network = require("hsd/lib/protocol/network");
 
-const network = Network.get('main');
 
 export default function Domains(): ReactElement {
   const offset = useDomainOffset();
@@ -39,6 +37,7 @@ export default function Domains(): ReactElement {
 
 export function DomainRow(props: {name: string}): ReactElement {
   const domain = useDomainByName(props.name);
+  const network = Network.get('main');
 
   if (!domain) return <></>;
 

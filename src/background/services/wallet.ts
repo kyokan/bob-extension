@@ -203,7 +203,7 @@ export default class WalletService extends GenericService {
       if (nonce !== this._getTxNonce) {
         return false;
       }
-      await this.pushBobMessage('Loading transactions...');
+      await this.pushBobMessage(`Loading transactions ${i} of ${txs.length}...`);
       const details = await wallet.toDetails(txs.slice(i, i + 250));
 
       const result = [];
@@ -446,7 +446,7 @@ export default class WalletService extends GenericService {
     const account = await wallet.getAccount('default');
     const addresses = [];
 
-    await this.pushBobMessage('Looking for transactions...');
+    await this.pushBobMessage(`Scanning receive depth ${startDepth}-${endDepth}...`);
 
     let b;
     for (let i = startDepth; i < endDepth; i++) {
@@ -480,7 +480,7 @@ export default class WalletService extends GenericService {
     const account = await wallet.getAccount('default');
     const addresses = [];
 
-    await this.pushBobMessage('Looking for transactions...');
+    await this.pushBobMessage(`Scanning change depth ${startDepth}-${endDepth}...`);
 
     let b;
     for (let i = startDepth; i < endDepth; i++) {
@@ -507,7 +507,7 @@ export default class WalletService extends GenericService {
   };
 
   fullRescan = async () => {
-    await this.pushBobMessage('Looking for transactions...');
+    await this.pushBobMessage('Start rescanning...');
     const latestBlockEnd = await this.exec('node', 'getLatestBlock');
     const changeTXs = await this.getAllChangeTXs();
     const receiveTXs = await this.getAllReceiveTXs();
@@ -519,23 +519,26 @@ export default class WalletService extends GenericService {
   };
 
   processBlock = async (blockHeight: number) => {
+    await this.pushBobMessage(`Fetching block # ${blockHeight}....`);
+
     const {
       txs: transactions,
       ...entryOption
     } = await this.exec('node', 'getBlockByHeight', blockHeight);
 
+    await this.pushBobMessage(`Processing block # ${entryOption.height}....`);
     this.wdb.rescanning = true;
     let retries = 0;
 
     for (let i = 0; i < transactions.length; i++) {
-      const wallet = await this.wdb.get(this.selectedID);
+      // const wallet = await this.wdb.get(this.selectedID);
       const txHashBuf = Buffer.from(transactions[i].hash, 'hex');
 
       if (await this.wdb.testFilter(txHashBuf)) {
         continue;
       }
 
-      const wtx = await wallet.getTX(txHashBuf);
+      // const wtx = await wallet.getTX(txHashBuf);
 
       // if (wtx) {
       //   continue;
@@ -544,7 +547,7 @@ export default class WalletService extends GenericService {
       const unlock = await this.wdb.txLock.lock();
       try {
         const tx = mapOneTx(transactions[i]);
-        await this.pushBobMessage(`Processing block # ${entryOption.height}....`);
+
         const entry = new ChainEntry({
           ...entryOption,
           version: Number(entryOption.version),
@@ -596,21 +599,26 @@ export default class WalletService extends GenericService {
     const latestBlockNow = await this.exec('node', 'getLatestBlock');
     const latestBlockLast = await get(this.store, `latest_block_${this.selectedID}`);
 
-    if (latestBlockLast && latestBlockLast.height >= latestBlockNow.height) {
-      await this.pushBobMessage('I am synchronized.');
-    } else if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
-      await this.rescanBlocks(latestBlockLast.height + 1, latestBlockNow.height);
-      await this.checkForRescan();
-      this.getTransactions({ nonce: this._getTxNonce });
-    } else {
-      await this.fullRescan();
-      this.getTransactions({ nonce: this._getTxNonce });
+    try {
+      if (latestBlockLast && latestBlockLast.height >= latestBlockNow.height) {
+        await this.pushBobMessage('I am synchronized.');
+      } else if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
+        await this.rescanBlocks(latestBlockLast.height + 1, latestBlockNow.height);
+        await this.checkForRescan();
+        this.getTransactions({ nonce: this._getTxNonce });
+      } else {
+        await this.fullRescan();
+        this.getTransactions({ nonce: this._getTxNonce });
+      }
+
+      await this.pushBobMessage(`I am synchonized.`);
+    } catch (e) {
+      console.error(e);
     }
 
-    await this.pushBobMessage(`I am synchonized.`);
+    this.rescanning = false;
 
     setTimeout(async () => {
-      this.rescanning = false;
       await this.pushState();
     }, 500);
   };

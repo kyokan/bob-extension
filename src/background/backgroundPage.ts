@@ -7,13 +7,11 @@ import MessageTypes from "@src/util/messageTypes";
 import NodeService from "@src/background/services/node";
 
 (async function() {
-    const app = new AppService();
-    app.add('setting', new SettingService());
-    app.add('node', new NodeService());
-    app.add('wallet', new WalletService());
-    await app.start();
+    let app: AppService;
 
     browser.runtime.onMessage.addListener(async (request: any, sender: any) => {
+        await waitForStartApp();
+
         try {
             const res = await handleMessage(app, request);
             return [null, res];
@@ -22,12 +20,35 @@ import NodeService from "@src/background/services/node";
         }
     });
 
-    browser.runtime.onConnect.addListener(port => {
+    browser.runtime.onConnect.addListener(async port => {
+        await waitForStartApp();
+
         port.onDisconnect.addListener(async () =>  {
             await app.exec('wallet', 'resetTransactions', -1);
             await app.exec('wallet', 'resetNames', -1);
         });
-    })
+    });
+
+    const startedApp = new AppService();
+    startedApp.add('setting', new SettingService());
+    startedApp.add('node', new NodeService());
+    startedApp.add('wallet', new WalletService());
+    await startedApp.start();
+    app = startedApp;
+
+    async function waitForStartApp() {
+        return new Promise((resolve) => {
+           if (app) {
+               resolve(true);
+               return;
+           }
+
+           setTimeout(async () => {
+               await waitForStartApp();
+               resolve(true);
+           }, 500);
+        });
+    }
 })();
 
 function handleMessage(app: AppService, message: MessageAction) {
