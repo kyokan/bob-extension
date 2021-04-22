@@ -12,6 +12,7 @@ import MessageTypes from "@src/util/messageTypes";
 import "./confirm-tx.scss";
 import UpdateTx from "@src/ui/pages/UpdateTx";
 import {useDispatch} from "react-redux";
+import {ellipsify} from "@src/util/address";
 
 const actionToTitle: {
   [k: string]: string;
@@ -23,8 +24,10 @@ export default function ConfirmTx(): ReactElement {
   const pendingTXHashes = useTXQueue();
   const [currentIndex, setCurrentIndex] = useState(0);
   const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
+  const value = getTXValue(pendingTx);
   const action = getTXAction(pendingTx);
   const [isUpdating, setUpdating] = useState(false);
+  const [isViewingDetail, setViewDetail] = useState(false);
   const dispatch = useDispatch();
 
   const submitTx = useCallback(async (txJSON: Transaction) => {
@@ -61,6 +64,88 @@ export default function ConfirmTx(): ReactElement {
       </RegularViewHeader>
       <RegularViewContent>
         {renderConfirmContent(pendingTx)}
+        {
+          isViewingDetail
+            ? (
+              <>
+                <div className="confirm-tx__detail-group">
+                  <div className="confirm-tx__inputs-group">
+                    <div className="confirm-tx__inputs-group__title">Inputs</div>
+                    {pendingTx.inputs.map(input => {
+                      if (!input.coin) return null;
+                      return (
+                        <div className="confirm-tx__input-group">
+                          <div className="confirm-tx__input-group__top">
+                            {
+                              input.coin.covenant.action !== "NONE" && (
+                                <div className="confirm-tx__input-group__action">
+                                  {input.coin.covenant.action}
+                                </div>
+                              )
+                            }
+                            <a
+                              className="confirm-tx__input-group__address"
+                              href={`https://e.hnsfans.com/address/${input.coin.address}`}
+                              target="_blank"
+                            >
+                              {ellipsify(input.coin.address)}
+                            </a>
+                          </div>
+                          <div className="confirm-tx__input-group__value">
+                            {fromDollaryDoos(input.coin.value, 6)} HNS
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="confirm-tx__outputs-group">
+                    <div className="confirm-tx__outputs-group__title">Outputs</div>
+                    {pendingTx.outputs.map(output => {
+                      return (
+                        <div className="confirm-tx__output-group">
+                          <div className="confirm-tx__output-group__top">
+                            {
+                              output.covenant.action !== 'NONE' && (
+                                <div className="confirm-tx__output-group__action">
+                                  {output.covenant.action}
+                                </div>
+                              )
+                            }
+                            <a
+                              className="confirm-tx__output-group__address"
+                              href={`https://e.hnsfans.com/address/${output.address}`}
+                              target="_blank"
+                            >
+                              {ellipsify(output.address)}
+                            </a>
+                          </div>
+                          <div className="confirm-tx__output-group__value">
+                            {fromDollaryDoos(output.value, 6)} HNS
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="confirm-tx__expand-toggle" onClick={() => setViewDetail(false)}>
+                  Collapse Detail
+                </div>
+              </>
+            )
+            : (
+              <div className="confirm-tx__expand-toggle" onClick={() => setViewDetail(true)}>
+                Expand Detail
+              </div>
+            )
+        }
+        <div className="confirm-tx__total-group">
+          <div className="confirm-tx__total-group__label">
+            Net Total:
+          </div>
+          <div className="confirm-tx__total-group__amount">
+            {formatNumber(fromDollaryDoos(Math.abs(value) + pendingTx.fee, 6))} HNS
+          </div>
+        </div>
       </RegularViewContent>
       <RegularViewFooter>
         <Button
@@ -96,7 +181,7 @@ function renderConfirmContent(pendingTx: Transaction): ReactNode {
             disabled
           />
           <Input
-            label="Amount"
+            label="Net Amount"
             value={fromDollaryDoos(Math.abs(value), 6)}
             disabled
           />
@@ -105,14 +190,6 @@ function renderConfirmContent(pendingTx: Transaction): ReactNode {
             value={fromDollaryDoos(pendingTx.fee, 6)}
             disabled
           />
-          <div className="confirm-tx__total-group">
-            <div className="confirm-tx__total-group__label">
-              Total:
-            </div>
-            <div className="confirm-tx__total-group__amount">
-              {formatNumber(fromDollaryDoos(Math.abs(value) + pendingTx.fee, 6))} HNS
-            </div>
-          </div>
         </>
       );
     default:

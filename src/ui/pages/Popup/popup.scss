@@ -18,6 +18,10 @@ html, body {
   height: 600px;
 }
 
+a {
+  color: $primary-blue;
+}
+
 .popup {
   @extend %col-nowrap;
   width: 357px;

@@ -5,6 +5,7 @@ export function getTXValue(tx: Transaction): number {
   let covAction = null;
   let covValue = 0;
   let totalValue = 0;
+
   for (let i = 0; i < tx.outputs.length; i++) {
     const output = tx.outputs[i];
 
@@ -55,21 +56,23 @@ export function getTXValue(tx: Transaction): number {
     return covValue;
   }
 
-  // If there were outputs to the wallet's receive branch
-  // but no covenants, this was just a plain receive.
-  // Note: assuming input[0] is the "from" is not really helpful data.
-  if (totalValue > 0) {
-    return totalValue;
-  }
-
   // This TX must have been a plain send from the wallet.
-  // Assume that the first non-wallet output of the TX is the "to".
-  const output = tx.outputs.filter(({path}) => !path)[0];
-  if (!output) {
-    return 0;
-  }
+  const inputValue = tx.inputs.reduce((sum, input) => {
+    if (input.coin) {
+      return sum + input.coin.value;
+    }
+    return sum + input.value;
+  }, 0);
 
-  return -output.value;
+  const outputValue = tx.outputs.reduce((sum, output) => {
+    if (output.path || output.owned) {
+      return sum + output.value;
+    } else {
+      return sum;
+    }
+  }, 0);
+
+  return outputValue - inputValue + tx.fee;
 }
 
 export function getTXAction(tx: Transaction): string {

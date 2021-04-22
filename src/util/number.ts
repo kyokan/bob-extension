@@ -4,10 +4,14 @@ const Network = require("hsd/lib/protocol/network");
 const network = Network.get('main');
 
 export const fromDollaryDoos = (raw: number, decimals = 2) => {
+  if (isNaN(raw)) return '';
+
   return new BigNumber(raw).dividedBy(10 ** 6).toFixed(decimals);
 };
 
 export const toDollaryDoos = (raw: number) => {
+  if (isNaN(raw)) return '';
+
   return new BigNumber(raw).multipliedBy(10 ** 6).toFixed(0);
 };
 

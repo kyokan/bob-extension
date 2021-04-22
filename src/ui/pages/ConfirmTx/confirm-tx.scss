@@ -24,4 +24,63 @@
       font-weight: 300;
     }
   }
+
+  &__detail-group {
+    border-radius: 4px;
+    border: 1px solid $border-gray;
+    margin-bottom: .5rem;
+    background-color: rgba(0, 0, 0, .025);
+  }
+
+  &__inputs-group,
+  &__outputs-group {
+    @extend %col-nowrap;
+    @extend %small-font;
+    padding: .25rem .5rem;
+
+    &__title {
+      @extend %small-font;
+      color: $label-text;
+      margin-bottom: .25rem;
+      cursor: default;
+    }
+  }
+
+  &__input-group,
+  &__output-group {
+    @extend %col-nowrap;
+    margin-bottom: .25rem;
+    color: $secondary-text;
+
+    &__top {
+      @extend %row-nowrap;
+      align-items: center;
+      margin-bottom: .25rem;
+    }
+
+    &__action {
+      font-size: 0.6125rem;
+      padding: .25rem;
+      background-color: $primary-text;
+      color: $white;
+      font-weight: 700;
+      margin-right: .25rem;
+    }
+
+    &__address {
+      flex: 1 1 auto;
+    }
+
+    &__value {
+      text-align: right;
+    }
+  }
+
+  &__expand-toggle {
+    @extend %clickable;
+    text-align: center;
+    font-size: .8125rem;
+    color: #2580F8;
+
+  }
 }

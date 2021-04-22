@@ -92,8 +92,8 @@ export default class NodeService extends GenericService {
   }
 
   async getBlockByHeight(blockHeight: number) {
-    const cachedEntry = await get(this.store, `block-${blockHeight}`);
-    if (cachedEntry) return cachedEntry;
+    // const cachedEntry = await get(this.store, `block-${blockHeight}`);
+    // if (cachedEntry) return cachedEntry;
 
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
@@ -104,7 +104,7 @@ export default class NodeService extends GenericService {
 
     const block = await resp.json();
 
-    await put(this.store, `block-${blockHeight}`, block);
+    // await put(this.store, `block-${blockHeight}`, block);
 
     return block;
   }

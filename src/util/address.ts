@@ -15,7 +15,10 @@ const isValidAddress = (address: string) => {
   } catch (e) {
     return false;
   }
-
 };
+
+export const ellipsify = (data: string, first = 6, last = 6) => {
+  return `${data.slice(0, first)}...${data.slice(-last)}`
+}
 
 export default isValidAddress;

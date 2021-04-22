@@ -3,6 +3,7 @@ const Mnemonic = require('hsd/lib/hd/mnemonic');
 const WalletDB = require("hsd/lib/wallet/walletdb");
 const Network = require("hsd/lib/protocol/network");
 const Covenant = require("hsd/lib/primitives/covenant");
+const Address = require("hsd/lib/primitives/address");
 const TX = require("hsd/lib/primitives/tx");
 const common = require("hsd/lib/wallet/common");
 const ChainEntry = require("hsd/lib/blockchain/chainentry");
@@ -126,7 +127,14 @@ export default class WalletService extends GenericService {
   getWalletReceiveAddress = async (options: {id: string; depth: number}) => {
     const wallet = await this.wdb.get(options.id || this.selectedID);
     const account = await wallet.getAccount('default');
-    return account.deriveReceive(options.depth > -1 ? options.depth : account.receiveDepth - 1).getAddress().toString();
+    return account
+      .deriveReceive(
+        options.depth > -1
+          ? options.depth
+          : account.receiveDepth - 1
+      )
+      .getAddress()
+      .toString();
   };
 
   getWalletBalance = async (id?: string) => {
@@ -143,11 +151,14 @@ export default class WalletService extends GenericService {
     const txs = [];
 
     for (const wtx of wtxs) {
-      if (!wtx.tx.isCoinbase())
+      if (!wtx.tx.isCoinbase()){
         txs.push(wtx.tx);
+      }
     }
 
     const sorted = common.sortDeps(txs);
+
+    await this._addPrevoutCoinToPending(txs);
 
     for (const tx of sorted) {
       await this.exec('node', 'sendRawTransaction', tx.toHex());
@@ -209,7 +220,8 @@ export default class WalletService extends GenericService {
       const result = [];
 
       for (const item of details) {
-        result.push(item.getJSON(this.network, latestBlock.height));
+        const json = item.getJSON(this.network, latestBlock.height);
+        result.push(json);
       }
 
       await pushMessage({
@@ -334,6 +346,7 @@ export default class WalletService extends GenericService {
   getTxQueue = async (id?: string) => {
     const walletId = id || this.selectedID;
     const txQueue = (await get(this.store,`tx_queue_${walletId}`)) || [];
+    await this._addOutputPathToTxQueue(txQueue);
     return txQueue;
   };
 
@@ -347,10 +360,37 @@ export default class WalletService extends GenericService {
     return tx.getJSON(this.network);
   };
 
+  async _addOutputPathToTxQueue(queue: Transaction[]): Promise<Transaction[]> {
+    for (let i = 0; i < queue.length; i++) {
+      const tx = queue[i];
+      for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
+        const output = tx.outputs[outputIndex];
+        output.owned = await this.hasAddress(output.address);
+      }
+    }
+
+    return queue;
+  }
+
+  async _addPrevoutCoinToPending(pending: any[]): Promise<Transaction[]> {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    for (let i = 0; i < pending.length; i++) {
+      const tx = pending[i];
+      for (let inputIndex = 0; inputIndex < tx.inputs.length; inputIndex++) {
+        const input = tx.inputs[inputIndex];
+        const coin = await wallet.getCoin(input.prevout.hash, input.prevout.index);
+        input.coin = coin.getJSON(this.network);
+      }
+    }
+
+    return pending;
+  }
+
   updateTxQueue = async () => {
     if (this.selectedID) {
       const txQueue = await get(this.store,`tx_queue_${this.selectedID}`);
-
+      await this._addOutputPathToTxQueue(txQueue);
       await pushMessage({
         type: QueueActionType.SET_TX_QUEUE,
         payload: txQueue || [],
@@ -440,6 +480,22 @@ export default class WalletService extends GenericService {
     this.wdb.rescanning = false;
   };
 
+  hasAddress = async (address: string): Promise<boolean> => {
+    if (!address) {
+      return false;
+    }
+
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+
+    try {
+      const key = await wallet.getKey(Address.from(address));
+      return !!key;
+    } catch (e) {
+      return false;
+    }
+  };
+
   getAllReceiveTXs = async (startDepth = 0, endDepth = 1000, transactions: any[] = []): Promise<any[]> => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
@@ -450,7 +506,7 @@ export default class WalletService extends GenericService {
 
     let b;
     for (let i = startDepth; i < endDepth; i++) {
-      const key = account.deriveReceive(i)
+      const key = account.deriveReceive(i);
       const receive = key.getAddress().toString();
       const path = key.toPath();
       if (!await this.wdb.hasPath(account.wid, path.hash)) {

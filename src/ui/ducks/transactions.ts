@@ -58,16 +58,18 @@ export type TxInput = {
   value: number;
   path: {
     change: boolean;
-  }
+  };
+  coin?: TxOutput;
 }
 
 export type TxOutput = {
   address: string;
   value: number;
   covenant: Covenant;
+  owned?: boolean;
   path: {
     change: boolean;
-  }
+  };
 }
 
 let getTxNonce = 0;
@@ -134,7 +136,7 @@ export default function transactions(state = initialState, action: Action): Stat
           : action.payload,
       };
     case ActionType.SET_PENDING_TRANSACTIONS:
-      return handleTransactions(state, action);
+      return handleTransactions(state, action, true);
     case ActionType.SET_TRANSACTIONS:
       return {
         ...state,
@@ -151,7 +153,7 @@ export default function transactions(state = initialState, action: Action): Stat
   }
 }
 
-function handleTransactions(state: State, action: Action): State {
+function handleTransactions(state: State, action: Action, pending = false): State {
   const newOrder: string[] = state.order.slice();
 
   action.payload
@@ -168,18 +170,31 @@ function handleTransactions(state: State, action: Action): State {
   return {
     ...state,
     order: newOrder,
-    map: {
-      ...state.map,
-      ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-        const existing = state.map[tx.hash];
+    map: pending
+      ?  {
+        ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
+          const existing = state.map[tx.hash];
 
-        if (!existing || !existing.height || existing.height < 0) {
-          map[tx.hash] = tx;
-        }
+          if (!existing || !existing.height || existing.height < 0) {
+            map[tx.hash] = tx;
+          }
 
-        return map;
-      }, {}),
-    },
+          return map;
+        }, {}),
+        ...state.map,
+      }
+      : {
+        ...state.map,
+        ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
+          const existing = state.map[tx.hash];
+
+          if (!existing || !existing.height || existing.height < 0) {
+            map[tx.hash] = tx;
+          }
+
+          return map;
+        }, {}),
+      },
   };
 }
 
