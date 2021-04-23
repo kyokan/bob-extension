@@ -10,6 +10,14 @@
   .loader {
     margin: 1rem auto;
   }
+
+  &__empty {
+    text-align: center;
+    margin: 1rem auto;
+    @extend %regular-font;
+    font-weight: 700;
+    color: $border-gray;
+  }
 }
 
 .transaction {
@@ -38,14 +46,6 @@
     &:active {
       background-color: rgba($black, .1);
     }
-  }
-
-  &__empty {
-    text-align: center;
-    margin: 1rem auto;
-    @extend %regular-font;
-    font-weight: 700;
-    color: $border-gray;
   }
 
   &__icon {

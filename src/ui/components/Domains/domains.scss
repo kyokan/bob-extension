@@ -24,6 +24,16 @@
   @extend %row-nowrap;
   align-items: center;
   padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: background-color 150ms ease-in-out;
+
+  &:hover {
+    background-color: rgba($black, .05);
+  }
+
+  &:active {
+    background-color: rgba($black, .075);
+  }
 
   &__info {
     @extend %col-nowrap;

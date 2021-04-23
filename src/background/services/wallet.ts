@@ -62,6 +62,7 @@ export default class WalletService extends GenericService {
     await wallet.unlock(password, 60000);
     this.locked = false;
     await wallet.lock();
+    this.emit('unlocked', this.selectedID);
   };
 
   getState = async () => {
@@ -76,6 +77,13 @@ export default class WalletService extends GenericService {
       },
       rescanning: this.rescanning,
     };
+  };
+
+  getWalletInfo = async (id?: string) => {
+    const walletId = id || this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const balance = await wallet.getBalance();
+    return wallet.getJSON(false, balance);
   };
 
   pushState = async () => {
@@ -350,6 +358,11 @@ export default class WalletService extends GenericService {
     return txQueue;
   };
 
+  rejectTx = async (txJSON: any) => {
+    await this.removeTxFromQueue(txJSON);
+    this.emit('txRejected', txJSON);
+  };
+
   submitTx = async (opts: {txJSON: Transaction; password: string}) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
@@ -357,7 +370,10 @@ export default class WalletService extends GenericService {
     const mtx = await wallet.createTX(opts.txJSON);
     const tx = await wallet.sendMTX(mtx, 'asdfasdf');
     await this.removeTxFromQueue(opts.txJSON);
-    return tx.getJSON(this.network);
+    await this.exec('node', 'sendRawTransaction', tx.toHex());
+    const json = tx.getJSON(this.network);
+    this.emit('txAccepted', json);
+    return json;
   };
 
   async _addOutputPathToTxQueue(queue: Transaction[]): Promise<Transaction[]> {

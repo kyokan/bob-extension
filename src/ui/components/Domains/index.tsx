@@ -44,7 +44,10 @@ export function DomainRow(props: {name: string}): ReactElement {
   const expiry = heightToMoment(domain.renewal + network.names.renewalWindow).format('YYYY-MM-DD');
 
   return (
-    <div className="domain">
+    <div
+      className="domain"
+      onClick={() => window.open(`https://e.hnsfans.com/name/${props.name}`)}
+    >
       <div className="domain__info">
         <div className="domain__info__name">
           <Name name={domain.name} />

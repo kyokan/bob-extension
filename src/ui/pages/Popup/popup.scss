@@ -1,10 +1,9 @@
 @import "./src/util/variables";
+
 body {
   font-family: "Open Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
-  width: 100vw;
-  height: 100vh;
   background-color: white;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
@@ -24,15 +23,15 @@ a {
 
 .popup {
   @extend %col-nowrap;
-  width: 357px;
-  height: 600px;
+  width: 100vw;
+  height: 100vh;
   display: flex;
 
   &__loading {
     @extend %col-nowrap;
     background-color: $header-gray;
-    width: 357px;
-    height: 600px;
+    width: 100vw;
+    height: 100vh;
     align-items: center;
     justify-content: center;
   }

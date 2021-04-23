@@ -40,7 +40,7 @@ export default function ConfirmTx(): ReactElement {
 
   const removeTx = useCallback((txJSON: Transaction) => {
     return postMessage({
-      type: MessageTypes.REMOVE_TX_FROM_QUEUE,
+      type: MessageTypes.REJECT_TX,
       payload: txJSON,
     })
   }, []);

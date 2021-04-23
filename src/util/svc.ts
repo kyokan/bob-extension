@@ -1,4 +1,4 @@
-import {EventEmitter} from "events";
+import {EventEmitter2} from "eventemitter2";
 
 export interface Service {
   start(): Promise<void>;
@@ -13,7 +13,7 @@ export type ServiceMessage = {
   nonce: number;
 }
 
-export class GenericService extends EventEmitter implements Service {
+export class GenericService extends EventEmitter2 implements Service {
   nonce: number;
   private _serviceName: string;
   private _services: {
@@ -21,7 +21,7 @@ export class GenericService extends EventEmitter implements Service {
   };
 
   constructor() {
-    super();
+    super({ wildcard: true, delimiter: '.' });
     this.nonce = 0;
     this._services = {};
     this._serviceName = '';
@@ -67,8 +67,13 @@ export class AppService extends GenericService {
   }
 
   add(serviceName: string, service: GenericService): AppService {
+    const that = this;
     this.services[serviceName] = service;
     service.setServiceName(serviceName, this.services);
+    service.on('*', function (...args) {
+      // @ts-ignore
+      that.emit([serviceName, this.event], ...args);
+    });
     return this;
   }
 
