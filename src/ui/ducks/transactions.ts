@@ -51,6 +51,7 @@ export type Transaction = {
   rate: number;
   time: number;
   tx: string;
+  bid?: number;
 }
 
 export type TxInput = {

@@ -18,6 +18,8 @@ import {getTXAction, getTXNameHash, getTXValue} from "@src/util/transaction";
 import {Loader} from "@src/ui/components/Loader";
 import {useDispatch} from "react-redux";
 import {fetchTXQueue} from "@src/ui/ducks/queue";
+import postMessage from "@src/util/postMessage";
+import MessageTypes from "@src/util/messageTypes";
 
 export default function Transactions(): ReactElement {
   const offset = useTXOffset();
@@ -78,16 +80,23 @@ const ActionToFA: {[actionType: string]: string} = {
 export const TransactionRow = (props: { hash: string }): ReactElement => {
   const {hash} = props;
   const tx = useTXByHash(hash);
+  const value = getTXValue(tx!);
+  const action = getTXAction(tx!);
+  const nameHash = getTXNameHash(tx!);
+  const pending = !tx!.height || tx!.height < 0;
 
-  if (!tx) return <></>;
-
-  const value = getTXValue(tx);
-  const action = getTXAction(tx);
-  const nameHash = getTXNameHash(tx);
-  const pending = !tx.height || tx.height < 0;
   const openExplorer = useCallback(() => {
-    window.open(`https://e.hnsfans.com/tx/${tx.hash}`, '_blank');
-  }, [tx.hash]);
+    window.open(`https://e.hnsfans.com/tx/${tx!.hash}`, '_blank');
+  }, [tx!.hash]);
+
+  const openExplorerName = useCallback(async (e) => {
+    e.stopPropagation();
+    const {result} = await postMessage({
+      type: MessageTypes.GET_NAME_BY_HASH,
+      payload: nameHash,
+    });
+    window.open(`https://e.hnsfans.com/name/${result}`, '_blank');
+  }, [nameHash]);
 
   return (
     <div
@@ -107,7 +116,7 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
           <div>{ActionToText[action] || action}</div>
           { nameHash && (
             <div className="transaction__body__action__name">
-              <Name hash={nameHash} />
+              <Name hash={nameHash} onClick={openExplorerName} />
             </div>
           )}
         </div>
@@ -115,7 +124,7 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
           {
             pending
               ? moment((tx as any).mdate).format('YYYY-MM-DD HH:mm:ss')
-              : moment(tx.date).format('YYYY-MM-DD HH:mm:ss')
+              : moment(tx!.date).format('YYYY-MM-DD HH:mm:ss')
           }
         </div>
       </div>

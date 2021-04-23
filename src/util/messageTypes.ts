@@ -20,6 +20,7 @@ enum MessageTypes {
   GET_DOMAIN_NAMES = 'get_domain_names',
   GET_NAME_NONCE = 'get_name_nonce',
   CREATE_TX = 'create_tx',
+  CREATE_BID = 'create_bid',
   UPDATE_TX_QUEUE = 'update_tx_queue',
   GET_TX_QUEUE = 'get_tx_queue',
   SUBMIT_TX = 'submit_tx',
@@ -35,6 +36,7 @@ enum MessageTypes {
   // Bob3
   CONNECT = 'connect',
   SEND_TX = 'send_tx',
+  SEND_BID = 'send_bid',
 }
 
 export default MessageTypes;

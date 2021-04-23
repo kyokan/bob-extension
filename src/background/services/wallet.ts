@@ -5,11 +5,13 @@ const Network = require("hsd/lib/protocol/network");
 const Covenant = require("hsd/lib/primitives/covenant");
 const Address = require("hsd/lib/primitives/address");
 const TX = require("hsd/lib/primitives/tx");
+const NameState = require("hsd/lib/covenants/namestate");
 const common = require("hsd/lib/wallet/common");
 const ChainEntry = require("hsd/lib/blockchain/chainentry");
 const BN = require('bcrypto/lib/bn.js');
 const bdb = require('bdb');
 const DB = require('bdb/lib/DB');
+const layout = require('hsd/lib/wallet/layout').txdb;
 import {get, put} from '@src/util/db';
 import pushMessage from "@src/util/pushMessage";
 import {ActionType as WalletActionType, setWalletBalance} from "@src/ui/ducks/wallet";
@@ -18,6 +20,7 @@ import {setTransactions, Transaction} from "@src/ui/ducks/transactions";
 import {ActionTypes, setDomainNames} from "@src/ui/ducks/domains";
 import {ActionType as QueueActionType, setTXQueue } from "@src/ui/ducks/queue";
 import {ActionType as TXActionType } from "@src/ui/ducks/transactions";
+import {toDollaryDoos} from "@src/util/number";
 
 export default class WalletService extends GenericService {
   network: typeof Network;
@@ -42,6 +45,8 @@ export default class WalletService extends GenericService {
 
   _getNameNonce: number;
 
+  private passphrase: string | undefined;
+
   constructor() {
     super();
     this.selectedID = '';
@@ -54,12 +59,14 @@ export default class WalletService extends GenericService {
   lockWallet = async () => {
     const wallet = await this.wdb.get(this.selectedID);
     await wallet.lock();
+    this.passphrase = undefined;
     this.locked = true;
   };
 
   unlockWallet = async (password: string) => {
     const wallet = await this.wdb.get(this.selectedID);
     await wallet.unlock(password, 60000);
+    this.passphrase = password;
     this.locked = false;
     await wallet.lock();
     this.emit('unlocked', this.selectedID);
@@ -132,7 +139,7 @@ export default class WalletService extends GenericService {
     return this.wdb.getWallets();
   };
 
-  getWalletReceiveAddress = async (options: {id: string; depth: number}) => {
+  getWalletReceiveAddress = async (options: {id?: string; depth: number} = { depth: -1 }) => {
     const wallet = await this.wdb.get(options.id || this.selectedID);
     const account = await wallet.getAccount('default');
     return account
@@ -314,11 +321,58 @@ export default class WalletService extends GenericService {
     return wallet.getJSON(false, balance);
   };
 
+  createBid = async (opts: {
+    name: string,
+    amount: number,
+    lockup: number,
+  }) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    const nameInfo = await this.exec('node', 'getNameInfo', opts.name);
+
+    if (!nameInfo || !nameInfo.result) throw new Error('cannot get name info');
+    const ns = new NameState().fromJSON(nameInfo.result.info);
+
+    const b = wallet.txdb.bucket.batch();
+
+    const {nameHash} = ns;
+
+    if (ns.isNull()) {
+      b.del(layout.A.encode(nameHash));
+    } else {
+      b.put(layout.A.encode(nameHash), ns.encode());
+    }
+
+    await b.write();
+
+
+    this.wdb.height = latestBlockNow.height;
+    const createdTx = await wallet.createBid(
+      opts.name,
+      +toDollaryDoos(opts.amount),
+      +toDollaryDoos(opts.lockup),
+    );
+    return createdTx.toJSON();
+  };
+
   createTx = async (txOptions: any) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     this.wdb.height = 2017;
-    const createdTx = await wallet.createTX(txOptions);
+    const options = {
+      ...txOptions,
+      outputs: txOptions.outputs.map((output: any) => {
+        return {
+          ...output,
+          covenant: {
+            ...output.covenant,
+            items: output.covenant?.items.map((data: string) => Buffer.from(data, 'hex')),
+          } ,
+        }
+      }),
+    };
+    const createdTx = await wallet.createTX(options);
     return createdTx.toJSON();
   };
 
@@ -367,8 +421,20 @@ export default class WalletService extends GenericService {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     this.wdb.height = 2017;
-    const mtx = await wallet.createTX(opts.txJSON);
-    const tx = await wallet.sendMTX(mtx, 'asdfasdf');
+    const options = {
+      ...opts.txJSON,
+      outputs: opts.txJSON.outputs.map((output: any) => {
+        return {
+          ...output,
+          covenant: {
+            ...output.covenant,
+            items: output.covenant?.items.map((data: string) => Buffer.from(data, 'hex')),
+          } ,
+        }
+      }),
+    };
+    const mtx = await wallet.createTX(options);
+    const tx = await wallet.sendMTX(mtx, this.passphrase);
     await this.removeTxFromQueue(opts.txJSON);
     await this.exec('node', 'sendRawTransaction', tx.toHex());
     const json = tx.getJSON(this.network);

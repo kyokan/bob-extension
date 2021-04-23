@@ -114,9 +114,9 @@ export default function Home(): ReactElement {
           <div className="home__account-info__spendable">
             {`${formatNumber(fromDollaryDoos(spendable))} HNS`}
           </div>
-          <small className="home__account-info__locked">
-            {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(lockedUnconfirmed))} HNS locked up`}
-          </small>
+          {/*<small className="home__account-info__locked">*/}
+          {/*  {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(lockedUnconfirmed))} HNS locked up`}*/}
+          {/*</small>*/}
         </div>
       </div>
       <div className="home__actions">

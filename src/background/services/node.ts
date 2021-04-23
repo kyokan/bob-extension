@@ -92,9 +92,6 @@ export default class NodeService extends GenericService {
   }
 
   async getBlockByHeight(blockHeight: number) {
-    // const cachedEntry = await get(this.store, `block-${blockHeight}`);
-    // if (cachedEntry) return cachedEntry;
-
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
     const resp = await fetch(`${apiHost}/block/${blockHeight}`, {
@@ -103,8 +100,6 @@ export default class NodeService extends GenericService {
     });
 
     const block = await resp.json();
-
-    // await put(this.store, `block-${blockHeight}`, block);
 
     return block;
   }
@@ -130,6 +125,9 @@ export default class NodeService extends GenericService {
   }
 
   async getNameInfo(tld: string) {
+    // const cachedEntry = await get(this.store, `nameinfo-${tld}`);
+    // if (cachedEntry) return cachedEntry;
+
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
     const resp = await fetch(apiHost, {
@@ -140,7 +138,9 @@ export default class NodeService extends GenericService {
         params: [tld],
       }),
     });
-    return await resp.json();
+    const json = await resp.json();
+    // await put(this.store, `nameinfo-${tld}`, json);
+    return json;
   }
 
   async getCoin(txHash: string, txIndex: number) {

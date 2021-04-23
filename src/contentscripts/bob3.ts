@@ -1,6 +1,5 @@
 import MessageTypes from "@src/util/messageTypes";
 import {MessageAction} from "@src/util/postMessage";
-import {toDollaryDoos} from "@src/util/number";
 
 const promises: {
   [k: string]: {
@@ -35,6 +34,16 @@ async function getBalance() {
 }
 
 /**
+ * Get the current receiving address.
+ *
+ * @returns {string}
+ */
+async function getAddress() {
+  await assertunLocked();
+  return post({ type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS });
+}
+
+/**
  * Send to address
  *
  * @param {string} address - Handshake address to send funds to
@@ -55,6 +64,26 @@ async function send(address: string, amount: number) {
   });
 }
 
+/**
+ * Send bid
+ *
+ * @param {string} name - name to bid on
+ * @param {number} amount - amount to bind (in HNS)
+ * @param {number} lockup - amount to lock up to blind your bid (must be greater than bid amount)
+ */
+async function sendBid(name: string, amount: number, lockup: number) {
+  await assertunLocked();
+  return post({
+    type: MessageTypes.SEND_BID,
+    payload: {
+      name,
+      amount,
+      lockup,
+    },
+  });
+}
+
+
 // utilities
 async function assertunLocked() {
   const res: any = await post({ type: MessageTypes.GET_WALLET_STATE });
@@ -67,7 +96,9 @@ async function assertunLocked() {
  */
 const wallet = {
   getBalance,
+  getAddress,
   send,
+  sendBid,
 };
 
 window.bob3 = {
@@ -81,16 +112,6 @@ declare global {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
 
 // Connect injected script messages with content script messages
 async function post(message: MessageAction) {

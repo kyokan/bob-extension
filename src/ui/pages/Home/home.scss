@@ -90,9 +90,9 @@
   &--fixed-header {
     .home__list__header {
       position: fixed;
-      top: 60px;
+      top: 66px;
       left: 0;
-      width: 357px;
+      width: 100%;
       background-color: $white;
       z-index: 200;
     }

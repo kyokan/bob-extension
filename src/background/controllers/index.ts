@@ -1,6 +1,6 @@
 import MessageTypes from "@src/util/messageTypes";
 import {AppService} from "@src/util/svc";
-import postMessage, {MessageAction} from "@src/util/postMessage";
+import {MessageAction} from "@src/util/postMessage";
 import {browser} from "webextension-polyfill-ts";
 import {toDollaryDoos} from "@src/util/number";
 
@@ -89,6 +89,52 @@ const controllers: {
         reject(new Error('user rejected.'));
         browser.windows.remove(popup.id as number);
       });
+    });
+  },
+
+  [MessageTypes.SEND_BID]: async (app, message) => {
+    const {payload} = message;
+    const { amount, lockup } = payload;
+    return new Promise(async (resolve, reject) => {
+      try {
+        const queue = await app.exec('wallet', 'getTxQueue');
+
+        if (queue.length) {
+          return reject(new Error('user has unconfirmed tx.'));
+        }
+
+        const tx = await app.exec('wallet', 'createBid', payload);
+
+        await app.exec('wallet', 'addTxToQueue', {
+          ...tx,
+          bid: amount,
+        });
+
+        const tab = await browser.tabs.create({
+          url: browser.extension.getURL('popup.html'),
+          active: false,
+        });
+
+        const popup = await browser.windows.create({
+          tabId: tab.id,
+          type: 'popup',
+          focused: true,
+          width: 357,
+          height: 600,
+        });
+
+        app.on('wallet.txAccepted', (returnTx) => {
+          resolve(returnTx);
+          browser.windows.remove(popup.id as number);
+        });
+
+        app.on('wallet.txRejected', () => {
+          reject(new Error('user rejected.'));
+          browser.windows.remove(popup.id as number);
+        });
+      } catch (e) {
+        reject(e);
+      }
     });
   },
 
@@ -190,6 +236,10 @@ const controllers: {
 
   [MessageTypes.GET_DOMAIN_NAMES]: async (app, message) => {
     return app.exec('wallet', 'getDomainNames', message.payload);
+  },
+
+  [MessageTypes.CREATE_BID]: async (app, message) => {
+    return app.exec('wallet', 'createBid', message.payload);
   },
 
   [MessageTypes.CREATE_TX]: async (app, message) => {

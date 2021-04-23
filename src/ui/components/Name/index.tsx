@@ -1,4 +1,4 @@
-import React, {ReactElement, useEffect, useState} from "react";
+import React, {MouseEventHandler, ReactElement, useEffect, useState} from "react";
 import "./name.scss";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
@@ -7,6 +7,7 @@ import punycode from 'punycode';
 type Props = {
   hash?: string;
   name?: string;
+  onClick?: MouseEventHandler;
 }
 
 export default function Name(props: Props): ReactElement {
@@ -29,17 +30,17 @@ export default function Name(props: Props): ReactElement {
         const unicode = punycode.toUnicode(value as string);
 
         if (unicode !== value) {
-          setDomain(`${unicode}/ (${value})`);
+          setDomain(`${unicode}`);
           return;
         }
       } catch(e) {}
 
-      setDomain(`${value}/`);
+      setDomain(`${value}`);
     })();
   }, [hash, name]);
 
   return (
-    <div className="name" title={domain}>
+    <div className="name" title={domain} onClick={props.onClick}>
       {domain}
     </div>
   )

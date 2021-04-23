@@ -1,6 +1,5 @@
-import React, {ReactElement, ReactNode, useCallback, useState} from "react";
+import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} from "@src/ui/components/RegularView";
-import {useHistory} from "react-router";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import {getTXAction, getTXNameHash, getTXRecipient, getTXValue} from "@src/util/transaction";
@@ -13,11 +12,13 @@ import "./confirm-tx.scss";
 import UpdateTx from "@src/ui/pages/UpdateTx";
 import {useDispatch} from "react-redux";
 import {ellipsify} from "@src/util/address";
+import {toUnicode} from "@src/util/name";
 
 const actionToTitle: {
   [k: string]: string;
 } = {
   SEND: 'Confirm Send',
+  BID: 'Confirm Bid',
 };
 
 export default function ConfirmTx(): ReactElement {
@@ -27,7 +28,6 @@ export default function ConfirmTx(): ReactElement {
   const value = getTXValue(pendingTx);
   const action = getTXAction(pendingTx);
   const [isUpdating, setUpdating] = useState(false);
-  const [isViewingDetail, setViewDetail] = useState(false);
   const dispatch = useDispatch();
 
   const submitTx = useCallback(async (txJSON: Transaction) => {
@@ -60,84 +60,11 @@ export default function ConfirmTx(): ReactElement {
         onClose={() => setUpdating(true)}
         actionText="Edit"
       >
-        {actionToTitle[action]}
+        {actionToTitle[action] || 'Send Raw Transaction'}
       </RegularViewHeader>
       <RegularViewContent>
-        {renderConfirmContent(pendingTx)}
-        {
-          isViewingDetail
-            ? (
-              <>
-                <div className="confirm-tx__detail-group">
-                  <div className="confirm-tx__inputs-group">
-                    <div className="confirm-tx__inputs-group__title">Inputs</div>
-                    {pendingTx.inputs.map(input => {
-                      if (!input.coin) return null;
-                      return (
-                        <div className="confirm-tx__input-group">
-                          <div className="confirm-tx__input-group__top">
-                            {
-                              input.coin.covenant.action !== "NONE" && (
-                                <div className="confirm-tx__input-group__action">
-                                  {input.coin.covenant.action}
-                                </div>
-                              )
-                            }
-                            <a
-                              className="confirm-tx__input-group__address"
-                              href={`https://e.hnsfans.com/address/${input.coin.address}`}
-                              target="_blank"
-                            >
-                              {ellipsify(input.coin.address)}
-                            </a>
-                          </div>
-                          <div className="confirm-tx__input-group__value">
-                            {fromDollaryDoos(input.coin.value, 6)} HNS
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="confirm-tx__outputs-group">
-                    <div className="confirm-tx__outputs-group__title">Outputs</div>
-                    {pendingTx.outputs.map(output => {
-                      return (
-                        <div className="confirm-tx__output-group">
-                          <div className="confirm-tx__output-group__top">
-                            {
-                              output.covenant.action !== 'NONE' && (
-                                <div className="confirm-tx__output-group__action">
-                                  {output.covenant.action}
-                                </div>
-                              )
-                            }
-                            <a
-                              className="confirm-tx__output-group__address"
-                              href={`https://e.hnsfans.com/address/${output.address}`}
-                              target="_blank"
-                            >
-                              {ellipsify(output.address)}
-                            </a>
-                          </div>
-                          <div className="confirm-tx__output-group__value">
-                            {fromDollaryDoos(output.value, 6)} HNS
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="confirm-tx__expand-toggle" onClick={() => setViewDetail(false)}>
-                  Collapse Detail
-                </div>
-              </>
-            )
-            : (
-              <div className="confirm-tx__expand-toggle" onClick={() => setViewDetail(true)}>
-                Expand Detail
-              </div>
-            )
-        }
+        <ConfirmContent hash={pendingTXHashes[currentIndex]} />
+        <TxDetail hash={pendingTXHashes[currentIndex]} />
         <div className="confirm-tx__total-group">
           <div className="confirm-tx__total-group__label">
             Net Total:
@@ -164,11 +91,108 @@ export default function ConfirmTx(): ReactElement {
   )
 }
 
-function renderConfirmContent(pendingTx: Transaction): ReactNode {
+function TxDetail(props: { hash: string }): ReactElement {
+  const pendingTx = useQueuedTXByHash(props.hash);
+  const action = getTXAction(pendingTx);
+  const [isViewingDetail, setViewDetail] = useState(false);
+
+  return !actionToTitle[action] || isViewingDetail
+    ? (
+      <>
+        <div className="confirm-tx__detail-group">
+          <div className="confirm-tx__inputs-group">
+            <div className="confirm-tx__inputs-group__title">Inputs</div>
+            {pendingTx.inputs.map(input => {
+              if (!input.coin) return null;
+              return (
+                <div className="confirm-tx__input-group">
+                  <div className="confirm-tx__input-group__top">
+                    {
+                      input.coin.covenant.action !== "NONE" && (
+                        <div className="confirm-tx__input-group__action">
+                          {input.coin.covenant.action}
+                        </div>
+                      )
+                    }
+                    <a
+                      className="confirm-tx__input-group__address"
+                      href={`https://e.hnsfans.com/address/${input.coin.address}`}
+                      target="_blank"
+                    >
+                      {ellipsify(input.coin.address)}
+                    </a>
+                  </div>
+                  <div className="confirm-tx__input-group__value">
+                    {fromDollaryDoos(input.coin.value, 6)} HNS
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="confirm-tx__outputs-group">
+            <div className="confirm-tx__outputs-group__title">Outputs</div>
+            {pendingTx.outputs.map(output => {
+              return (
+                <div className="confirm-tx__output-group">
+                  <div className="confirm-tx__output-group__top">
+                    {
+                      output.covenant.action !== 'NONE' && (
+                        <div className="confirm-tx__output-group__action">
+                          {output.covenant.action}
+                        </div>
+                      )
+                    }
+                    <a
+                      className="confirm-tx__output-group__address"
+                      href={`https://e.hnsfans.com/address/${output.address}`}
+                      target="_blank"
+                    >
+                      {ellipsify(output.address)}
+                    </a>
+                  </div>
+                  <div className="confirm-tx__output-group__value">
+                    {fromDollaryDoos(output.value, 6)} HNS
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {
+          actionToTitle[action] && (
+            <div className="confirm-tx__expand-toggle" onClick={() => setViewDetail(false)}>
+              Collapse Detail
+            </div>
+          )
+        }
+      </>
+    )
+    : (
+      <div className="confirm-tx__expand-toggle" onClick={() => setViewDetail(true)}>
+        Expand Detail
+      </div>
+    );
+}
+
+function ConfirmContent(props: { hash: string }): ReactElement {
+  const pendingTx = useQueuedTXByHash(props.hash);
   const value = getTXValue(pendingTx);
   const action = getTXAction(pendingTx);
   const nameHash = getTXNameHash(pendingTx);
   const recipientAddress = getTXRecipient(pendingTx);
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const {result} = await postMessage({
+        type: MessageTypes.GET_NAME_BY_HASH,
+        payload: nameHash,
+      });
+
+      setName(toUnicode(result));
+    })()
+
+  }, [nameHash]);
 
   switch (action) {
     case 'SEND':
@@ -192,7 +216,36 @@ function renderConfirmContent(pendingTx: Transaction): ReactNode {
           />
         </>
       );
+    case 'BID':
+      return (
+        <>
+          <Input
+            label="TLD"
+            value={name}
+            spellCheck={false}
+            disabled
+          />
+          <Input
+            label="Bid Amount"
+            value={pendingTx.bid || fromDollaryDoos(Math.abs(value), 6)}
+            disabled
+          />
+          <Input
+            label="Blind Amount"
+            value={pendingTx.bid
+              ? +fromDollaryDoos(Math.abs(value), 6) - pendingTx.bid
+              : 0
+            }
+            disabled
+          />
+          <Input
+            label="Estimated Fee"
+            value={fromDollaryDoos(pendingTx.fee, 6)}
+            disabled
+          />
+        </>
+      );
     default:
-      return null;
+      return <></>;
   }
 }
