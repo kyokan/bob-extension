@@ -83,6 +83,18 @@ async function sendBid(name: string, amount: number, lockup: number) {
   });
 }
 
+/**
+ * Send reveal
+ *
+ * @param {string} name - name to reveal bid for (`null` for all names)
+ */
+async function sendReveal(name: string) {
+  await assertunLocked();
+  return post({
+    type: MessageTypes.SEND_REVEAL,
+    payload: name,
+  });
+}
 
 // utilities
 async function assertunLocked() {
@@ -99,6 +111,7 @@ const wallet = {
   getAddress,
   send,
   sendBid,
+  sendReveal,
 };
 
 window.bob3 = {

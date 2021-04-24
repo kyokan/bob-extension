@@ -13,18 +13,7 @@ const controllers: {
       const {locked} = await app.exec('wallet', 'getState');
 
       if (locked) {
-        const tab = await browser.tabs.create({
-          url: browser.extension.getURL('popup.html'),
-          active: false,
-        });
-
-        const popup = await browser.windows.create({
-          tabId: tab.id,
-          type: 'popup',
-          focused: true,
-          width: 357,
-          height: 600,
-        });
+        const popup = await openPopup();
 
         const onPopUpClose = (windowId: number) => {
           if (windowId === popup.id) {
@@ -67,28 +56,8 @@ const controllers: {
 
       await app.exec('wallet', 'addTxToQueue', tx);
 
-      const tab = await browser.tabs.create({
-        url: browser.extension.getURL('popup.html'),
-        active: false,
-      });
-
-      const popup = await browser.windows.create({
-        tabId: tab.id,
-        type: 'popup',
-        focused: true,
-        width: 357,
-        height: 600,
-      });
-
-      app.on('wallet.txAccepted', (returnTx) => {
-        resolve(returnTx);
-        browser.windows.remove(popup.id as number);
-      });
-
-      app.on('wallet.txRejected', () => {
-        reject(new Error('user rejected.'));
-        browser.windows.remove(popup.id as number);
-      });
+      const popup = await openPopup();
+      closePopupOnAcceptOrReject(app, resolve, reject, popup);
     });
   },
 
@@ -110,28 +79,32 @@ const controllers: {
           bid: amount,
         });
 
-        const tab = await browser.tabs.create({
-          url: browser.extension.getURL('popup.html'),
-          active: false,
+        const popup = await openPopup();
+        closePopupOnAcceptOrReject(app, resolve, reject, popup);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  },
+
+  [MessageTypes.SEND_REVEAL]: async (app, message) => {
+    const {payload} = message;
+    return new Promise(async (resolve, reject) => {
+      try {
+        const queue = await app.exec('wallet', 'getTxQueue');
+
+        if (queue.length) {
+          return reject(new Error('user has unconfirmed tx.'));
+        }
+
+        const tx = await app.exec('wallet', 'createReveal', {
+          name: payload,
         });
 
-        const popup = await browser.windows.create({
-          tabId: tab.id,
-          type: 'popup',
-          focused: true,
-          width: 357,
-          height: 600,
-        });
+        await app.exec('wallet', 'addTxToQueue', tx);
 
-        app.on('wallet.txAccepted', (returnTx) => {
-          resolve(returnTx);
-          browser.windows.remove(popup.id as number);
-        });
-
-        app.on('wallet.txRejected', () => {
-          reject(new Error('user rejected.'));
-          browser.windows.remove(popup.id as number);
-        });
+        const popup = await openPopup();
+        closePopupOnAcceptOrReject(app, resolve, reject, popup);
       } catch (e) {
         reject(e);
       }
@@ -242,8 +215,16 @@ const controllers: {
     return app.exec('wallet', 'createBid', message.payload);
   },
 
+  [MessageTypes.CREATE_REVEAL]: async (app, message) => {
+    return app.exec('wallet', 'createReveal', message.payload);
+  },
+
   [MessageTypes.CREATE_TX]: async (app, message) => {
     return app.exec('wallet', 'createTx', message.payload);
+  },
+
+  [MessageTypes.CREATE_SEND]: async (app, message) => {
+    return app.exec('wallet', 'createSend', message.payload);
   },
 
   [MessageTypes.GET_NAME_BY_HASH]: async (app, message) => {
@@ -261,3 +242,37 @@ const controllers: {
 };
 
 export default controllers;
+
+async function openPopup() {
+  const tab = await browser.tabs.create({
+    url: browser.extension.getURL('popup.html'),
+    active: false,
+  });
+
+  const popup = await browser.windows.create({
+    tabId: tab.id,
+    type: 'popup',
+    focused: true,
+    width: 357,
+    height: 600,
+  });
+
+  return popup;
+}
+
+function closePopupOnAcceptOrReject(
+  app: AppService,
+  resolve: (data: any) => void,
+  reject: (err: Error) => void,
+  popup: any,
+) {
+  app.on('wallet.txAccepted', (returnTx) => {
+    resolve(returnTx);
+    browser.windows.remove(popup.id as number);
+  });
+
+  app.on('wallet.txRejected', () => {
+    reject(new Error('user rejected.'));
+    browser.windows.remove(popup.id as number);
+  });
+}

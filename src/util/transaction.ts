@@ -51,6 +51,10 @@ export function getTXValue(tx: Transaction): number {
     }
   }
 
+  if (covAction === 'BID') {
+    return -covValue;
+  }
+
   // This TX was a covenant, return.
   if (covAction) {
     return covValue;
@@ -235,8 +239,9 @@ export function getTXNameHash(tx: Transaction): string {
 
     // Track normal receive amounts for later
     if (covenant.action === 'NONE') {
-      return '';
+      continue;
     }
+
     // Stay focused on the first non-NONE covenant type, ignore other types
     if (covAction && covenant.action !== covAction)
       continue;

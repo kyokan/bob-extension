@@ -19,23 +19,33 @@ const actionToTitle: {
 } = {
   SEND: 'Confirm Send',
   BID: 'Confirm Bid',
+  REVEAL: 'Confirm Reveal',
 };
 
 export default function ConfirmTx(): ReactElement {
   const pendingTXHashes = useTXQueue();
   const [currentIndex, setCurrentIndex] = useState(0);
   const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
-  const value = getTXValue(pendingTx);
   const action = getTXAction(pendingTx);
   const [isUpdating, setUpdating] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const dispatch = useDispatch();
 
   const submitTx = useCallback(async (txJSON: Transaction) => {
-    await postMessage({
-      type: MessageTypes.SUBMIT_TX,
-      payload: {txJSON},
-    });
-    await dispatch(fetchPendingTransactions());
+    setConfirming(true);
+    try {
+      await postMessage({
+        type: MessageTypes.SUBMIT_TX,
+        payload: {txJSON},
+      });
+      await dispatch(fetchPendingTransactions());
+    } catch (e) {
+      setErrorMessage(e.message);
+    }
+
+    setConfirming(false);
+
   }, []);
 
   const removeTx = useCallback((txJSON: Transaction) => {
@@ -65,15 +75,9 @@ export default function ConfirmTx(): ReactElement {
       <RegularViewContent>
         <ConfirmContent hash={pendingTXHashes[currentIndex]} />
         <TxDetail hash={pendingTXHashes[currentIndex]} />
-        <div className="confirm-tx__total-group">
-          <div className="confirm-tx__total-group__label">
-            Net Total:
-          </div>
-          <div className="confirm-tx__total-group__amount">
-            {formatNumber(fromDollaryDoos(Math.abs(value) + pendingTx.fee, 6))} HNS
-          </div>
-        </div>
+        <NetTotal hash={pendingTXHashes[currentIndex]} />
       </RegularViewContent>
+      { errorMessage && <small className="error-message">{errorMessage}</small> }
       <RegularViewFooter>
         <Button
           btnType={ButtonType.secondary}
@@ -83,12 +87,47 @@ export default function ConfirmTx(): ReactElement {
         </Button>
         <Button
           onClick={() => submitTx(pendingTx)}
+          disabled={confirming}
+          loading={confirming}
         >
           Confirm
         </Button>
       </RegularViewFooter>
     </RegularView>
   )
+}
+
+function NetTotal(props: {hash: string}): ReactElement {
+  const pendingTx = useQueuedTXByHash(props.hash);
+  const value = getTXValue(pendingTx);
+  const action = getTXAction(pendingTx);
+
+  switch (action) {
+    case 'REVEAL':
+      return (
+      <div className="confirm-tx__total-group">
+        <div className="confirm-tx__total-group__label">
+          Net Total:
+        </div>
+        <div className="confirm-tx__total-group__amount">
+          {formatNumber(fromDollaryDoos(Math.abs(value) - pendingTx.fee, 6))} HNS
+        </div>
+      </div>
+    );
+    case 'BID':
+    case 'SEND':
+    default:
+      return (
+        <div className="confirm-tx__total-group">
+          <div className="confirm-tx__total-group__label">
+            Net Total:
+          </div>
+          <div className="confirm-tx__total-group__amount">
+            {formatNumber(fromDollaryDoos(-Math.abs(value) - pendingTx.fee, 6))} HNS
+          </div>
+        </div>
+      );
+  }
 }
 
 function TxDetail(props: { hash: string }): ReactElement {
@@ -189,6 +228,7 @@ function ConfirmContent(props: { hash: string }): ReactElement {
         payload: nameHash,
       });
 
+      console.log(nameHash);
       setName(toUnicode(result));
     })()
 
@@ -236,6 +276,22 @@ function ConfirmContent(props: { hash: string }): ReactElement {
               ? +fromDollaryDoos(Math.abs(value), 6) - pendingTx.bid
               : 0
             }
+            disabled
+          />
+          <Input
+            label="Estimated Fee"
+            value={fromDollaryDoos(pendingTx.fee, 6)}
+            disabled
+          />
+        </>
+      );
+    case 'REVEAL':
+      return (
+        <>
+          <Input
+            label="TLD"
+            value={name}
+            spellCheck={false}
             disabled
           />
           <Input

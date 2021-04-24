@@ -45,7 +45,7 @@ export default function SendTx(): ReactElement {
 
   const setMax = useCallback(async () => {
     const tx = await postMessage({
-      type: MessageTypes.CREATE_TX,
+      type: MessageTypes.CREATE_SEND,
       payload: {
         rate: +toDollaryDoos(fee),
         outputs: [{
@@ -61,7 +61,7 @@ export default function SendTx(): ReactElement {
     setUpdating(true);
     try {
       const tx = await postMessage({
-        type: MessageTypes.CREATE_TX,
+        type: MessageTypes.CREATE_SEND,
         payload: {
           rate: +toDollaryDoos(fee),
           outputs: [{

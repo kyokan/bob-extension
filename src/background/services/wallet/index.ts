@@ -3,11 +3,16 @@ const Mnemonic = require('hsd/lib/hd/mnemonic');
 const WalletDB = require("hsd/lib/wallet/walletdb");
 const Network = require("hsd/lib/protocol/network");
 const Covenant = require("hsd/lib/primitives/covenant");
+const rules = require("hsd/lib/covenants/rules");
+const {states} = require("hsd/lib/covenants/namestate");
 const Address = require("hsd/lib/primitives/address");
 const TX = require("hsd/lib/primitives/tx");
 const NameState = require("hsd/lib/covenants/namestate");
 const common = require("hsd/lib/wallet/common");
 const ChainEntry = require("hsd/lib/blockchain/chainentry");
+const MTX = require("hsd/lib/primitives/mtx");
+const Output = require('hsd/lib/primitives/output');
+const Outpoint = require("hsd/lib/primitives/outpoint");
 const BN = require('bcrypto/lib/bn.js');
 const bdb = require('bdb');
 const DB = require('bdb/lib/DB');
@@ -21,6 +26,8 @@ import {ActionTypes, setDomainNames} from "@src/ui/ducks/domains";
 import {ActionType as QueueActionType, setTXQueue } from "@src/ui/ducks/queue";
 import {ActionType as TXActionType } from "@src/ui/ducks/transactions";
 import {toDollaryDoos} from "@src/util/number";
+import BlindBid from "@src/background/services/wallet/blind-bid";
+const {types} = rules;
 
 export default class WalletService extends GenericService {
   network: typeof Network;
@@ -311,25 +318,10 @@ export default class WalletService extends GenericService {
     return true;
   };
 
-  createWallet = async (options: {
-    id: string;
-    passphrase: string;
-    mnemonic: string;
-  }) => {
-    const wallet = await this.wdb.create(options);
-    const balance = await wallet.getBalance();
-    return wallet.getJSON(false, balance);
-  };
-
-  createBid = async (opts: {
-    name: string,
-    amount: number,
-    lockup: number,
-  }) => {
+  addNameState = async (name: string) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    const latestBlockNow = await this.exec('node', 'getLatestBlock');
-    const nameInfo = await this.exec('node', 'getNameInfo', opts.name);
+    const nameInfo = await this.exec('node', 'getNameInfo', name);
 
     if (!nameInfo || !nameInfo.result) throw new Error('cannot get name info');
     const ns = new NameState().fromJSON(nameInfo.result.info);
@@ -345,13 +337,156 @@ export default class WalletService extends GenericService {
     }
 
     await b.write();
+  };
 
+  createWallet = async (options: {
+    id: string;
+    passphrase: string;
+    mnemonic: string;
+  }) => {
+    const wallet = await this.wdb.create(options);
+    const balance = await wallet.getBalance();
+    return wallet.getJSON(false, balance);
+  };
 
+  createReveal = async (opts: {name: string; rate?: number}) => {
+    const {name, rate} = opts;
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    await this.addNameState(name);
     this.wdb.height = latestBlockNow.height;
+
+    if (!rules.verifyName(name)) {
+      throw new Error('Invalid name.');
+    }
+
+    const rawName = Buffer.from(name, 'ascii');
+    const nameHash = rules.hashName(rawName);
+    const ns = await wallet.getNameState(nameHash);
+    const height = this.wdb.height + 1;
+    const network = this.network;
+
+    if (!ns) {
+      throw new Error('Auction not found.');
+    }
+
+    ns.maybeExpire(height, network);
+
+    const state = ns.state(height, network);
+
+    if (state < states.REVEAL) {
+      throw new Error('Cannot reveal yet.');
+    }
+
+    if (state > states.REVEAL) {
+      throw new Error('Reveal period has passed.');
+    }
+
+    const iter = wallet.txdb.bucket.iterator({
+      gte: nameHash ? layout.i.min(nameHash) : layout.i.min(),
+      lte: nameHash ? layout.i.max(nameHash) : layout.i.max(),
+      values: true
+    });
+
+    const iter2 = wallet.txdb.bucket.iterator({
+      gte: nameHash ? layout.i.min(nameHash) : layout.i.min(),
+      lte: nameHash ? layout.i.max(nameHash) : layout.i.max(),
+      values: true
+    });
+
+    const raws = await iter.values();
+    const keys = await iter2.keys();
+    const bids: any[] = [];
+
+    for (let i = 0; i < raws.length; i++) {
+      const raw = raws[i];
+      const key = keys[i];
+      const [nameHash, hash, index] = layout.i.decode(key);
+      const bb = BlindBid.decode(raw);
+
+      bb.nameHash = nameHash;
+      bb.prevout = new Outpoint(hash, index);
+
+      const bv = await wallet.txdb.getBlind(bb.blind);
+
+      if (bv)
+        bb.value = bv.value;
+
+      bids.push(bb);
+    }
+
+    const mtx = new MTX();
+
+    for (const {prevout, own} of bids) {
+      if (!own)
+        continue;
+
+      const {hash, index} = prevout;
+      const coin = await wallet.getCoin(hash, index);
+
+      if (!coin) {
+        continue;
+      }
+
+      if (!await wallet.txdb.hasCoinByAccount(0, hash, index)) {
+        continue;
+      }
+
+      // Is local?
+      if (coin.height < ns.height) {
+        continue;
+      }
+
+      const blind = coin.covenant.getHash(3);
+      const bv = await wallet.getBlind(blind);
+
+      if (!bv)
+        throw new Error('Blind value not found.');
+
+      const {value, nonce} = bv;
+
+      const output = new Output();
+      output.address = coin.address;
+      output.value = value;
+      output.covenant.type = types.REVEAL;
+      output.covenant.pushHash(nameHash);
+      output.covenant.pushU32(ns.height);
+      output.covenant.pushHash(nonce);
+
+      mtx.addOutpoint(prevout);
+      mtx.outputs.push(output);
+    }
+
+    if (mtx.outputs.length === 0) {
+      throw new Error('No bids to reveal.');
+    }
+
+    await wallet.fill(mtx, rate && { rate });
+    const createdTx = await wallet.finalize(mtx);
+    return createdTx.toJSON();
+  };
+
+  createBid = async (opts: {
+    name: string,
+    amount: number,
+    lockup: number,
+    feeRate?: number,
+  }) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    this.wdb.height = latestBlockNow.height;
+
+    await this.addNameState(opts.name);
+
     const createdTx = await wallet.createBid(
       opts.name,
       +toDollaryDoos(opts.amount),
       +toDollaryDoos(opts.lockup),
+      opts.feeRate && {
+        rate: opts.feeRate,
+      },
     );
     return createdTx.toJSON();
   };
@@ -359,20 +494,32 @@ export default class WalletService extends GenericService {
   createTx = async (txOptions: any) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    this.wdb.height = 2017;
-    const options = {
-      ...txOptions,
-      outputs: txOptions.outputs.map((output: any) => {
-        return {
-          ...output,
-          covenant: {
-            ...output.covenant,
-            items: output.covenant?.items.map((data: string) => Buffer.from(data, 'hex')),
-          } ,
-        }
-      }),
-    };
-    const createdTx = await wallet.createTX(options);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    this.wdb.height = latestBlockNow.height;
+    // const options = {
+    //   ...txOptions,
+    //   outputs: txOptions.outputs.map((output: any) => {
+    //     return {
+    //       ...output,
+    //       covenant: {
+    //         ...output.covenant,
+    //         items: output.covenant?.items.map((data: string) => Buffer.from(data, 'hex')),
+    //       } ,
+    //     }
+    //   }),
+    // };
+    const mtx = MTX.fromJSON(txOptions);
+    await wallet.fill(mtx);
+    const createdTx = await wallet.finalize(mtx);
+    return createdTx.toJSON();
+  };
+
+  createSend = async (txOptions: any) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    this.wdb.height = latestBlockNow.height;
+    const createdTx = await wallet.createTX(txOptions);
     return createdTx.toJSON();
   };
 
@@ -420,20 +567,9 @@ export default class WalletService extends GenericService {
   submitTx = async (opts: {txJSON: Transaction; password: string}) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    this.wdb.height = 2017;
-    const options = {
-      ...opts.txJSON,
-      outputs: opts.txJSON.outputs.map((output: any) => {
-        return {
-          ...output,
-          covenant: {
-            ...output.covenant,
-            items: output.covenant?.items.map((data: string) => Buffer.from(data, 'hex')),
-          } ,
-        }
-      }),
-    };
-    const mtx = await wallet.createTX(options);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    this.wdb.height = latestBlockNow.height;
+    const mtx = MTX.fromJSON(opts.txJSON);
     const tx = await wallet.sendMTX(mtx, this.passphrase);
     await this.removeTxFromQueue(opts.txJSON);
     await this.exec('node', 'sendRawTransaction', tx.toHex());

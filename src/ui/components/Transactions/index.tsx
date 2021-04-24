@@ -98,6 +98,8 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
     window.open(`https://e.hnsfans.com/name/${result}`, '_blank');
   }, [nameHash]);
 
+  const displayValue = formatNumber(fromDollaryDoos(value));
+
   return (
     <div
       className={classNames("transaction", {
@@ -135,7 +137,7 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
             'transaction__value__amount--negative': value < 0,
           })}
         >
-          {formatNumber(fromDollaryDoos(value))}
+          {displayValue}
         </div>
         <div className="transaction__value__action">
 

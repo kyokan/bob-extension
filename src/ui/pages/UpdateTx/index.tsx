@@ -28,6 +28,8 @@ export default function UpdateTx(props: Props): ReactElement {
       return <UpdateSend {...props} />;
     case 'BID':
       return <UpdateBid {...props} />;
+    case 'REVEAL':
+      return <UpdateReveal {...props} />;
     default:
       return <UpdateRaw {...props} />;
   }
@@ -74,7 +76,7 @@ function UpdateSend(props: Props): ReactElement {
 
   const setMax = useCallback(async () => {
     const tx = await postMessage({
-      type: MessageTypes.CREATE_TX,
+      type: MessageTypes.CREATE_SEND,
       payload: {
         rate: +toDollaryDoos(fee),
         outputs: [{
@@ -90,7 +92,7 @@ function UpdateSend(props: Props): ReactElement {
     setSending(true);
     try {
       const tx = await postMessage({
-        type: MessageTypes.CREATE_TX,
+        type: MessageTypes.CREATE_SEND,
         payload: {
           rate: +toDollaryDoos(fee),
           outputs: [{
@@ -190,7 +192,6 @@ function UpdateBid(props: Props): ReactElement {
   );
   const [fee, setFee] = useState<number>(FEE_TYPE_TO_OPT.standard);
   const [feeType, _setFeeType] = useState<'slow' | 'standard' | 'fast'>("standard");
-  const {spendable} = useWalletBalance();
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -219,6 +220,7 @@ function UpdateBid(props: Props): ReactElement {
           name: toASCII(name),
           amount: bidAmount,
           lockup: bidAmount + blindAmount,
+          feeRate: +toDollaryDoos(fee),
         },
       });
       await postMessage({
@@ -236,12 +238,12 @@ function UpdateBid(props: Props): ReactElement {
       console.error(e);
     }
     setSending(false);
-  }, [fee, bidAmount, blindAmount]);
+  }, [fee, bidAmount, blindAmount, name]);
 
   return (
     <RegularView>
       <RegularViewHeader>
-        Send HNS
+        Send Bid
       </RegularViewHeader>
       <RegularViewContent>
         <Input
@@ -293,6 +295,106 @@ function UpdateBid(props: Props): ReactElement {
         </Button>
         <Button
           disabled={sending || !bidAmount || bidAmount < 0}
+          onClick={addTX}
+          loading={sending}
+        >
+          Next
+        </Button>
+      </RegularViewFooter>
+    </RegularView>
+  );
+}
+
+function UpdateReveal(props: Props): ReactElement {
+  const pendingTx = useQueuedTXByHash(props.hash);
+  const nameHash = getTXNameHash(pendingTx);
+  const [name, setName] = useState('');
+  const [fee, setFee] = useState<number>(FEE_TYPE_TO_OPT.standard);
+  const [feeType, _setFeeType] = useState<'slow' | 'standard' | 'fast'>("standard");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const {result} = await postMessage({
+        type: MessageTypes.GET_NAME_BY_HASH,
+        payload: nameHash,
+      });
+
+      setName(toUnicode(result));
+    })()
+  }, [nameHash]);
+
+  const onChangeFeeOption = useCallback((e) => {
+    _setFeeType(e.target.value);
+    const feeOption = FEE_TYPE_TO_OPT[e.target.value] || 2;
+    setFee(feeOption);
+  },[]);
+
+  const addTX = useCallback(async () => {
+    setSending(true);
+    try {
+      const tx = await postMessage({
+        type: MessageTypes.CREATE_REVEAL,
+        payload: {
+          name: toASCII(name),
+          rate: +toDollaryDoos(fee),
+        },
+      });
+      await postMessage({
+        type: MessageTypes.UPDATE_TX_FROM_QUEUE,
+        payload: {
+          oldJSON: pendingTx,
+          txJSON: tx,
+        },
+      });
+      props.onCancel();
+    } catch (e) {
+      console.error(e);
+    }
+    setSending(false);
+  }, [fee, name]);
+
+  return (
+    <RegularView>
+      <RegularViewHeader>
+        Send Reveal
+      </RegularViewHeader>
+      <RegularViewContent>
+        <Input
+          className="send-tx__input"
+          label="TLD"
+          value={name}
+          disabled
+        />
+        <div className="send-tx__select">
+          <div className="send-tx__select__label">Network Fee</div>
+          <div className="send-tx__select__content">
+            <Select
+              options={[
+                {value: 'slow', children: 'Slow'},
+                {value: 'standard', children: 'Standard'},
+                {value: 'fast', children: 'Fast'},
+              ]}
+              onChange={onChangeFeeOption}
+              value={feeType}
+            />
+            <Input
+              type="number"
+              value={fee}
+              onChange={e => setFee(Number(e.target.value))}
+            />
+          </div>
+        </div>
+      </RegularViewContent>
+      <RegularViewFooter>
+        <Button
+          btnType={ButtonType.secondary}
+          onClick={props.onCancel}
+        >
+          Cancel
+        </Button>
+        <Button
+          disabled={sending}
           onClick={addTX}
           loading={sending}
         >

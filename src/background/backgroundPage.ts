@@ -3,7 +3,6 @@ import WalletService from "@src/background/services/wallet";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
 import SettingService from "@src/background/services/setting";
-import MessageTypes from "@src/util/messageTypes";
 import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
 
