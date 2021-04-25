@@ -105,8 +105,8 @@ export default class NodeService extends GenericService {
   }
 
   async getNameByHash(hash: string) {
-    // const cachedEntry = await get(this.store, `namehash-${hash}`);
-    // if (cachedEntry) return cachedEntry;
+    const cachedEntry = await get(this.store, `namehash-${hash}`);
+    if (cachedEntry) return cachedEntry;
 
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();

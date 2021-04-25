@@ -94,6 +94,15 @@ export default function WalletMenu(): ReactElement {
                 </div>
               )
             }
+            <div
+              className="wallet-menu__menu__row"
+              onClick={() => history.push('/settings')}
+            >
+              <Icon fontAwesome="fa-cog" size={1} />
+              <div className="wallet-menu__menu__row__name">
+                Settings
+              </div>
+            </div>
           </div>
         )
       }

@@ -9,13 +9,13 @@ export enum ButtonType {
   secondary,
 }
 
-type Props = {
+export type ButtonProps = {
   className?: string;
   loading?: boolean;
   btnType?: ButtonType;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
-export default function Button (props: Props): ReactElement {
+export default function Button (props: ButtonProps): ReactElement {
   const {
     className,
     loading,

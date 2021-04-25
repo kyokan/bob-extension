@@ -1,21 +1,37 @@
 import {GenericService} from "@src/util/svc";
+const bdb = require('bdb');
+const DB = require('bdb/lib/DB');
+import {get, put} from '@src/util/db';
+
+const RPC_HOST_DB_KEY = 'rpc_host';
+const RPC_API_KEY_DB_KEY = 'rpc_api_key';
 
 export default class SettingService extends GenericService {
-  getAPI = async () => {
-    return {
-      // apiHost: 'https://5pi.io/hsd',
-      // apiKey: '028b0965978137223fb9d132de96993c',
-      //
-      apiHost: 'http://localhost:3000/hsd',
-      apiKey: '028b0965978137223fb9d132de96993c',
+  store: typeof DB;
 
-      // apiHost: 'http://localhost:12037',
-      // apiKey: '5caadfadcad9e3bc79164ac14bb55ace1035d61e',
+  getAPI = async () => {
+    const apiHost = await get(this.store, RPC_HOST_DB_KEY);
+    const apiKey = await get(this.store, RPC_API_KEY_DB_KEY);
+
+    return {
+      apiHost: apiHost || 'http://127.0.0.1:3000/hsd',
+      apiKey: apiKey || '',
     };
   };
 
-  async start() {
+  setRPCHost = async (apiHost: string) => {
+    await put(this.store, RPC_HOST_DB_KEY, apiHost);
+    return true;
+  };
 
+  setRPCKey = async (apiKey: string) => {
+    await put(this.store, RPC_API_KEY_DB_KEY, apiKey);
+    return true;
+  };
+
+  async start() {
+    this.store = bdb.create('/setting-store');
+    await this.store.open();
   }
 
   async stop() {

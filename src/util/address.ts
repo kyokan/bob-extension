@@ -1,10 +1,10 @@
 const protocol = require('hsd/lib/protocol');
 const Address = require('hsd/lib/primitives/address');
-
+const networkType = process.env.NETWORK_TYPE || 'main';
 const isValidAddress = (address: string) => {
   const {networks} = protocol;
   const inputAddressPrefix = address.slice(0, 2);
-  const expectedAddressPrefix = networks['main'].addressPrefix;
+  const expectedAddressPrefix = networks[networkType].addressPrefix;
   if (inputAddressPrefix !== expectedAddressPrefix) {
     return false;
   }

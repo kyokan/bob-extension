@@ -1,4 +1,7 @@
+const webpack = require('webpack');
 const path = require("path");
+
+const envPlugin = new webpack.EnvironmentPlugin(['NODE_ENV', 'NETWORK_TYPE']);
 
 module.exports = {
     entry: {
@@ -11,6 +14,7 @@ module.exports = {
         path: path.join(__dirname, "dist/js"),
         filename: "[name].js",
     },
+    plugins: [envPlugin],
     module: {
         rules: [
             {

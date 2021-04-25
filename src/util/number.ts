@@ -1,7 +1,9 @@
 import BigNumber from "bignumber.js";
 import moment from "moment";
 const Network = require("hsd/lib/protocol/network");
-const network = Network.get('main');
+
+const networkType = process.env.NETWORK_TYPE || 'main';
+const network = Network.get(networkType);
 
 export const fromDollaryDoos = (raw: number, decimals = 2) => {
   if (isNaN(raw)) return '';

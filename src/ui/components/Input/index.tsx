@@ -30,6 +30,7 @@ export default function Input(props: Props) {
       <div className="input-group__group">
         <input
           className="input"
+          title={label}
           {...inputProps}
         />
         {

@@ -16,6 +16,7 @@ import MessageTypes from "@src/util/messageTypes";
 import ConfirmTx from "@src/ui/pages/ConfirmTx";
 import postMessage from "@src/util/postMessage";
 import {useTXQueue} from "@src/ui/ducks/queue";
+import Settings from "@src/ui/pages/Settings";
 
 export default function Popup (): ReactElement {
   const dispatch = useDispatch();
@@ -32,10 +33,10 @@ export default function Popup (): ReactElement {
         await dispatch(fetchWalletState());
         await dispatch(fetchLatestBlock());
         await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
-        setLoading(false);
       } catch (e) {
         console.error(e)
       }
+      setLoading(false);
     })();
   }, []);
 
@@ -63,11 +64,18 @@ export default function Popup (): ReactElement {
     );
   }
 
-  return (
-    <div className="popup">
-      { !initialized && <Onboarding /> }
-      { initialized && <AppHeader />}
-      { initialized && locked && (
+  if (!initialized) {
+    return (
+      <div className="popup">
+        <Onboarding />
+      </div>
+    );
+  }
+
+  if (locked) {
+    return (
+      <div className="popup">
+        <AppHeader />
         <Switch>
           <Route path="/onboarding">
             <Onboarding />
@@ -79,26 +87,33 @@ export default function Popup (): ReactElement {
             <Redirect to="/login" />
           </Route>
         </Switch>
-      )}
-      { initialized && !locked && (
-        <Switch>
-          <Route path="/onboarding">
-            <Onboarding />
-          </Route>
-          <Route path="/receive">
-            <ReceiveTx />
-          </Route>
-          <Route path="/send">
-            <SendTx />
-          </Route>
-          <Route path="/">
-            <Home />
-          </Route>
-          <Route>
-            <Redirect to="/" />
-          </Route>
-        </Switch>
-      )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="popup">
+      <AppHeader />
+      <Switch>
+        <Route path="/onboarding">
+          <Onboarding />
+        </Route>
+        <Route path="/receive">
+          <ReceiveTx />
+        </Route>
+        <Route path="/send">
+          <SendTx />
+        </Route>
+        <Route path="/settings">
+          <Settings />
+        </Route>
+        <Route path="/">
+          <Home />
+        </Route>
+        <Route>
+          <Redirect to="/" />
+        </Route>
+      </Switch>
     </div>
   )
 };

@@ -29,6 +29,8 @@ import {toDollaryDoos} from "@src/util/number";
 import BlindBid from "@src/background/services/wallet/blind-bid";
 const {types} = rules;
 
+const networkType = process.env.NETWORK_TYPE || 'main';
+
 export default class WalletService extends GenericService {
   network: typeof Network;
 
@@ -133,10 +135,14 @@ export default class WalletService extends GenericService {
       this.domains = null;
       this.locked = true;
       await this.pushState();
-      await pushMessage(setWalletBalance(await this.getWalletBalance()));
       await pushMessage(setTransactions([]));
       await pushMessage(setDomainNames([]));
       await pushMessage(setTXQueue([]));
+      try {
+        await pushMessage(setWalletBalance(await this.getWalletBalance()));
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     this.selectedID = id;
@@ -725,7 +731,7 @@ export default class WalletService extends GenericService {
     let b;
     for (let i = startDepth; i < endDepth; i++) {
       const key = account.deriveReceive(i);
-      const receive = key.getAddress().toString();
+      const receive = key.getAddress().toString(this.network);
       const path = key.toPath();
       if (!await this.wdb.hasPath(account.wid, path.hash)) {
         b = b || this.wdb.db.batch();
@@ -759,7 +765,7 @@ export default class WalletService extends GenericService {
     let b;
     for (let i = startDepth; i < endDepth; i++) {
       const key = account.deriveChange(i);
-      const change = key.getAddress().toString();
+      const change = key.getAddress().toString(this.network);
       const path = key.toPath();
       if (!await this.wdb.hasPath(account.wid, path.hash)) {
         b = b || this.wdb.db.batch();
@@ -898,11 +904,11 @@ export default class WalletService extends GenericService {
   };
 
   async start() {
-    this.network = Network.get('main');
+    this.network = Network.get(networkType);
     this.wdb = new WalletDB({
       network: this.network,
       memory: false,
-      location: '/walletdb',
+      location: this.network === 'main' ? '/walletdb' : `/${this.network}/walletdb`,
       cacheSize: 256 << 20,
       maxFileSize: 128 << 20,
     });

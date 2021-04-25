@@ -239,6 +239,20 @@ const controllers: {
     return app.exec('node', 'getLatestBlock');
   },
 
+  [MessageTypes.GET_API]: async (app, message) => {
+    return app.exec('setting', 'getAPI');
+  },
+
+  [MessageTypes.SET_RPC_HOST]: async (app, message) => {
+    return app.exec('setting', 'setRPCHost', message.payload);
+  },
+
+  [MessageTypes.SET_RPC_KEY]: async (app, message) => {
+    return app.exec('setting', 'setRPCKey', message.payload);
+  },
+
+
+
 };
 
 export default controllers;

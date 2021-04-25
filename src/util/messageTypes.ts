@@ -35,6 +35,11 @@ enum MessageTypes {
   GET_NAME_BY_HASH = 'get_name_by_hash',
   ESTIMATE_SMART_FEE = 'estimate_smart_fee',
 
+  // settings
+  GET_API = 'get_api',
+  SET_RPC_HOST = 'set_rpc_host',
+  SET_RPC_KEY = 'set_rpc_key',
+
   // Bob3
   CONNECT = 'connect',
   SEND_TX = 'send_tx',
