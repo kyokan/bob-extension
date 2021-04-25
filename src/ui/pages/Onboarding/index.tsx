@@ -29,10 +29,17 @@ export default function Onboarding(): ReactElement {
   const dispatch = useDispatch();
 
   const onCreateWallet = useCallback(async () => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: onboardingType === "create" ? 'create wallet' : 'import wallet',
+      }
+    });
     await dispatch(createWallet({
       walletName,
       seedphrase,
       password,
+      optIn,
     }));
     history.push('/');
   }, [
@@ -40,6 +47,7 @@ export default function Onboarding(): ReactElement {
     seedphrase,
     password,
     optIn,
+    onboardingType,
   ]);
 
   return (
@@ -106,6 +114,18 @@ function WelcomeStep(props: {
   const history = useHistory();
   const initialized = useInitialized();
 
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Onboarding View',
+        data: {
+          view: 'Welcome',
+        },
+      },
+    });
+  }, []);
+
   return (
     <OnboardingModal
       onClose={() => null}
@@ -152,6 +172,18 @@ function Terms(): ReactElement {
   const [accepted, setAccept] = useState(false);
   const initialized = useInitialized();
 
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Onboarding View',
+        data: {
+          view: 'Terms',
+        },
+      },
+    });
+  }, []);
+
   return (
     <OnboardingModal>
       <OnboardingModalHeader
@@ -193,6 +225,18 @@ function NameYourWallet(props: {
   const [errorMessage, setErrorMessage] = useState('');
   const walletIDs = useWalletIDs();
   const initialized = useInitialized();
+
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Onboarding View',
+        data: {
+          view: 'Name Your Wallet',
+        },
+      },
+    });
+  }, []);
 
   const onChange = useCallback((e) => {
     const value = e.target.value;
@@ -248,6 +292,18 @@ function CreatePassword(props: {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [visible, setVisibility] = useState(false);
   const initialized = useInitialized();
+
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Onboarding View',
+        data: {
+          view: 'Create Password',
+        },
+      },
+    });
+  }, []);
 
   useEffect(() => {
     props.setPassword('');
@@ -312,6 +368,18 @@ function SeedWarning(props: {
   const [accepted, setAccept] = useState(false);
   const initialized = useInitialized();
 
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Onboarding View',
+        data: {
+          view: 'Seed Warning',
+        },
+      },
+    });
+  }, []);
+
   const onNext = useCallback(() => {
     if (props.isImporting) {
       history.push('/onboarding/confirm-seedphrase')
@@ -374,6 +442,18 @@ function RevealSeedphrase(props: {
   const initialized = useInitialized();
 
   useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Onboarding View',
+        data: {
+          view: 'Reveal Seedphrase',
+        },
+      },
+    });
+  }, []);
+
+  useEffect(() => {
     (async function onRevealSeedphraseMount() {
       const mnemonic = await postMessage({
         type: MessageTypes.GENERATE_NEW_MNEMONIC,
@@ -428,6 +508,18 @@ function ConfirmSeedphrase(props: {
   const initialized = useInitialized();
 
   const [enteredSeeds, setEnteredSeeds] = useState<string[]>(Array(24).fill(''));
+
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Onboarding View',
+        data: {
+          view: 'Confirm Seedphrase',
+        },
+      },
+    });
+  }, []);
 
   const onEnterSeed = useCallback((word, i) => {
     const newSeeds = enteredSeeds.map((seed, j) => {
@@ -534,6 +626,18 @@ function OptInAnalytics(props: {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(false);
   const initialized = useInitialized();
+
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Onboarding View',
+        data: {
+          view: 'Opt In Analytics',
+        },
+      },
+    });
+  }, []);
 
   const onCreateWallet = useCallback(async () => {
     setLoading(true);

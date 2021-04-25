@@ -39,6 +39,18 @@ export default function ConfirmTx(): ReactElement {
   const [errorMessage, setErrorMessage] = useState('');
   const dispatch = useDispatch();
 
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Screen View',
+        data: {
+          view: 'Confirm Transaction',
+        },
+      },
+    });
+  }, []);
+
   const submitTx = useCallback(async (txJSON: Transaction) => {
     setConfirming(true);
     try {

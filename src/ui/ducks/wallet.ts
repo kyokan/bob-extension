@@ -55,8 +55,9 @@ export const createWallet = (opt: {
   walletName: string;
   seedphrase: string;
   password: string;
+  optIn: boolean;
 }) => async (dispatch: ThunkDispatch<AppRootState, any, Action>) => {
-  const {walletName, seedphrase, password} = opt;
+  const {walletName, seedphrase, password, optIn} = opt;
   if (!walletName) throw new Error('Wallet name cannot be empty.');
   if (!seedphrase) throw new Error('Invalid seedphrase.');
   if (!password) throw new Error('Password cannot be empty.');
@@ -67,6 +68,7 @@ export const createWallet = (opt: {
       id: walletName,
       mnemonic: seedphrase,
       passphrase: password,
+      optIn,
     },
   });
   await new Promise(r => setTimeout(r, 1000));

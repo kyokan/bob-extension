@@ -14,8 +14,7 @@ let nonce = 0;
 
 /**
  * Connect to Bob Extension
- *
- * @returns {client}
+ * @returns Wallet client
  */
 async function connect() {
   await post({ type: MessageTypes.CONNECT });
@@ -23,11 +22,7 @@ async function connect() {
 }
 
 /**
- * Get Wallet Info
- *
- * @return {{
- *
- * }}
+ * Get Wallet balance
  */
 async function getBalance() {
   await assertunLocked();
@@ -36,8 +31,6 @@ async function getBalance() {
 
 /**
  * Get the current receiving address.
- *
- * @returns {string}
  */
 async function getAddress() {
   await assertunLocked();
@@ -46,13 +39,8 @@ async function getAddress() {
 
 /**
  * Send to address
- *
- * @param {string} address - Handshake address to send funds to
- * @param {number} amount - Amount (in HNS) to send
- *
- * @returns {{
- *
- * }}
+ * @param address - Handshake address to send funds to
+ * @param amount - Amount (in HNS) to send
  */
 async function send(address: string, amount: number) {
   await assertunLocked();
@@ -67,8 +55,7 @@ async function send(address: string, amount: number) {
 
 /**
  * Send open
- *
- * @param {string} name - name to open bidding on
+ * @param name - name to open bidding on
  */
 async function sendOpen(name: string) {
   await assertunLocked();
@@ -82,10 +69,9 @@ async function sendOpen(name: string) {
 
 /**
  * Send bid
- *
- * @param {string} name - name to bid on
- * @param {number} amount - amount to bind (in HNS)
- * @param {number} lockup - amount to lock up to blind your bid (must be greater than bid amount)
+ * @param name - name to bid on
+ * @param amount - amount to bind (in HNS)
+ * @param lockup - amount to lock up to blind your bid (must be greater than bid amount)
  */
 async function sendBid(name: string, amount: number, lockup: number) {
   await assertunLocked();
@@ -101,8 +87,7 @@ async function sendBid(name: string, amount: number, lockup: number) {
 
 /**
  * Send reveal
- *
- * @param {string} name - name to reveal bid for (`null` for all names)
+ * @param name - name to reveal bid for (`null` for all names)
  */
 async function sendReveal(name: string) {
   await assertunLocked();
@@ -114,8 +99,7 @@ async function sendReveal(name: string) {
 
 /**
  * Send redeem
- *
- * @param {string} name - name to redeem a losing bid for (`null` for all names)
+ * @param name - name to redeem a losing bid for (`null` for all names)
  */
 async function sendRedeem(name: string) {
   await assertunLocked();
@@ -128,9 +112,8 @@ async function sendRedeem(name: string) {
 
 /**
  * Send update
- *
- * @param {string} name - name to update the data for
- * @param {array} data - JSON-encoded resource
+ * @param name - name to update the data for
+ * @param data - JSON-encoded resource
  */
 async function sendUpdate(name: string, records: UpdateRecordType[]) {
   await assertunLocked();
@@ -145,8 +128,7 @@ async function sendUpdate(name: string, records: UpdateRecordType[]) {
 
 /**
  * Event listener for when wallet is disconnected. Only invoked once.
- *
- * @param {function} callback - invoke when wallet is locked
+ * @param callback - invoke when wallet is locked
  */
 async function onDisconnect(callback: () => void) {
   promises.disconnect = {

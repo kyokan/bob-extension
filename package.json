@@ -1,6 +1,6 @@
 {
     "name": "bob-ext",
-    "version": "0.1.0",
+    "version": "0.1.0-beta",
     "description": "Chrome Extension for Bob",
     "main": "index.js",
     "scripts": {
@@ -46,6 +46,7 @@
         "@types/eventemitter2": "^4.1.0",
         "@types/jest": "^26.0.14",
         "@types/lodash.debounce": "^4.0.6",
+        "@types/mixpanel-browser": "^2.35.6",
         "@types/node": "^14.11.8",
         "@types/qrcode.react": "^1.0.1",
         "@types/react": "^16.9.52",
@@ -97,6 +98,7 @@
         "hsd": "https://github.com/handshake-org/hsd/tarball/9f0361f",
         "jdenticon": "^3.1.0",
         "lodash.debounce": "^4.0.8",
+        "mixpanel-browser": "^2.41.0",
         "moment": "^2.29.1",
         "punycode": "^2.1.1",
         "qrcode.react": "^1.0.1",

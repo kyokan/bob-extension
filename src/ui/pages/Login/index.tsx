@@ -1,4 +1,4 @@
-import React, {ReactElement, useCallback, useState} from "react";
+import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import BobIcon from "../../../static/icons/bob-black-large.png";
 import "./login.scss";
 import Icon from "@src/ui/components/Icon";
@@ -7,6 +7,8 @@ import Input from "@src/ui/components/Input";
 import {useDispatch} from "react-redux";
 import {unlockWallet} from "@src/ui/ducks/wallet";
 import ErrorMessage from "@src/ui/components/ErrorMessage";
+import postMessage from "@src/util/postMessage";
+import MessageTypes from "@src/util/messageTypes";
 
 type Props = {
 
@@ -18,6 +20,18 @@ export default function Login(props: Props): ReactElement {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Screen View',
+        data: {
+          view: 'Login',
+        },
+      },
+    });
+  }, []);
 
   const onUnlockWallet = useCallback(async () => {
     setLoading(true);

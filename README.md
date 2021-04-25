@@ -1,102 +1,117 @@
-[![GitHub stars](https://img.shields.io/github/stars/aeksco/react-typescript-web-extension-starter.svg?style=social&label=Stars&style=plastic)]()
-[![GitHub watchers](https://img.shields.io/github/watchers/aeksco/react-typescript-web-extension-starter.svg?style=social&label=Watch&style=plastic)]()
-[![GitHub forks](https://img.shields.io/github/forks/aeksco/react-typescript-web-extension-starter.svg?style=social&label=Fork&style=plastic)]()
-[![GitHub contributors](https://img.shields.io/github/contributors/aeksco/react-typescript-web-extension-starter.svg)](https://github.com/aeksco/react-typescript-web-extension-starter/graphs/contributors)
-[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)
-[![GitHub issues](https://img.shields.io/github/issues/aeksco/react-typescript-web-extension-starter.svg)](https://github.com/aeksco/react-typescript-web-extension-starter/issues)
-[![GitHub last commit](https://img.shields.io/github/last-commit/aeksco/react-typescript-web-extension-starter.svg)](https://github.com/aeksco/react-typescript-web-extension-starter/commits/master)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/aeksco/react-typescript-web-extension-starter.svg?style=flat)]()
-[![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
+# Bob Extension
 
-[![HitCount](http://hits.dwyl.com/aeksco/react-typescript-web-extension-starter.svg)](http://hits.dwyl.com/aeksco/react-typescript-web-extension-starter)
-[![Tweet](https://img.shields.io/twitter/url/https/github.com/aeksco/react-typescript-web-extension-starter.svg?style=social)](https://twitter.com/intent/tweet?text=https://github.com/aeksco/react-typescript-web-extension-starter)
-[![Twitter Follow](https://img.shields.io/twitter/follow/aeksco.svg?style=social)](https://twitter.com/aeksco)
+Handshake wallet in the browser
 
-![React TypeScript Web Extension Starter](https://i.imgur.com/DLXldrn.png)
 
-:desktop_computer: A Web Extension starter kit built with React, TypeScript, SCSS, Storybook, EsLint, Prettier, Jest, Bootstrap,x &amp; Webpack. Compatible with Google Chrome, Mozilla Firefox, and Brave.
+## Development
 
-![Example Extension Popup](https://i.imgur.com/Wp37usG.png "Example Extension Popup")
-
-**Getting Started**
-
-Run the following commands to install dependencies and start developing
-
+**Install**
 ```
-yarn install
-yarn dev
+npm install 
 ```
 
-**Scripts**
+**Run in dev mode**
+```
+NODE_ENV=development npm run dev
+```
 
--   `yarn dev` - run `webpack` in `watch` mode
--   `yarn storybook` - runs the Storybook server
--   `yarn build` - builds the production-ready unpacked extension
--   `yarn test -u` - runs Jest + updates test snapshots
--   `yarn lint` - runs EsLint
--   `yarn prettify` - runs Prettier
+**Run in simnet**
+```
+NETWORK_TYPE=simnet npm run dev
+```
 
-<details>
-  <summary>Loading the extension in Google Chrome</summary>
+**Build**
+```
+NODE_ENV=production npm run build
+```
 
-In [Google Chrome](https://www.google.com/chrome/), open up [chrome://extensions](chrome://extensions) in a new tab. Make sure the `Developer Mode` checkbox in the upper-right corner is turned on. Click `Load unpacked` and select the `dist` directory in this repository - your extension should now be loaded.
+### Injected Bob3 
 
-![Installed Extension in Google Chrome](https://i.imgur.com/ORuHbDR.png "Installed Extension in Google Chrome")
+Bob Extension injects a Bob3 object to each page, which enables apps to interact with the wallet. 
 
-</details>
+**Connect to Bob extension and get wallet info**
+```js
+// If Bob is locked, this will open the popup and prompt user to login
+const wallet = await bob3.connect();
+const receiveAddress = await wallet.getAddress();
+const balance = await wallet.getBalance();
+```
 
-<details>
-  <summary>Loading the extension in Brave</summary>
+**Send Open**
 
-In [Brave](https://brave.com/), open up [brave://extensions](brave://extensions) in a new tab. Make sure the `Developer Mode` checkbox in the upper-right corner is turned on. Click `Load unpacked` and select the `dist` directory in this repository - your extension should now be loaded.
+Once a name is available, a sendopen transaction starts the opening phase.
 
-![Installed Extension in Brave](https://i.imgur.com/z8lW02m.png "Installed Extension in Brave")
+```js
+// Bob3 uses the same
+const wallet = await bob3.connect();
+const tx = await wallet.sendBid('silverhand');
+```
 
-</details>
+**Send Bid**
 
-<details>
-  <summary>Loading the extension in Mozilla Firefox</summary>
+Place a bid
 
-In [Mozilla Firefox](https://www.mozilla.org/en-US/firefox/new/), open up the [about:debugging](about:debugging) page in a new tab. Click the `Load Temporary Add-on...` button and select the `manfiest.json` from the `dist` directory in this repository - your extension should now be loaded.
+Params:
 
-![Installed Extension in Mozilla Firefox](https://i.imgur.com/gO2Lrb5.png "Installed Extension in Mozilla Firefox")
+| Name  | Default | Description |
+| ------------- | ------------- |-------------|
+| name  | Required  | name to bid on |
+| amount  | Required  | amount to bid (in HNS) |
+| lockup  | Required  | amount to lock up to blind your bid (must be greater than bid amount) |
 
-</details>
+```js
+// Bob3 uses the same
+const wallet = await bob3.connect();
+const tx = await wallet.sendBid('silverhand', 100, 150);
+```
 
-**Notes**
+**Send Reveal**
 
--   Includes ESLint configured to work with TypeScript and Prettier.
+Reveal a bid
 
--   Includes tests with Jest - note that the `babel.config.js` and associated dependencies are only necessary for Jest to work with TypeScript.
+Params:
 
--   Recommended to use `Visual Studio Code` with the `Format on Save` setting turned on.
+| Name  | Default | Description |
+| ------------- | ------------- |-------------|
+| name  | Required  | name to reveal bid for |
 
--   Example icons courtesy of [FontAwesome](https://fontawesome.com).
+```js
+// Bob3 uses the same
+const wallet = await bob3.connect();
+const tx = await wallet.sendReveal('silverhand');
+```
 
--   [Microsoft Edge]() is not currently supported.
+**Send Redeem**
 
--   Includes Storybook configured to work with React + TypeScript. Note that it maintains its own `webpack.config.js` and `tsconfig.json` files. See example story in `src/components/hello/__tests__/hello.stories.tsx`
+Redeem a losing bid after REVEAL period is over.
 
--   Includes a custom mock for the [webextension-polyfill-ts](https://github.com/Lusito/webextension-polyfill-ts) package in `src/__mocks__`. This allows you to mock any browser APIs used by your extension so you can develop your components inside Storybook.
+Params:
 
-![Example Storybook Setup](https://i.imgur.com/ER0WHtY.png "Example Storybook Setup")
+| Name  | Default | Description |
+| ------------- | ------------- |-------------|
+| name  | Required  | name to redeem bid for |
 
-**Built with**
+```js
+// Bob3 uses the same
+const wallet = await bob3.connect();
+const tx = await wallet.sendRedeem('silverhand');
+```
 
--   [React](https://reactjs.org)
--   [TypeScript](https://www.typescriptlang.org/)
--   [Storybook](https://storybook.js.org/)
--   [Jest](https://jestjs.io)
--   [Eslint](https://eslint.org/)
--   [Prettier](https://prettier.io/)
--   [Webpack](https://webpack.js.org/)
--   [Babel](https://babeljs.io/)
--   [Bootstrap](https://getbootstrap.com)
--   [SCSS](https://sass-lang.com/)
--   [webextension-polyfill-ts](https://github.com/Lusito/webextension-polyfill-ts)
+**Send Update**
 
-**Misc. References**
+Update root zone record. First update is called a register, which will return the difference between winning bid and second highest bid. 
 
--   [Chrome Extension Developer Guide](https://developer.chrome.com/extensions/devguide)
--   [Firefox Extension Developer Guide](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Your_first_WebExtension)
--   [Eslint + Prettier + Typescript Guide](https://dev.to/robertcoopercode/using-eslint-and-prettier-in-a-typescript-project-53jb)
+Params:
+
+| Name  | Default | Description |
+| ------------- | ------------- |-------------|
+| name  | Required  | name to update data for |
+| data  | Required  | [JSON-encoded resource](https://hsd-dev.org/api-docs/#resource-object) |
+
+```js
+// Bob3 uses the same
+const wallet = await bob3.connect();
+const tx = await wallet.sendRedeem('silverhand');
+```
+
+

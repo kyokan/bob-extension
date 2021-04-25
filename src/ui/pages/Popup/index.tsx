@@ -28,11 +28,18 @@ export default function Popup (): ReactElement {
   useEffect(() => {
     (async () => {
       try {
-        const now = Date.now();
+        postMessage({
+          type: MessageTypes.MP_TRACK,
+          payload: {
+            name: 'Screen View',
+            data: {
+              view: 'Home',
+            },
+          },
+        });
         await dispatch(fetchWallets());
         await dispatch(fetchWalletState());
         await dispatch(fetchLatestBlock());
-        await new Promise(r => setTimeout(r, Math.min(1000, 1000 - (Date.now() - now))));
       } catch (e) {
         console.error(e)
       }

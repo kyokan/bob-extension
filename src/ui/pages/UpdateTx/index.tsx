@@ -323,6 +323,18 @@ function UpdateOpen(props: Props): ReactElement {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Screen View',
+        data: {
+          view: 'Update Transaction',
+        },
+      },
+    });
+  }, []);
+
+  useEffect(() => {
     (async () => {
       const {result} = await postMessage({
         type: MessageTypes.GET_NAME_BY_HASH,

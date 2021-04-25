@@ -6,6 +6,7 @@ import SettingService from "@src/background/services/setting";
 import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
 import MessageTypes from "@src/util/messageTypes";
+import AnalyticsService from "@src/background/services/analytics";
 
 (async function() {
     let app: AppService;
@@ -32,6 +33,7 @@ import MessageTypes from "@src/util/messageTypes";
 
     const startedApp = new AppService();
     startedApp.add('setting', new SettingService());
+    startedApp.add('analytics', new AnalyticsService());
     startedApp.add('node', new NodeService());
     startedApp.add('wallet', new WalletService());
     await startedApp.start();

@@ -43,6 +43,9 @@ enum MessageTypes {
   SET_RPC_HOST = 'set_rpc_host',
   SET_RPC_KEY = 'set_rpc_key',
 
+  // analytics
+  MP_TRACK = 'mp_track',
+
   // Bob3
   CONNECT = 'connect',
   DISCONNECTED = 'disconnected',

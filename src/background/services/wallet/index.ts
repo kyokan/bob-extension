@@ -30,6 +30,7 @@ import {toDollaryDoos} from "@src/util/number";
 import BlindBid from "@src/background/services/wallet/blind-bid";
 import BidReveal from "@src/background/services/wallet/bid-reveal";
 import {UpdateRecordType} from "@src/contentscripts/bob3";
+import {getTXAction} from "@src/util/transaction";
 const {types} = rules;
 
 const networkType = process.env.NETWORK_TYPE || 'main';
@@ -354,9 +355,13 @@ export default class WalletService extends GenericService {
     id: string;
     passphrase: string;
     mnemonic: string;
+    optIn: boolean;
   }) => {
+    await this.exec('setting', 'setAnalytics', options.optIn);
     const wallet = await this.wdb.create(options);
     const balance = await wallet.getBalance();
+    await this.selectWallet(options.id);
+    await this.unlockWallet(options.passphrase);
     return wallet.getJSON(false, balance);
   };
 
@@ -890,11 +895,28 @@ export default class WalletService extends GenericService {
   rejectTx = async (txJSON: any) => {
     await this.removeTxFromQueue(txJSON);
     this.emit('txRejected', txJSON);
+    const action = getTXAction(txJSON);
+    this.exec('analytics', 'track', {
+      name: 'Reject',
+      data: {
+        action,
+      }
+    });
   };
 
   submitTx = async (opts: {txJSON: Transaction; password: string}) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
+
+    const action = getTXAction(opts.txJSON);
+
+    this.exec('analytics', 'track', {
+      name: 'Submit',
+      data: {
+        action,
+      }
+    });
+
     const latestBlockNow = await this.exec('node', 'getLatestBlock');
     this.wdb.height = latestBlockNow.height;
     const mtx = MTX.fromJSON(opts.txJSON);
@@ -980,13 +1002,14 @@ export default class WalletService extends GenericService {
     await this.pushBobMessage(`Found ${transactions.length} transaction.`);
 
     this.wdb.rescanning = true;
+    this.rescanning = true;
     let retries = 0;
     for (let i = 0; i < transactions.length; i++) {
       const wallet = await this.wdb.get(this.selectedID);
       const wtx = await wallet.getTX(Buffer.from(transactions[i].hash, 'hex'));
 
       if (wtx) {
-        await this.pushBobMessage(`Processed TX # ${i} of ${transactions.length}....`);
+        await this.pushBobMessage(`Inserting TX # ${i} of ${transactions.length}....`);
         continue;
       }
 
@@ -1197,6 +1220,7 @@ export default class WalletService extends GenericService {
 
     this.rescanning = true;
 
+    await this.pushState();
     await this.pushBobMessage('Checking status...');
     const latestBlockNow = await this.exec('node', 'getLatestBlock');
     const latestBlockLast = await get(this.store, `latest_block_${this.selectedID}`);
@@ -1230,7 +1254,7 @@ export default class WalletService extends GenericService {
     this.wdb = new WalletDB({
       network: this.network,
       memory: false,
-      location: this.network === 'main' ? '/walletdb' : `/${this.network}/walletdb`,
+      location: this.network.type === 'main' ? '/walletdb' : `/${this.network}/walletdb`,
       cacheSize: 256 << 20,
       maxFileSize: 128 << 20,
     });

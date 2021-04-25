@@ -8,9 +8,22 @@ import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import Button, {ButtonProps, ButtonType} from "@src/ui/components/Button";
 import {useWalletState} from "@src/ui/ducks/wallet";
+const pkg = require('../../../../package.json');
 
 export default function Settings(): ReactElement {
   const history = useHistory();
+
+  useEffect(() => {
+    postMessage({
+      type: MessageTypes.MP_TRACK,
+      payload: {
+        name: 'Screen View',
+        data: {
+          view: 'Settings',
+        },
+      },
+    });
+  }, []);
 
   return (
     <RegularView className="settings">
@@ -56,7 +69,9 @@ export default function Settings(): ReactElement {
             <WalletContent />
           </Route>
           <Route path="/settings/about">
-
+            <SettingGroup name="Version">
+              {pkg.version}
+            </SettingGroup>
           </Route>
           <Route path="/settings">
             <SettingsSelectContent />
@@ -158,7 +173,7 @@ function WalletContent(): ReactElement {
     if (rescanning) return;
 
     postMessage({
-      type: MessageTypes.CHECK_FOR_RESCAN,
+      type: MessageTypes.FULL_RESCAN,
     });
   }, [rescanning]);
 

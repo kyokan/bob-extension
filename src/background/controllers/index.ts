@@ -12,6 +12,10 @@ const controllers: {
     return new Promise(async (resolve, reject) => {
       const {locked} = await app.exec('wallet', 'getState');
 
+      app.exec('analytics', 'track', {
+        name: 'Bob3 Connect',
+      });
+
       if (locked) {
         const popup = await openPopup();
 
@@ -46,6 +50,10 @@ const controllers: {
         return reject(new Error('user has unconfirmed tx.'));
       }
 
+      app.exec('analytics', 'track', {
+        name: 'Bob3 Send',
+      });
+
       const tx = await app.exec('wallet', 'createSend', {
         rate: +toDollaryDoos(0.01),
         outputs: [{
@@ -71,6 +79,10 @@ const controllers: {
           return reject(new Error('user has unconfirmed tx.'));
         }
 
+        app.exec('analytics', 'track', {
+          name: 'Bob3 Open',
+        });
+
         const tx = await app.exec('wallet', 'createOpen', payload);
 
         await app.exec('wallet', 'addTxToQueue', tx);
@@ -93,6 +105,10 @@ const controllers: {
         if (queue.length) {
           return reject(new Error('user has unconfirmed tx.'));
         }
+
+        app.exec('analytics', 'track', {
+          name: 'Bob3 Bid',
+        });
 
         const tx = await app.exec('wallet', 'createBid', payload);
 
@@ -119,6 +135,10 @@ const controllers: {
           return reject(new Error('user has unconfirmed tx.'));
         }
 
+        app.exec('analytics', 'track', {
+          name: 'Bob3 Reveal',
+        });
+
         const tx = await app.exec('wallet', 'createReveal', {
           name: payload,
         });
@@ -143,6 +163,10 @@ const controllers: {
           return reject(new Error('user has unconfirmed tx.'));
         }
 
+        app.exec('analytics', 'track', {
+          name: 'Bob3 Update',
+        });
+
         const tx = await app.exec('wallet', 'createUpdate', payload);
 
         await app.exec('wallet', 'addTxToQueue', tx);
@@ -164,6 +188,10 @@ const controllers: {
         if (queue.length) {
           return reject(new Error('user has unconfirmed tx.'));
         }
+
+        app.exec('analytics', 'track', {
+          name: 'Bob3 Redeem',
+        });
 
         const tx = await app.exec('wallet', 'createRedeem', {
           name: payload,
@@ -330,11 +358,16 @@ const controllers: {
   [MessageTypes.SET_RPC_KEY]: async (app, message) => {
     return app.exec('setting', 'setRPCKey', message.payload);
   },
+
+  [MessageTypes.MP_TRACK]: async (app, message) => {
+    return app.exec('analytics', 'track', message.payload.name, message.payload.data);
+  },
 };
 
 export default controllers;
 
 async function openPopup() {
+
   const tab = await browser.tabs.create({
     url: browser.extension.getURL('popup.html'),
     active: false,

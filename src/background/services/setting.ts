@@ -5,6 +5,7 @@ import {get, put} from '@src/util/db';
 
 const RPC_HOST_DB_KEY = 'rpc_host';
 const RPC_API_KEY_DB_KEY = 'rpc_api_key';
+const ANALYTICS_OPT_IN_KEY = 'analytics_opt_in_key';
 
 export default class SettingService extends GenericService {
   store: typeof DB;
@@ -14,7 +15,7 @@ export default class SettingService extends GenericService {
     const apiKey = await get(this.store, RPC_API_KEY_DB_KEY);
 
     return {
-      apiHost: apiHost || 'http://127.0.0.1:3000/hsd',
+      apiHost: apiHost || 'https://5pi.io/hsd',
       apiKey: apiKey || '',
     };
   };
@@ -27,6 +28,16 @@ export default class SettingService extends GenericService {
   setRPCKey = async (apiKey: string) => {
     await put(this.store, RPC_API_KEY_DB_KEY, apiKey);
     return true;
+  };
+
+  setAnalytics = async (optIn = false) => {
+    await put(this.store, ANALYTICS_OPT_IN_KEY, optIn);
+    return true;
+  };
+
+  getAnalytics = async () => {
+    const optIn = await get(this.store, ANALYTICS_OPT_IN_KEY);
+    return !!optIn;
   };
 
   async start() {
