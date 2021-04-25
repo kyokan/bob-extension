@@ -251,3 +251,25 @@ export function getTXNameHash(tx: Transaction): string {
 
   return '';
 }
+
+export function getTXRecords(tx: Transaction): string {
+  // Look for covenants. A TX with multiple covenant types is not supported
+  for (let i = 0; i < tx.outputs.length; i++) {
+    const output = tx.outputs[i];
+
+    // Find outputs to the wallet's receive branch
+    if (output.path && output.path.change)
+      continue;
+
+    const covenant = output.covenant;
+
+    // Renewals and Updates have a value, but it doesn't
+    // affect the spendable balance of the wallet.
+    if (covenant.action === 'REGISTER' ||
+      covenant.action === 'UPDATE') {
+      return covenant.items[2];
+    }
+  }
+
+  return '';
+}

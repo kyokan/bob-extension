@@ -24,6 +24,7 @@ enum MessageTypes {
   CREATE_BID = 'create_bid',
   CREATE_REVEAL = 'create_reveal',
   CREATE_REDEEM = 'create_redeem',
+  CREATE_UPDATE = 'create_update',
   UPDATE_TX_QUEUE = 'update_tx_queue',
   GET_TX_QUEUE = 'get_tx_queue',
   SUBMIT_TX = 'submit_tx',

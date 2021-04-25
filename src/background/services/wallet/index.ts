@@ -17,6 +17,7 @@ const BN = require('bcrypto/lib/bn.js');
 const bdb = require('bdb');
 const DB = require('bdb/lib/DB');
 const layout = require('hsd/lib/wallet/layout').txdb;
+const {Resource} = require('hsd/lib/dns/resource');
 import {get, put} from '@src/util/db';
 import pushMessage from "@src/util/pushMessage";
 import {ActionType as WalletActionType, setWalletBalance} from "@src/ui/ducks/wallet";
@@ -28,6 +29,7 @@ import {ActionType as TXActionType } from "@src/ui/ducks/transactions";
 import {toDollaryDoos} from "@src/util/number";
 import BlindBid from "@src/background/services/wallet/blind-bid";
 import BidReveal from "@src/background/services/wallet/bid-reveal";
+import {UpdateRecordType} from "@src/contentscripts/bob3";
 const {types} = rules;
 
 const networkType = process.env.NETWORK_TYPE || 'main';
@@ -579,6 +581,175 @@ export default class WalletService extends GenericService {
     return createdTx.toJSON();
   };
 
+  createRegister = async (opts: {
+    name: string,
+    data: {
+      records: UpdateRecordType[];
+    },
+    rate?: number,
+  }) => {
+    const {name, data, rate} = opts;
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const resource = Resource.fromJSON(data);
+
+    if (!rules.verifyName(name))
+      throw new Error('Invalid name.');
+
+    const rawName = Buffer.from(name, 'ascii');
+    const nameHash = rules.hashName(rawName);
+    const ns = await wallet.getNameState(nameHash);
+    const height = this.wdb.height + 1;
+    const network = this.network;
+
+    if (!ns)
+      throw new Error('Auction not found.');
+
+    const {hash, index} = ns.owner;
+    const coin = await wallet.getCoin(hash, index);
+
+    if (!coin)
+      throw new Error('Wallet did not win the auction.');
+
+    if (ns.isExpired(height, network))
+      throw new Error('Name has expired!');
+
+    // Is local?
+    if (coin.height < ns.height)
+      throw new Error('Wallet did not win the auction.');
+
+    if (!coin.covenant.isReveal() && !coin.covenant.isClaim())
+      throw new Error('Name must be in REVEAL or CLAIM state.');
+
+    if (coin.covenant.isClaim()) {
+      if (height < coin.height + network.coinbaseMaturity)
+        throw new Error('Claim is not yet mature.');
+    }
+
+    const state = ns.state(height, network);
+
+    if (state !== states.CLOSED)
+      throw new Error('Auction is not yet closed.');
+
+    const output = new Output();
+    output.address = coin.address;
+    output.value = ns.value;
+
+    output.covenant.type = types.REGISTER;
+    output.covenant.pushHash(nameHash);
+    output.covenant.pushU32(ns.height);
+
+    if (resource) {
+      const raw = resource.encode();
+
+      if (raw.length > rules.MAX_RESOURCE_SIZE)
+        throw new Error('Resource exceeds maximum size.');
+
+      output.covenant.push(raw);
+    } else {
+      output.covenant.push(Buffer.alloc(0));
+    }
+
+    let renewalHeight = height - this.network.names.renewalMaturity * 2;
+
+    if (height < 0)
+      renewalHeight = 0;
+
+    const renewalBlock = await this.exec('node', 'getBlockByHeight', renewalHeight);
+
+    output.covenant.pushHash(Buffer.from(renewalBlock.hash, 'hex'));
+
+    const mtx = new MTX();
+    mtx.addOutpoint(ns.owner);
+    mtx.outputs.push(output);
+
+    await wallet.fill(mtx, rate && { rate: rate });
+    const createdTx = await wallet.finalize(mtx);
+    return createdTx.toJSON();
+  };
+
+  createUpdate = async (opts: {
+    name: string,
+    data: {
+      records: UpdateRecordType[];
+    },
+    rate?: number,
+  }) => {
+    const {name, data, rate} = opts;
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    this.wdb.height = latestBlockNow.height;
+
+    await this.addNameState(name);
+
+    const resource = Resource.fromJSON(data);
+
+    if (!rules.verifyName(name))
+      throw new Error('Invalid name.');
+
+    const rawName = Buffer.from(name, 'ascii');
+    const nameHash = rules.hashName(rawName);
+    const ns = await wallet.getNameState(nameHash);
+    const height = this.wdb.height + 1;
+    const network = this.network;
+
+    if (!ns)
+      throw new Error('Auction not found.');
+
+    const {hash, index} = ns.owner;
+    const coin = await wallet.getCoin(hash, index);
+
+    if (!coin)
+      throw new Error(`Wallet does not own: "${name}".`);
+
+    if (!await wallet.txdb.hasCoinByAccount(0, hash, index))
+      throw new Error(`Account does not own: "${name}".`);
+
+    if (coin.covenant.isReveal() || coin.covenant.isClaim())
+      return this.createRegister(opts);
+
+    if (ns.isExpired(height, network))
+      throw new Error('Name has expired!');
+
+    // Is local?
+    if (coin.height < ns.height)
+      throw new Error(`Wallet does not own: "${name}".`);
+
+    const state = ns.state(height, network);
+
+    if (state !== states.CLOSED)
+      throw new Error('Auction is not yet closed.');
+
+    if (!coin.covenant.isRegister()
+      && !coin.covenant.isUpdate()
+      && !coin.covenant.isRenew()
+      && !coin.covenant.isFinalize()) {
+      throw new Error('Name must be registered.');
+    }
+
+    const raw = resource.encode();
+
+    if (raw.length > rules.MAX_RESOURCE_SIZE)
+      throw new Error('Resource exceeds maximum size.');
+
+    const output = new Output();
+    output.address = coin.address;
+    output.value = coin.value;
+    output.covenant.type = types.UPDATE;
+    output.covenant.pushHash(nameHash);
+    output.covenant.pushU32(ns.height);
+    output.covenant.push(raw);
+
+    const mtx = new MTX();
+    mtx.addOutpoint(ns.owner);
+    mtx.outputs.push(output);
+
+    await wallet.fill(mtx, rate && { rate: rate });
+    const createdTx = await wallet.finalize(mtx);
+    return createdTx.toJSON();
+  };
+
   createBid = async (opts: {
     name: string,
     amount: number,
@@ -608,18 +779,6 @@ export default class WalletService extends GenericService {
     const wallet = await this.wdb.get(walletId);
     const latestBlockNow = await this.exec('node', 'getLatestBlock');
     this.wdb.height = latestBlockNow.height;
-    // const options = {
-    //   ...txOptions,
-    //   outputs: txOptions.outputs.map((output: any) => {
-    //     return {
-    //       ...output,
-    //       covenant: {
-    //         ...output.covenant,
-    //         items: output.covenant?.items.map((data: string) => Buffer.from(data, 'hex')),
-    //       } ,
-    //     }
-    //   }),
-    // };
     const mtx = MTX.fromJSON(txOptions);
     await wallet.fill(mtx);
     const createdTx = await wallet.finalize(mtx);

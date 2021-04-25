@@ -76,11 +76,23 @@
     }
   }
 
+  .textarea-group {
+    margin-bottom: 1rem;
+    color: $secondary-text;
+
+    .textarea {
+      @extend %h5-font;
+      font-family: "Roboto Mono";
+      white-space: pre;
+      line-height: 1.5;
+    }
+  }
+
   &__expand-toggle {
     @extend %clickable;
     text-align: center;
     font-size: .8125rem;
     color: #2580F8;
-
+    margin: .5rem 0;
   }
 }

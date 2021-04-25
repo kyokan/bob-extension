@@ -3,7 +3,7 @@ import "./update-tx.scss";
 import {useQueuedTXByHash} from "@src/ui/ducks/queue";
 import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} from "@src/ui/components/RegularView";
 import Button, {ButtonType} from "@src/ui/components/Button";
-import {getTXAction, getTXNameHash, getTXRecipient, getTXValue} from "@src/util/transaction";
+import {getTXAction, getTXNameHash, getTXRecipient, getTXRecords, getTXValue} from "@src/util/transaction";
 import {useWalletBalance} from "@src/ui/ducks/wallet";
 import isValidAddress from "@src/util/address";
 import postMessage from "@src/util/postMessage";
@@ -13,6 +13,7 @@ import Input from "@src/ui/components/Input";
 import MaxIcon from "@src/static/icons/max.svg";
 import Select from "@src/ui/components/Select";
 import {toASCII, toUnicode} from "@src/util/name";
+const {Resource} = require('hsd/lib/dns/resource');
 
 type Props = {
   hash: string;
@@ -32,6 +33,10 @@ export default function UpdateTx(props: Props): ReactElement {
       return <UpdateReveal {...props} />;
     case 'REDEEM':
       return <UpdateRedeem {...props} />;
+    case 'REGISTER':
+      return <UpdateRegister {...props} />;
+    case 'UPDATE':
+      return <UpdateUpdate {...props} />;
     default:
       return <UpdateRaw {...props} />;
   }
@@ -461,6 +466,217 @@ function UpdateRedeem(props: Props): ReactElement {
     <RegularView>
       <RegularViewHeader>
         Send Redeem
+      </RegularViewHeader>
+      <RegularViewContent>
+        <Input
+          className="send-tx__input"
+          label="TLD"
+          value={name}
+          disabled
+        />
+        <div className="send-tx__select">
+          <div className="send-tx__select__label">Network Fee</div>
+          <div className="send-tx__select__content">
+            <Select
+              options={[
+                {value: 'slow', children: 'Slow'},
+                {value: 'standard', children: 'Standard'},
+                {value: 'fast', children: 'Fast'},
+              ]}
+              onChange={onChangeFeeOption}
+              value={feeType}
+            />
+            <Input
+              type="number"
+              value={fee}
+              onChange={e => setFee(Number(e.target.value))}
+            />
+          </div>
+        </div>
+      </RegularViewContent>
+      <RegularViewFooter>
+        <Button
+          btnType={ButtonType.secondary}
+          onClick={props.onCancel}
+        >
+          Cancel
+        </Button>
+        <Button
+          disabled={sending}
+          onClick={addTX}
+          loading={sending}
+        >
+          Next
+        </Button>
+      </RegularViewFooter>
+    </RegularView>
+  );
+}
+
+
+function UpdateRegister(props: Props): ReactElement {
+  const pendingTx = useQueuedTXByHash(props.hash);
+  const nameHash = getTXNameHash(pendingTx);
+  const raw = getTXRecords(pendingTx);
+  const {records} = Resource.fromRaw(Buffer.from(raw, 'hex')).toJSON();
+  const [name, setName] = useState('');
+  const [fee, setFee] = useState<number>(FEE_TYPE_TO_OPT.standard);
+  const [feeType, _setFeeType] = useState<'slow' | 'standard' | 'fast'>("standard");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const {result} = await postMessage({
+        type: MessageTypes.GET_NAME_BY_HASH,
+        payload: nameHash,
+      });
+
+      setName(toUnicode(result));
+    })()
+  }, [nameHash]);
+
+  const onChangeFeeOption = useCallback((e) => {
+    _setFeeType(e.target.value);
+    const feeOption = FEE_TYPE_TO_OPT[e.target.value] || 2;
+    setFee(feeOption);
+  },[]);
+
+  const addTX = useCallback(async () => {
+    setSending(true);
+    try {
+      const tx = await postMessage({
+        type: MessageTypes.CREATE_UPDATE,
+        payload: {
+          name: toASCII(name),
+          data: {
+            records,
+          },
+          rate: +toDollaryDoos(fee),
+        },
+      });
+      await postMessage({
+        type: MessageTypes.UPDATE_TX_FROM_QUEUE,
+        payload: {
+          oldJSON: pendingTx,
+          txJSON: tx,
+        },
+      });
+      props.onCancel();
+    } catch (e) {
+      console.error(e);
+    }
+    setSending(false);
+  }, [fee, name, raw]);
+
+  return (
+    <RegularView>
+      <RegularViewHeader>
+        Send Register
+      </RegularViewHeader>
+      <RegularViewContent>
+        <Input
+          className="send-tx__input"
+          label="TLD"
+          value={name}
+          disabled
+        />
+        <div className="send-tx__select">
+          <div className="send-tx__select__label">Network Fee</div>
+          <div className="send-tx__select__content">
+            <Select
+              options={[
+                {value: 'slow', children: 'Slow'},
+                {value: 'standard', children: 'Standard'},
+                {value: 'fast', children: 'Fast'},
+              ]}
+              onChange={onChangeFeeOption}
+              value={feeType}
+            />
+            <Input
+              type="number"
+              value={fee}
+              onChange={e => setFee(Number(e.target.value))}
+            />
+          </div>
+        </div>
+      </RegularViewContent>
+      <RegularViewFooter>
+        <Button
+          btnType={ButtonType.secondary}
+          onClick={props.onCancel}
+        >
+          Cancel
+        </Button>
+        <Button
+          disabled={sending}
+          onClick={addTX}
+          loading={sending}
+        >
+          Next
+        </Button>
+      </RegularViewFooter>
+    </RegularView>
+  );
+}
+
+function UpdateUpdate(props: Props): ReactElement {
+  const pendingTx = useQueuedTXByHash(props.hash);
+  const nameHash = getTXNameHash(pendingTx);
+  const raw = getTXRecords(pendingTx);
+  const {records} = Resource.fromRaw(Buffer.from(raw, 'hex')).toJSON();
+  const [name, setName] = useState('');
+  const [fee, setFee] = useState<number>(FEE_TYPE_TO_OPT.standard);
+  const [feeType, _setFeeType] = useState<'slow' | 'standard' | 'fast'>("standard");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const {result} = await postMessage({
+        type: MessageTypes.GET_NAME_BY_HASH,
+        payload: nameHash,
+      });
+
+      setName(toUnicode(result));
+    })()
+  }, [nameHash]);
+
+  const onChangeFeeOption = useCallback((e) => {
+    _setFeeType(e.target.value);
+    const feeOption = FEE_TYPE_TO_OPT[e.target.value] || 2;
+    setFee(feeOption);
+  },[]);
+
+  const addTX = useCallback(async () => {
+    setSending(true);
+    try {
+      const tx = await postMessage({
+        type: MessageTypes.CREATE_UPDATE,
+        payload: {
+          name: toASCII(name),
+          data: {
+            records,
+          },
+          rate: +toDollaryDoos(fee),
+        },
+      });
+      await postMessage({
+        type: MessageTypes.UPDATE_TX_FROM_QUEUE,
+        payload: {
+          oldJSON: pendingTx,
+          txJSON: tx,
+        },
+      });
+      props.onCancel();
+    } catch (e) {
+      console.error(e);
+    }
+    setSending(false);
+  }, [fee, name, raw]);
+
+  return (
+    <RegularView>
+      <RegularViewHeader>
+        Send Update
       </RegularViewHeader>
       <RegularViewContent>
         <Input

@@ -1,6 +1,7 @@
 import MessageTypes from "@src/util/messageTypes";
 import {MessageAction} from "@src/util/postMessage";
 
+
 const promises: {
   [k: string]: {
     resolve: Function;
@@ -99,13 +100,31 @@ async function sendReveal(name: string) {
 /**
  * Send redeem
  *
- * @param {string} name - name to reveal bid for (`null` for all names)
+ * @param {string} name - name to redeem a losing bid for (`null` for all names)
  */
 async function sendRedeem(name: string) {
   await assertunLocked();
   return post({
     type: MessageTypes.SEND_REDEEM,
     payload: name,
+  });
+}
+
+
+/**
+ * Send update
+ *
+ * @param {string} name - name to update the data for
+ * @param {array} data - JSON-encoded resource
+ */
+async function sendUpdate(name: string, records: UpdateRecordType[]) {
+  await assertunLocked();
+  return post({
+    type: MessageTypes.SEND_UPDATE,
+    payload: {
+      name,
+      data: { records },
+    },
   });
 }
 
@@ -126,6 +145,7 @@ const wallet = {
   sendBid,
   sendReveal,
   sendRedeem,
+  sendUpdate,
 };
 
 window.bob3 = {
@@ -170,6 +190,49 @@ window.addEventListener('message', (event) => {
     delete promises[data.nonce];
   }
 });
+
+
+export type DSRecord = {
+  type: 'DS';
+  keyTag: number;
+  algorithm: number;
+  digestType: number;
+  digest: string;
+}
+
+export type NSRecord = {
+  type: 'NS';
+  ns: string;
+}
+
+export type GLUE4Record = {
+  type: 'GLUE4';
+  ns: string;
+  address: string;
+}
+
+export type GLUE6Record = {
+  type: 'GLUE6';
+  ns: string;
+  address: string;
+}
+
+export type SYNTH4Record = {
+  type: 'SYNTH4';
+  address: string;
+}
+
+export type SYNTH6Record = {
+  type: 'SYNTH6';
+  address: string;
+}
+
+export type TXTRecord = {
+  type: 'TXT';
+  txt: string[];
+}
+
+export type UpdateRecordType = DSRecord | NSRecord | GLUE4Record | GLUE6Record | SYNTH4Record | SYNTH6Record | TXTRecord;
 
 
 

@@ -2,7 +2,7 @@ import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} from "@src/ui/components/RegularView";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
 import Button, {ButtonType} from "@src/ui/components/Button";
-import {getTXAction, getTXNameHash, getTXRecipient, getTXValue} from "@src/util/transaction";
+import {getTXAction, getTXNameHash, getTXRecipient, getTXRecords, getTXValue} from "@src/util/transaction";
 import {fetchPendingTransactions, Transaction} from "@src/ui/ducks/transactions";
 import Input from "@src/ui/components/Input";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
@@ -13,6 +13,9 @@ import UpdateTx from "@src/ui/pages/UpdateTx";
 import {useDispatch} from "react-redux";
 import {ellipsify} from "@src/util/address";
 import {toUnicode} from "@src/util/name";
+import Textarea from "@src/ui/components/Textarea";
+import {toBIND} from "@src/util/records";
+const {Resource} = require('hsd/lib/dns/resource');
 
 const actionToTitle: {
   [k: string]: string;
@@ -21,6 +24,8 @@ const actionToTitle: {
   BID: 'Confirm Bid',
   REVEAL: 'Confirm Reveal',
   REDEEM: 'Confirm Redeem',
+  REGISTER: 'Confirm Register',
+  UPDATE: 'Confirm Update',
 };
 
 export default function ConfirmTx(): ReactElement {
@@ -106,6 +111,7 @@ function NetTotal(props: {hash: string}): ReactElement {
   switch (action) {
     case 'REVEAL':
     case 'REDEEM':
+    case 'REGISTER':
       return (
       <div className="confirm-tx__total-group">
         <div className="confirm-tx__total-group__label">
@@ -221,6 +227,7 @@ function ConfirmContent(props: { hash: string }): ReactElement {
   const action = getTXAction(pendingTx);
   const nameHash = getTXNameHash(pendingTx);
   const recipientAddress = getTXRecipient(pendingTx);
+  const raw = getTXRecords(pendingTx);
   const [name, setName] = useState('');
 
   useEffect(() => {
@@ -230,7 +237,6 @@ function ConfirmContent(props: { hash: string }): ReactElement {
         payload: nameHash,
       });
 
-      console.log(nameHash);
       setName(toUnicode(result));
     })()
 
@@ -300,6 +306,31 @@ function ConfirmContent(props: { hash: string }): ReactElement {
           <Input
             label="Estimated Fee"
             value={fromDollaryDoos(pendingTx.fee, 6)}
+            disabled
+          />
+        </>
+      );
+    case 'REGISTER':
+    case 'UPDATE':
+      const {records} = Resource.fromRaw(Buffer.from(raw, 'hex')).toJSON();
+      const bindFormattedRecords = toBIND(records);
+      return (
+        <>
+          <Input
+            label="TLD"
+            value={name}
+            spellCheck={false}
+            disabled
+          />
+          <Input
+            label="Estimated Fee"
+            value={fromDollaryDoos(pendingTx.fee, 6)}
+            disabled
+          />
+          <Textarea
+            label="Records"
+            value={bindFormattedRecords.join('\n')}
+            rows={bindFormattedRecords.length}
             disabled
           />
         </>
