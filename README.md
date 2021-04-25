@@ -2,6 +2,9 @@
 
 Handshake wallet in the browser
 
+### Note about wallet rescan
+
+Bob extension uses the address indexer to make wallet rescan faster and more performant on our hosted infrastructure. However, this will expose all addresses related to your wallet to our backend. We do not keep any logs containing your addresses. If privacy is a concern, you may point RPC to a different `hsd` node (including Bob Desktop!) in settings prior to importing your wallet.
 
 ## Development
 
@@ -118,5 +121,3 @@ const tx = await wallet.sendUpdate('silverhand', [
   },
 ]);
 ```
-
-
