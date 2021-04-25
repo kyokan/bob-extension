@@ -71,6 +71,7 @@ export default class WalletService extends GenericService {
   lockWallet = async () => {
     const wallet = await this.wdb.get(this.selectedID);
     await wallet.lock();
+    this.emit('locked');
     this.passphrase = undefined;
     this.locked = true;
   };
@@ -134,6 +135,7 @@ export default class WalletService extends GenericService {
     if (this.selectedID !== id) {
       const wallet = await this.wdb.get(id);
       await wallet.lock();
+      this.emit('locked');
       this.transactions = null;
       this.domains = null;
       this.locked = true;
@@ -744,6 +746,61 @@ export default class WalletService extends GenericService {
     const mtx = new MTX();
     mtx.addOutpoint(ns.owner);
     mtx.outputs.push(output);
+
+    await wallet.fill(mtx, rate && { rate: rate });
+    const createdTx = await wallet.finalize(mtx);
+    return createdTx.toJSON();
+  };
+
+  createOpen = async (opts: {
+    name: string,
+    rate?: number,
+  }) => {
+    const { name, rate } = opts;
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    this.wdb.height = latestBlockNow.height;
+
+    if (!rules.verifyName(name))
+      throw new Error('Invalid name.');
+
+    const rawName = Buffer.from(name, 'ascii');
+    const nameHash = rules.hashName(rawName);
+    const height = this.wdb.height + 1;
+    const network = this.network;
+
+    if (rules.isReserved(nameHash, height, network))
+      throw new Error('Name is reserved.');
+
+    if (!rules.hasRollout(nameHash, height, network))
+      throw new Error('Name not yet available.');
+
+    const nameInfo = await this.exec('node', 'getNameInfo', name);
+
+    if (!nameInfo || !nameInfo.result) throw new Error('cannot get name info');
+
+    if (nameInfo.result.info) {
+      throw new Error('Name is already opened.');
+    }
+
+    await this.exec('node', 'addNameHash', name, nameHash.toString('hex'));
+
+    const addr = await wallet.receiveAddress(0);
+
+    const output = new Output();
+    output.address = addr;
+    output.value = 0;
+    output.covenant.type = types.OPEN;
+    output.covenant.pushHash(nameHash);
+    output.covenant.pushU32(0);
+    output.covenant.push(rawName);
+
+    const mtx = new MTX();
+    mtx.outputs.push(output);
+
+    if (await wallet.txdb.isDoubleOpen(mtx))
+      throw new Error(`Already sent an open for: ${name}.`);
 
     await wallet.fill(mtx, rate && { rate: rate });
     const createdTx = await wallet.finalize(mtx);

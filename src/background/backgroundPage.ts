@@ -5,6 +5,7 @@ import {AppService} from "@src/util/svc";
 import SettingService from "@src/background/services/setting";
 import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
+import MessageTypes from "@src/util/messageTypes";
 
 (async function() {
     let app: AppService;
@@ -35,6 +36,15 @@ import controllers from "@src/background/controllers";
     startedApp.add('wallet', new WalletService());
     await startedApp.start();
     app = startedApp;
+
+    app.on('wallet.locked', async () => {
+        const tabs = await browser.tabs.query({ active: true });
+        for (let tab of tabs) {
+            await browser.tabs.sendMessage(tab.id as number, {
+                type: MessageTypes.DISCONNECTED,
+            });
+        }
+    });
 
     async function waitForStartApp() {
         return new Promise((resolve) => {

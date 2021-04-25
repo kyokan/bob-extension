@@ -27,6 +27,8 @@ export default function UpdateTx(props: Props): ReactElement {
   switch (action) {
     case 'SEND':
       return <UpdateSend {...props} />;
+    case 'OPEN':
+      return <UpdateOpen {...props} />;
     case 'BID':
       return <UpdateBid {...props} />;
     case 'REVEAL':
@@ -302,6 +304,106 @@ function UpdateBid(props: Props): ReactElement {
         </Button>
         <Button
           disabled={sending || !bidAmount || bidAmount < 0}
+          onClick={addTX}
+          loading={sending}
+        >
+          Next
+        </Button>
+      </RegularViewFooter>
+    </RegularView>
+  );
+}
+
+function UpdateOpen(props: Props): ReactElement {
+  const pendingTx = useQueuedTXByHash(props.hash);
+  const nameHash = getTXNameHash(pendingTx);
+  const [name, setName] = useState('');
+  const [fee, setFee] = useState<number>(FEE_TYPE_TO_OPT.standard);
+  const [feeType, _setFeeType] = useState<'slow' | 'standard' | 'fast'>("standard");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const {result} = await postMessage({
+        type: MessageTypes.GET_NAME_BY_HASH,
+        payload: nameHash,
+      });
+
+      setName(toUnicode(result));
+    })()
+  }, [nameHash]);
+
+  const onChangeFeeOption = useCallback((e) => {
+    _setFeeType(e.target.value);
+    const feeOption = FEE_TYPE_TO_OPT[e.target.value] || 2;
+    setFee(feeOption);
+  },[]);
+
+  const addTX = useCallback(async () => {
+    setSending(true);
+    try {
+      const tx = await postMessage({
+        type: MessageTypes.CREATE_OPEN,
+        payload: {
+          name: toASCII(name),
+          rate: +toDollaryDoos(fee),
+        },
+      });
+      await postMessage({
+        type: MessageTypes.UPDATE_TX_FROM_QUEUE,
+        payload: {
+          oldJSON: pendingTx,
+          txJSON: tx,
+        },
+      });
+      props.onCancel();
+    } catch (e) {
+      console.error(e);
+    }
+    setSending(false);
+  }, [fee, name]);
+
+  return (
+    <RegularView>
+      <RegularViewHeader>
+        Send Open
+      </RegularViewHeader>
+      <RegularViewContent>
+        <Input
+          className="send-tx__input"
+          label="TLD"
+          value={name}
+          disabled
+        />
+        <div className="send-tx__select">
+          <div className="send-tx__select__label">Network Fee</div>
+          <div className="send-tx__select__content">
+            <Select
+              options={[
+                {value: 'slow', children: 'Slow'},
+                {value: 'standard', children: 'Standard'},
+                {value: 'fast', children: 'Fast'},
+              ]}
+              onChange={onChangeFeeOption}
+              value={feeType}
+            />
+            <Input
+              type="number"
+              value={fee}
+              onChange={e => setFee(Number(e.target.value))}
+            />
+          </div>
+        </div>
+      </RegularViewContent>
+      <RegularViewFooter>
+        <Button
+          btnType={ButtonType.secondary}
+          onClick={props.onCancel}
+        >
+          Cancel
+        </Button>
+        <Button
+          disabled={sending}
           onClick={addTX}
           loading={sending}
         >

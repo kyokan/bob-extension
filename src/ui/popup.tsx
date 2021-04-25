@@ -8,7 +8,7 @@ import {MemoryRouter} from "react-router";
 
 const store = configureAppStore();
 
-chrome.runtime.onMessage.addListener((action) => {
+browser.runtime.onMessage.addListener((action) => {
   store.dispatch(action);
 });
 

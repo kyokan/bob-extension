@@ -46,7 +46,7 @@ const controllers: {
         return reject(new Error('user has unconfirmed tx.'));
       }
 
-      const tx = await app.exec('wallet', 'createTx', {
+      const tx = await app.exec('wallet', 'createSend', {
         rate: +toDollaryDoos(0.01),
         outputs: [{
           value: +toDollaryDoos(amount || 0),
@@ -58,6 +58,28 @@ const controllers: {
 
       const popup = await openPopup();
       closePopupOnAcceptOrReject(app, resolve, reject, popup);
+    });
+  },
+
+  [MessageTypes.SEND_OPEN]: async (app, message) => {
+    const {payload} = message;
+    return new Promise(async (resolve, reject) => {
+      try {
+        const queue = await app.exec('wallet', 'getTxQueue');
+
+        if (queue.length) {
+          return reject(new Error('user has unconfirmed tx.'));
+        }
+
+        const tx = await app.exec('wallet', 'createOpen', payload);
+
+        await app.exec('wallet', 'addTxToQueue', tx);
+
+        const popup = await openPopup();
+        closePopupOnAcceptOrReject(app, resolve, reject, popup);
+      } catch (e) {
+        reject(e);
+      }
     });
   },
 
@@ -257,6 +279,10 @@ const controllers: {
     return app.exec('wallet', 'getDomainNames', message.payload);
   },
 
+  [MessageTypes.CREATE_OPEN]: async (app, message) => {
+    return app.exec('wallet', 'createOpen', message.payload);
+  },
+
   [MessageTypes.CREATE_BID]: async (app, message) => {
     return app.exec('wallet', 'createBid', message.payload);
   },
@@ -304,9 +330,6 @@ const controllers: {
   [MessageTypes.SET_RPC_KEY]: async (app, message) => {
     return app.exec('setting', 'setRPCKey', message.payload);
   },
-
-
-
 };
 
 export default controllers;

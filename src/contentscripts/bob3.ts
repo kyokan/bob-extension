@@ -66,6 +66,21 @@ async function send(address: string, amount: number) {
 }
 
 /**
+ * Send open
+ *
+ * @param {string} name - name to open bidding on
+ */
+async function sendOpen(name: string) {
+  await assertunLocked();
+  return post({
+    type: MessageTypes.SEND_OPEN,
+    payload: {
+      name,
+    },
+  });
+}
+
+/**
  * Send bid
  *
  * @param {string} name - name to bid on
@@ -128,6 +143,19 @@ async function sendUpdate(name: string, records: UpdateRecordType[]) {
   });
 }
 
+/**
+ * Event listener for when wallet is disconnected. Only invoked once.
+ *
+ * @param {function} callback - invoke when wallet is locked
+ */
+async function onDisconnect(callback: () => void) {
+  promises.disconnect = {
+    resolve: callback,
+    reject: callback,
+  };
+  return null;
+}
+
 // utilities
 async function assertunLocked() {
   const res: any = await post({ type: MessageTypes.GET_WALLET_STATE });
@@ -142,10 +170,12 @@ const wallet = {
   getBalance,
   getAddress,
   send,
+  sendOpen,
   sendBid,
   sendReveal,
   sendRedeem,
   sendUpdate,
+  onDisconnect,
 };
 
 window.bob3 = {

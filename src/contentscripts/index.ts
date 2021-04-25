@@ -1,4 +1,5 @@
 import {browser} from "webextension-polyfill-ts";
+import MessageTypes from "@src/util/messageTypes";
 
 (async function() {
   const url = browser.runtime.getURL('js/bob3.js');
@@ -20,6 +21,19 @@ import {browser} from "webextension-polyfill-ts";
       }, '*');
     }
   });
+
+  browser.runtime.onMessage.addListener((action) => {
+    switch (action.type) {
+      case MessageTypes.DISCONNECTED:
+        window.postMessage({
+          target: 'bob3-injectedscript',
+          payload: [null, null],
+          nonce: 'disconnect',
+        }, '*');
+        return;
+    }
+  });
+
 })();
 
 

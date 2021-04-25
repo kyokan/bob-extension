@@ -21,6 +21,7 @@ const actionToTitle: {
   [k: string]: string;
 } = {
   SEND: 'Confirm Send',
+  OPEN: 'Confirm Open',
   BID: 'Confirm Bid',
   REVEAL: 'Confirm Reveal',
   REDEEM: 'Confirm Redeem',
@@ -123,6 +124,8 @@ function NetTotal(props: {hash: string}): ReactElement {
       </div>
     );
     case 'BID':
+    case 'OPEN':
+    case 'UPDATE':
     case 'SEND':
     default:
       return (
@@ -295,6 +298,7 @@ function ConfirmContent(props: { hash: string }): ReactElement {
       );
     case 'REVEAL':
     case 'REDEEM':
+    case 'OPEN':
       return (
         <>
           <Input

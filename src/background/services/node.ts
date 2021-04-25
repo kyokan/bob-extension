@@ -104,6 +104,10 @@ export default class NodeService extends GenericService {
     return block;
   }
 
+  async addNameHash(name: string, hash: string) {
+    return put(this.store, `namehash-${hash}`, {result: name});
+  }
+
   async getNameByHash(hash: string) {
     const cachedEntry = await get(this.store, `namehash-${hash}`);
     if (cachedEntry) return cachedEntry;

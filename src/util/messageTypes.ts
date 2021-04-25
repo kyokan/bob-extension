@@ -21,6 +21,7 @@ enum MessageTypes {
   GET_NAME_NONCE = 'get_name_nonce',
   CREATE_TX = 'create_tx',
   CREATE_SEND = 'create_send',
+  CREATE_OPEN = 'create_open',
   CREATE_BID = 'create_bid',
   CREATE_REVEAL = 'create_reveal',
   CREATE_REDEEM = 'create_redeem',
@@ -44,7 +45,9 @@ enum MessageTypes {
 
   // Bob3
   CONNECT = 'connect',
+  DISCONNECTED = 'disconnected',
   SEND_TX = 'send_tx',
+  SEND_OPEN = 'send_open',
   SEND_BID = 'send_bid',
   SEND_REVEAL = 'send_reveal',
   SEND_REDEEM = 'send_redeem',
