@@ -111,7 +111,12 @@ Params:
 ```js
 // Bob3 uses the same
 const wallet = await bob3.connect();
-const tx = await wallet.sendRedeem('silverhand');
+const tx = await wallet.sendUpdate('silverhand', [ 
+  {
+    type: "NS", 
+    ns: "ns1.example.com.",
+  },
+]);
 ```
 
 
