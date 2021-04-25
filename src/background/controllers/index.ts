@@ -111,6 +111,30 @@ const controllers: {
     });
   },
 
+  [MessageTypes.SEND_REDEEM]: async (app, message) => {
+    const {payload} = message;
+    return new Promise(async (resolve, reject) => {
+      try {
+        const queue = await app.exec('wallet', 'getTxQueue');
+
+        if (queue.length) {
+          return reject(new Error('user has unconfirmed tx.'));
+        }
+
+        const tx = await app.exec('wallet', 'createRedeem', {
+          name: payload,
+        });
+
+        await app.exec('wallet', 'addTxToQueue', tx);
+
+        const popup = await openPopup();
+        closePopupOnAcceptOrReject(app, resolve, reject, popup);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  },
+
   [MessageTypes.GET_WALLET_STATE]: async (app, message) => {
     return app.exec('wallet', 'getState');
   },
@@ -217,6 +241,10 @@ const controllers: {
 
   [MessageTypes.CREATE_REVEAL]: async (app, message) => {
     return app.exec('wallet', 'createReveal', message.payload);
+  },
+
+  [MessageTypes.CREATE_REDEEM]: async (app, message) => {
+    return app.exec('wallet', 'createRedeem', message.payload);
   },
 
   [MessageTypes.CREATE_TX]: async (app, message) => {

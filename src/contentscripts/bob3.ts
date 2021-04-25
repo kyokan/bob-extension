@@ -96,6 +96,19 @@ async function sendReveal(name: string) {
   });
 }
 
+/**
+ * Send redeem
+ *
+ * @param {string} name - name to reveal bid for (`null` for all names)
+ */
+async function sendRedeem(name: string) {
+  await assertunLocked();
+  return post({
+    type: MessageTypes.SEND_REDEEM,
+    payload: name,
+  });
+}
+
 // utilities
 async function assertunLocked() {
   const res: any = await post({ type: MessageTypes.GET_WALLET_STATE });
@@ -112,6 +125,7 @@ const wallet = {
   send,
   sendBid,
   sendReveal,
+  sendRedeem,
 };
 
 window.bob3 = {

@@ -27,6 +27,7 @@ import {ActionType as QueueActionType, setTXQueue } from "@src/ui/ducks/queue";
 import {ActionType as TXActionType } from "@src/ui/ducks/transactions";
 import {toDollaryDoos} from "@src/util/number";
 import BlindBid from "@src/background/services/wallet/blind-bid";
+import BidReveal from "@src/background/services/wallet/bid-reveal";
 const {types} = rules;
 
 const networkType = process.env.NETWORK_TYPE || 'main';
@@ -466,6 +467,111 @@ export default class WalletService extends GenericService {
 
     if (mtx.outputs.length === 0) {
       throw new Error('No bids to reveal.');
+    }
+
+    await wallet.fill(mtx, rate && { rate });
+    const createdTx = await wallet.finalize(mtx);
+    return createdTx.toJSON();
+  };
+
+  createRedeem = async (opts: {name: string; rate?: number}) => {
+    const {name, rate} = opts;
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const latestBlockNow = await this.exec('node', 'getLatestBlock');
+    await this.addNameState(name);
+    this.wdb.height = latestBlockNow.height;
+
+    if (!rules.verifyName(name)) {
+      throw new Error('Invalid name.');
+    }
+
+    const rawName = Buffer.from(name, 'ascii');
+    const nameHash = rules.hashName(rawName);
+    const ns = await wallet.getNameState(nameHash);
+    const height = this.wdb.height + 1;
+    const network = this.network;
+
+    if (!ns) {
+      throw new Error('Auction not found.');
+    }
+
+    if (ns.isExpired(height, network)) {
+      throw new Error('Name has expired!');
+    }
+
+    const state = ns.state(height, network);
+
+    if (state < states.CLOSED) {
+      throw new Error('Auction is not yet closed.');
+    }
+
+    const iter = wallet.txdb.bucket.iterator({
+      gte: nameHash ? layout.B.min(nameHash) : layout.B.min(),
+      lte: nameHash ? layout.B.max(nameHash) : layout.B.max(),
+      values: true
+    });
+
+    const iter2 = wallet.txdb.bucket.iterator({
+      gte: nameHash ? layout.B.min(nameHash) : layout.B.min(),
+      lte: nameHash ? layout.B.max(nameHash) : layout.B.max(),
+      values: true
+    });
+
+    const raws = await iter.values();
+    const keys = await iter2.keys();
+    const reveals: any[] = [];
+
+    for (let i = 0; i < raws.length; i++) {
+      const raw = raws[i];
+      const key = keys[i];
+      const [nameHash, hash, index] = layout.B.decode(key);
+      const brv = BidReveal.decode(raw);
+      brv.nameHash = nameHash;
+      brv.prevout = new Outpoint(hash, index);
+      reveals.push(brv);
+    }
+
+    const mtx = new MTX();
+
+    for (const {prevout, own} of reveals) {
+      if (!own)
+        continue;
+
+      // Winner can not redeem
+      if (prevout.equals(ns.owner))
+        continue;
+
+      const {hash, index} = prevout;
+      const coin = await wallet.getCoin(hash, index);
+
+      if (!coin) {
+        continue;
+      }
+
+      if (!await wallet.txdb.hasCoinByAccount(0, hash, index)) {
+        continue;
+      }
+
+      // Is local?
+      if (coin.height < ns.height) {
+        continue;
+      }
+
+      mtx.addOutpoint(prevout);
+
+      const output = new Output();
+      output.address = coin.address;
+      output.value = coin.value;
+      output.covenant.type = types.REDEEM;
+      output.covenant.pushHash(nameHash);
+      output.covenant.pushU32(ns.height);
+
+      mtx.outputs.push(output);
+    }
+
+    if (mtx.outputs.length === 0) {
+      throw new Error('No reveals to redeem.');
     }
 
     await wallet.fill(mtx, rate && { rate });

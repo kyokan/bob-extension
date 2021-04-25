@@ -23,6 +23,7 @@ enum MessageTypes {
   CREATE_SEND = 'create_send',
   CREATE_BID = 'create_bid',
   CREATE_REVEAL = 'create_reveal',
+  CREATE_REDEEM = 'create_redeem',
   UPDATE_TX_QUEUE = 'update_tx_queue',
   GET_TX_QUEUE = 'get_tx_queue',
   SUBMIT_TX = 'submit_tx',
@@ -45,6 +46,8 @@ enum MessageTypes {
   SEND_TX = 'send_tx',
   SEND_BID = 'send_bid',
   SEND_REVEAL = 'send_reveal',
+  SEND_REDEEM = 'send_redeem',
+  SEND_UPDATE = 'send_update',
 }
 
 export default MessageTypes;

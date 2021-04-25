@@ -20,6 +20,7 @@ const actionToTitle: {
   SEND: 'Confirm Send',
   BID: 'Confirm Bid',
   REVEAL: 'Confirm Reveal',
+  REDEEM: 'Confirm Redeem',
 };
 
 export default function ConfirmTx(): ReactElement {
@@ -104,6 +105,7 @@ function NetTotal(props: {hash: string}): ReactElement {
 
   switch (action) {
     case 'REVEAL':
+    case 'REDEEM':
       return (
       <div className="confirm-tx__total-group">
         <div className="confirm-tx__total-group__label">
@@ -286,6 +288,7 @@ function ConfirmContent(props: { hash: string }): ReactElement {
         </>
       );
     case 'REVEAL':
+    case 'REDEEM':
       return (
         <>
           <Input
