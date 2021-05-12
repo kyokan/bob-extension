@@ -32,6 +32,7 @@ import BidReveal from "@src/background/services/wallet/bid-reveal";
 import {UpdateRecordType} from "@src/contentscripts/bob3";
 import {getTXAction} from "@src/util/transaction";
 const {types} = rules;
+const bsocket = require("bsock");
 
 const networkType = process.env.NETWORK_TYPE || 'main';
 
@@ -45,6 +46,8 @@ export default class WalletService extends GenericService {
   transactions?: any[] | null;
 
   domains?: any[] | null;
+
+  socket?: typeof bsocket.Socket;
 
   selectedID: string;
 
@@ -163,12 +166,10 @@ export default class WalletService extends GenericService {
     const account = await wallet.getAccount('default');
     return account
       .deriveReceive(
-        options.depth > -1
-          ? options.depth
-          : account.receiveDepth - 1
+        options.depth > -1 ? options.depth : account.receiveDepth - 1
       )
       .getAddress()
-      .toString();
+      .toString(this.network);
   };
 
   getWalletBalance = async (id?: string) => {
@@ -282,7 +283,7 @@ export default class WalletService extends GenericService {
 
     let domains = await wallet.getNames();
 
-    const {height} = await this.exec('node', 'getLatestBlock');
+    const latestBlock = await this.exec('node', 'getLatestBlock');
 
     this._getNameNonce = nonce;
 
@@ -305,7 +306,7 @@ export default class WalletService extends GenericService {
       for (let j = 0; j < partials.length; j++) {
         const domain = partials[j];
         const {owner} = domain;
-        const state = domain.state(height, this.network);
+        const state = domain.state(latestBlock?.height, this.network);
 
         if (state !== 4) {
           continue;
@@ -973,15 +974,6 @@ export default class WalletService extends GenericService {
   };
 
   insertTransactions = async (transactions: any[]) => {
-    try {
-      // await this.wdb.deepClean();
-      // await new Promise(r => setTimeout(r, 500));
-      // await this.wdb.rollback(0);
-      // await new Promise(r => setTimeout(r, 500));
-    } catch (e) {
-      console.error(e);
-    }
-
     transactions = transactions.sort((a, b) => {
       if (a.height > b.height) return 1;
       if (b.height > a.height) return -1;
@@ -1001,10 +993,9 @@ export default class WalletService extends GenericService {
 
     await this.pushBobMessage(`Found ${transactions.length} transaction.`);
 
-    this.wdb.rescanning = true;
-    this.rescanning = true;
     let retries = 0;
     for (let i = 0; i < transactions.length; i++) {
+      this.rescanning = true;
       const wallet = await this.wdb.get(this.selectedID);
       const wtx = await wallet.getTX(Buffer.from(transactions[i].hash, 'hex'));
 
@@ -1032,21 +1023,18 @@ export default class WalletService extends GenericService {
           chainwork: entryOption.chainwork && BN.from(entryOption.chainwork, 16, 'be'),
         });
         await this.wdb._addTX(tx, entry);
-        await new Promise(r => setTimeout(r, 2));
         retries = 0;
+        await unlock();
       } catch (e) {
         retries++;
+        await unlock();
         await new Promise(r => setTimeout(r, 10));
-        if (retries > 1000) {
+        if (retries > 10000) {
           throw e;
         }
-        i = i - 1;
-      } finally {
-        await unlock();
+        i = i - 2;
       }
     }
-
-    this.wdb.rescanning = false;
   };
 
   hasAddress = async (address: string): Promise<boolean> => {
@@ -1152,22 +1140,14 @@ export default class WalletService extends GenericService {
     } = await this.exec('node', 'getBlockByHeight', blockHeight);
 
     await this.pushBobMessage(`Processing block # ${entryOption.height}....`);
-    this.wdb.rescanning = true;
     let retries = 0;
 
     for (let i = 0; i < transactions.length; i++) {
-      // const wallet = await this.wdb.get(this.selectedID);
       const txHashBuf = Buffer.from(transactions[i].hash, 'hex');
 
       if (await this.wdb.testFilter(txHashBuf)) {
         continue;
       }
-
-      // const wtx = await wallet.getTX(txHashBuf);
-
-      // if (wtx) {
-      //   continue;
-      // }
 
       const unlock = await this.wdb.txLock.lock();
       try {
@@ -1187,21 +1167,21 @@ export default class WalletService extends GenericService {
           chainwork: entryOption.chainwork && BN.from(entryOption.chainwork, 16, 'be'),
         });
         await this.wdb._addTX(tx, entry);
-        await new Promise(r => setTimeout(r, 2));
         retries = 0;
       } catch (e) {
         retries++;
+        await this.wdb.close();
         await new Promise(r => setTimeout(r, 10));
-        if (retries > 1000) {
+        await this.wdb.open();
+        if (retries > 10000) {
           throw e;
         }
-        i = i - 1;
+        i = i - 2;
       } finally {
         await unlock();
       }
     }
 
-    this.wdb.rescanning = false;
     await put(this.store,`latest_block_${this.selectedID}`, {
       hash: entryOption.hash,
       height: entryOption.height,
@@ -1219,8 +1199,8 @@ export default class WalletService extends GenericService {
     if (!this.selectedID || this.rescanning) return;
 
     this.rescanning = true;
-
     await this.pushState();
+
     await this.pushBobMessage('Checking status...');
     const latestBlockNow = await this.exec('node', 'getLatestBlock');
     const latestBlockLast = await get(this.store, `latest_block_${this.selectedID}`);
@@ -1234,20 +1214,58 @@ export default class WalletService extends GenericService {
         this.getTransactions({ nonce: this._getTxNonce });
       } else {
         await this.fullRescan();
+        await this.checkForRescan();
         this.getTransactions({ nonce: this._getTxNonce });
       }
 
+      this.rescanning = false;
+      await this.pushState();
       await this.pushBobMessage(`I am synchonized.`);
     } catch (e) {
       console.error(e);
-    }
-
-    this.rescanning = false;
-
-    setTimeout(async () => {
+      this.rescanning = false;
       await this.pushState();
-    }, 500);
+      await this.pushBobMessage(`Something went wrong while rescanning.`);
+    }
   };
+
+  async initSocket() {
+    const { apiHost, apiKey } = await this.exec('setting', 'getAPI');
+    const {hostname} = new URL(apiHost);
+    const is5pi = ['5pi.io', 'www.5pi.io'].includes(hostname);
+    const socket = bsocket.socket();
+    socket.on('connect', async () => {
+      try {
+        await socket.call(
+          'auth',
+          is5pi
+            ? '775f8ca39e1748a7b47ff16ad4b1b9ad'
+            : apiKey,
+        );
+        await socket.call('watch chain');
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+    });
+
+    socket.on('error', (err: any) => {
+      console.error(err);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('disconnected');
+    });
+
+    socket.bind('block connect', (data: any) => {
+      console.log(data);
+      setTimeout(() => this.checkForRescan(), 1000);
+    });
+
+    socket.connect(apiHost);
+
+    this.socket = socket;
+  }
 
   async start() {
     this.network = Network.get(networkType);
@@ -1255,8 +1273,8 @@ export default class WalletService extends GenericService {
       network: this.network,
       memory: false,
       location: this.network.type === 'main' ? '/walletdb' : `/${this.network}/walletdb`,
-      cacheSize: 256 << 20,
-      maxFileSize: 128 << 20,
+      cacheSize: 512 << 20,
+      maxFileSize: 256 << 20,
     });
 
     this.store = bdb.create('/wallet-store');
@@ -1272,7 +1290,7 @@ export default class WalletService extends GenericService {
     }
 
     this.checkForRescan();
-    this.checkStatusTimeout = setInterval(this.checkForRescan, 60000);
+    this.initSocket();
   }
 
   async stop() {

@@ -296,7 +296,7 @@ const controllers: {
   },
 
   [MessageTypes.CHECK_FOR_RESCAN]: async (app, message) => {
-    return app.exec('wallet', 'checkForRescan');
+    return app.exec('wallet', 'checkForRescan', message.payload);
   },
 
   [MessageTypes.FULL_RESCAN]: async (app, message) => {

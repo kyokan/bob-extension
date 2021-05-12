@@ -173,7 +173,7 @@ function WalletContent(): ReactElement {
     if (rescanning) return;
 
     postMessage({
-      type: MessageTypes.FULL_RESCAN,
+      type: MessageTypes.CHECK_FOR_RESCAN,
     });
   }, [rescanning]);
 

@@ -12,7 +12,9 @@ type Props = {
 export function OnboardingModal(props: Props) {
   return (
     <Modal className="onboarding-modal" onClose={props.onClose}>
-      {props.children}
+      <div className="onboarding-modal__wrapper">
+        {props.children}
+      </div>
     </Modal>
   );
 }

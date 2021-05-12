@@ -36,3 +36,20 @@ a {
     justify-content: center;
   }
 }
+
+@media only screen and (min-width: 358px) {
+  body {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .popup {
+    width: 36rem;
+    height: 40rem;
+    border: 1px solid $border-gray;
+    margin: 3rem auto;
+    background-color: $white;
+    box-shadow: 0 2px 4px 0px $header-gray;
+  }
+}
+

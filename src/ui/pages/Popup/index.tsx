@@ -90,6 +90,9 @@ export default function Popup (): ReactElement {
           <Route path="/login">
             <Login />
           </Route>
+          <Route path="/settings">
+            <Settings />
+          </Route>
           <Route>
             <Redirect to="/login" />
           </Route>

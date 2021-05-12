@@ -156,13 +156,18 @@ export default function transactions(state = initialState, action: Action): Stat
 
 function handleTransactions(state: State, action: Action, pending = false): State {
   const newOrder: string[] = state.order.slice();
+  const firstTx = state.map[newOrder[0]];
 
   action.payload
     .forEach((tx: Transaction) => {
       const existing = state.map[tx.hash];
 
       if (!existing && tx.height > 0) {
-        newOrder.push(tx.hash);
+        if (firstTx?.height < tx.height) {
+          newOrder.unshift(tx.hash);
+        } else {
+          newOrder.push(tx.hash);
+        }
       } else if (!existing && (!tx.height || tx.height < 0)) {
         newOrder.unshift(tx.hash);
       }

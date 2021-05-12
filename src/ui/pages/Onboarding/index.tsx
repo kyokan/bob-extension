@@ -1,6 +1,6 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import "./onboarding.scss";
-import {Redirect, Route, Switch, useHistory} from "react-router";
+import {Redirect, Route, Switch, useHistory, useLocation} from "react-router";
 import {
   OnboardingModal,
   OnboardingModalContent,
@@ -18,6 +18,7 @@ import postMessage from "@src/util/postMessage";
 import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
 import {useDispatch} from "react-redux";
 import ErrorMessage from "@src/ui/components/ErrorMessage";
+import {browser} from "webextension-polyfill-ts";
 
 export default function Onboarding(): ReactElement {
   const [onboardingType, setOnboardingType] = useState<'create'|'import'|null>(null);
@@ -54,13 +55,13 @@ export default function Onboarding(): ReactElement {
     <div className="onboarding">
       <Switch>
         <Route path="/onboarding/welcome">
-          <WelcomeStep
+          <WelcomeStep />
+        </Route>
+        <Route path="/onboarding/terms">
+          <Terms
             onCreateNewWallet={() => setOnboardingType('create')}
             onImportWallet={() => setOnboardingType('import')}
           />
-        </Route>
-        <Route path="/onboarding/terms">
-          <Terms />
         </Route>
         <Route path="/onboarding/name-your-wallet">
           <NameYourWallet
@@ -108,8 +109,6 @@ export default function Onboarding(): ReactElement {
 }
 
 function WelcomeStep(props: {
-  onCreateNewWallet: () => void;
-  onImportWallet: () => void;
 }): ReactElement {
   const history = useHistory();
   const initialized = useInitialized();
@@ -147,8 +146,9 @@ function WelcomeStep(props: {
       <OnboardingModalFooter>
         <Button
           onClick={() => {
-            props.onCreateNewWallet();
-            history.push('/onboarding/terms');
+            browser.tabs.create({
+              url: browser.runtime.getURL('popup.html') + `#onboarding/terms?type=create`
+            });
           }}
         >
           Create a new wallet
@@ -156,8 +156,9 @@ function WelcomeStep(props: {
         <Button
           btnType={ButtonType.secondary}
           onClick={() => {
-            props.onImportWallet();
-            history.push('/onboarding/terms');
+            browser.tabs.create({
+              url: browser.runtime.getURL('popup.html') + `#onboarding/terms?type=import`
+            });
           }}
         >
           Import a wallet
@@ -167,7 +168,10 @@ function WelcomeStep(props: {
   )
 }
 
-function Terms(): ReactElement {
+function Terms(props: {
+  onCreateNewWallet: () => void;
+  onImportWallet: () => void;
+}): ReactElement {
   const history = useHistory();
   const [accepted, setAccept] = useState(false);
   const initialized = useInitialized();
@@ -182,14 +186,22 @@ function Terms(): ReactElement {
         },
       },
     });
+
+    const onboardingType = new URL(window.location.href.replace('#', ''))
+      .searchParams.get('type');
+
+    if (onboardingType === 'import') {
+      props.onImportWallet();
+    } else {
+      props.onCreateNewWallet();
+    }
   }, []);
 
   return (
     <OnboardingModal>
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
-        onBack={() => history.push('/onboarding/welcome')}
-        onClose={initialized ? () => history.push('/') : undefined}
+        onClose={initialized ? () => window.close() : undefined}
         currentStep={1}
         maxStep={6}
       />
@@ -258,7 +270,7 @@ function NameYourWallet(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/terms')}
-        onClose={initialized ? () => history.push('/') : undefined}
+        onClose={initialized ? () => window.close() : undefined}
         currentStep={2}
         maxStep={6}
       />
@@ -269,6 +281,7 @@ function NameYourWallet(props: {
           label="Wallet name"
           errorMessage={errorMessage}
           onChange={onChange}
+          onKeyDown={e => e.key === 'Enter' && history.push('/onboarding/create-password')}
           value={props.walletName}
         />
       </OnboardingModalContent>
@@ -324,7 +337,7 @@ function CreatePassword(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/name-your-wallet')}
-        onClose={initialized ? () => history.push('/') : undefined}
+        onClose={initialized ? () => window.close() : undefined}
         currentStep={3}
         maxStep={6}
       />
@@ -393,7 +406,7 @@ function SeedWarning(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/create-password')}
-        onClose={initialized ? () => history.push('/') : undefined}
+        onClose={initialized ? () => window.close() : undefined}
         currentStep={4}
         maxStep={6}
       />
@@ -468,7 +481,7 @@ function RevealSeedphrase(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/seedphrase-warning')}
-        onClose={initialized ? () => history.push('/') : undefined}
+        onClose={initialized ? () => window.close() : undefined}
         currentStep={5}
         maxStep={6}
       />
@@ -538,7 +551,7 @@ function ConfirmSeedphrase(props: {
   }, [props.isImporting]);
 
   let disabled = false;
-  const nonEmptySeeds = props.seedphrase.split(' ').filter(s => !!s);
+  const nonEmptySeeds = enteredSeeds.filter(s => !!s);
 
   if (!props.isImporting && props.seedphrase !== enteredSeeds.join(' ')) {
     disabled = true;
@@ -551,7 +564,7 @@ function ConfirmSeedphrase(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={onBack}
-        onClose={initialized ? () => history.push('/') : undefined}
+        onClose={initialized ? () => window.close() : undefined}
         currentStep={5}
         maxStep={6}
       />
@@ -654,7 +667,7 @@ function OptInAnalytics(props: {
       <OnboardingModalHeader
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25}/>}
         onBack={() => history.push('/onboarding/confirm-seedphrase')}
-        onClose={initialized ? () => history.push('/') : undefined}
+        onClose={initialized ? () => window.close() : undefined}
         currentStep={6}
         maxStep={6}
       />

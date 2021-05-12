@@ -102,3 +102,19 @@
     }
   }
 }
+
+
+@media only screen and (min-width: 358px) {
+  .home {
+    &--fixed-header {
+      .home__list__header {
+        top: 115px;
+        left: 0;
+        right: 0;
+        width: 36rem;
+        margin: 0 auto;
+        background-color: $white;
+      }
+    }
+  }
+}

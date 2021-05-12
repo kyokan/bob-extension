@@ -22,7 +22,7 @@ export type AppRootState = ReturnType<typeof rootReducer>;
 export default function configureAppStore() {
   return createStore(
     rootReducer,
-    process.env.NODE_ENV === 'development'
+    process.env.NODE_ENV !== 'production'
       ? applyMiddleware(thunk, createLogger({
         collapsed: (getState, action = {}) => [''].includes(action.type),
       }))

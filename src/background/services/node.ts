@@ -9,14 +9,17 @@ export default class NodeService extends GenericService {
   async getHeaders(): Promise<any> {
     const { apiHost, apiKey } = await this.exec('setting', 'getAPI');
     const {hostname} = new URL(apiHost);
-    const isLocalhost = ['127.0.0.1', 'localhost'].includes(hostname);
+    const is5pi = ['5pi.io', 'www.5pi.io'].includes(hostname);
+
     const headers: any = {
-      'Authorization': apiKey && 'Basic ' + Buffer.from(`x:${apiKey}`).toString('base64'),
+      'Content-Type': 'application/json',
+      'Authorization': apiKey
+        ? 'Basic ' + Buffer.from(`x:${apiKey}`).toString('base64')
+        : is5pi
+          ? 'Basic ' + Buffer.from(`x:775f8ca39e1748a7b47ff16ad4b1b9ad`).toString('base64')
+          : '',
     };
 
-    if (true || !isLocalhost) {
-      headers['Content-Type'] = 'application/json';
-    }
     return headers;
   }
 
@@ -92,6 +95,9 @@ export default class NodeService extends GenericService {
   }
 
   async getBlockByHeight(blockHeight: number) {
+    const cachedEntry = await get(this.store, `blockdata-${blockHeight}`);
+    if (cachedEntry) return cachedEntry;
+
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
     const resp = await fetch(`${apiHost}/block/${blockHeight}`, {
@@ -100,7 +106,7 @@ export default class NodeService extends GenericService {
     });
 
     const block = await resp.json();
-
+    await put(this.store, `blockdata-${blockHeight}`, block);
     return block;
   }
 

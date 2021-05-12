@@ -5,6 +5,7 @@ import Popup from "@src/ui/pages/Popup";
 import {Provider} from "react-redux";
 import configureAppStore from "@src/ui/store/configureAppStore";
 import {MemoryRouter} from "react-router";
+import {HashRouter} from "react-router-dom";
 
 const store = configureAppStore();
 
@@ -16,9 +17,9 @@ browser.tabs.query({ active: true, currentWindow: true }).then(() => {
   browser.runtime.connect();
   ReactDOM.render(
     <Provider store={store}>
-      <MemoryRouter>
+      <HashRouter>
         <Popup />
-      </MemoryRouter>
+      </HashRouter>
     </Provider>,
     document.getElementById("popup"),
   );
