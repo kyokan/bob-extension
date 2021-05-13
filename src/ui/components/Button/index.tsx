@@ -13,6 +13,7 @@ export type ButtonProps = {
   className?: string;
   loading?: boolean;
   btnType?: ButtonType;
+  small?: boolean;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 export default function Button (props: ButtonProps): ReactElement {
@@ -21,12 +22,14 @@ export default function Button (props: ButtonProps): ReactElement {
     loading,
     children,
     btnType = ButtonType.primary,
+    small,
     ...btnProps
   } = props;
 
   return (
     <button
       className={classNames('button', className, {
+        'button--small': small,
         'button--loading': loading,
         'button--primary': btnType === ButtonType.primary,
         'button--secondary': btnType === ButtonType.secondary,

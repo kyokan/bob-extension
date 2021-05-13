@@ -67,3 +67,39 @@
     color: $primary-blue;
   }
 }
+
+.confirm-modal {
+  @extend %col-nowrap;
+  padding: 1rem 1.5rem;
+  width: 18rem;
+  margin: 25vh auto;
+
+  p:nth-of-type(1) {
+    margin-top: 0;
+  }
+}
+
+.reveal-seed {
+  p, small {
+    text-align: center;
+  }
+
+  .input-group,
+  .textarea-group {
+    width: 100%;
+  }
+
+  .textarea {
+    width: 100%;
+    height: 6rem;
+  }
+
+  &__password-input {
+    margin: 1rem 0;
+  }
+
+  &__confirm-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

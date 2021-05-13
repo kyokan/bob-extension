@@ -8,6 +8,9 @@ import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import Button, {ButtonProps, ButtonType} from "@src/ui/components/Button";
 import {useCurrentWallet, useWalletState} from "@src/ui/ducks/wallet";
+import Modal from "@src/ui/components/Modal";
+import Textarea from "@src/ui/components/Textarea";
+
 const pkg = require('../../../../package.json');
 
 export default function Settings(): ReactElement {
@@ -44,6 +47,14 @@ export default function Settings(): ReactElement {
             <div className="settings__title">Wallet</div>
           </RegularViewHeader>
         </Route>
+        <Route path="/settings/security">
+          <RegularViewHeader
+            onClose={() => history.push('/')}
+          >
+            <Icon size={1.25} fontAwesome="fa-arrow-left" onClick={() => history.goBack()}/>
+            <div className="settings__title">Security</div>
+          </RegularViewHeader>
+        </Route>
         <Route path="/settings/about">
           <RegularViewHeader
             onClose={() => history.push('/')}
@@ -67,6 +78,9 @@ export default function Settings(): ReactElement {
           </Route>
           <Route path="/settings/wallet">
             <WalletContent />
+          </Route>
+          <Route path="/settings/security">
+            <SecurityContent />
           </Route>
           <Route path="/settings/about">
             <SettingGroup name="Version">
@@ -216,10 +230,107 @@ function WalletContent(): ReactElement {
           onClick: download,
         }}
       >
-        <small>Perform a full rescan.</small>
+        <small>Download SQL Database for the selected wallet.</small>
       </SettingGroup>
     </>
   )
+}
+
+function SecurityContent(): ReactElement {
+  const [isShowingRevealModal, setShowingRevealModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [revealError, setRevealError] = useState('');
+  const [mnemonic, setMnemonic] = useState('');
+
+  const revealSeed = useCallback(async () => {
+    try {
+      const mnemonic = await postMessage({
+        type: MessageTypes.REVEAL_SEED,
+        payload: password,
+      });
+      setMnemonic(mnemonic);
+      setRevealError('');
+    } catch (e) {
+      setRevealError(e.message);
+    }
+  }, [password]);
+
+  const closeRevealModal = useCallback(() => {
+    setMnemonic('');
+    setPassword('');
+    setRevealError('');
+    setShowingRevealModal(false);
+  }, []);
+
+  return (
+    <>
+      {
+        isShowingRevealModal && (
+          <Modal
+            className="confirm-modal reveal-seed"
+            onClose={closeRevealModal}
+          >
+            {
+              mnemonic
+                ? (
+                  <>
+                    <p>Reveal your seed phrase</p>
+                    <small>You need this to restore your wallet if use change browser or computer.</small>
+                    <Textarea
+                      value={mnemonic}
+                    />
+                    <Button
+                      className="reveal-seed__confirm-button"
+                      onClick={closeRevealModal}
+                      small
+                    >
+                      Close
+                    </Button>
+                  </>
+                )
+                : (
+                  <>
+                    <p>Reveal your seed phrase</p>
+                    <small>You need this to restore your wallet if use change browser or computer.</small>
+                    <Input
+                      type="password"
+                      className="reveal-seed__password-input"
+                      label="Enter password to continue"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                    />
+                    { revealError && <small className="error-message">{revealError}</small> }
+                    <Button
+                      className="reveal-seed__confirm-button"
+                      disabled={!password}
+                      onClick={revealSeed}
+                      small
+                    >
+                      Reveal Seedphrase
+                    </Button>
+                  </>
+                )
+            }
+
+          </Modal>
+        )
+      }
+      <SettingGroup
+        name="Reveal Seedphrase"
+        primaryBtnProps={{
+          children: 'Reveal',
+          onClick: () => setShowingRevealModal(true),
+        }}
+      >
+        <small>Reveal wallet seed phrase.</small>
+      </SettingGroup>
+      <SettingGroup
+        name="Analytics Opt-in"
+      >
+        <small>Send analytics to Kyokan to help improve Bob.</small>
+      </SettingGroup>
+    </>
+  );
 }
 
 function SettingsSelectContent(): ReactElement {
@@ -236,6 +347,11 @@ function SettingsSelectContent(): ReactElement {
         name="Wallet"
         description="Rescan, backup, seed phrase"
         onClick={() => history.push('/settings/wallet')}
+      />
+      <SettingSelectGroup
+        name="Security & Privacy"
+        description="Privacy settings and wallet seed phrase"
+        onClick={() => history.push('/settings/security')}
       />
       <SettingSelectGroup
         name="About"

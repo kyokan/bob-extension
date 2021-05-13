@@ -32,6 +32,7 @@ enum MessageTypes {
   REJECT_TX = 'reject_tx',
   UPDATE_TX_FROM_QUEUE = 'updateTxFromQueue',
   REMOVE_TX_FROM_QUEUE = 'removeTxFromQueue',
+  REVEAL_SEED = 'reveal_seed',
 
   // node
   GET_LATEST_BLOCK = 'get_latest_block',

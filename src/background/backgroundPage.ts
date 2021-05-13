@@ -27,7 +27,6 @@ import AnalyticsService from "@src/background/services/analytics";
         await waitForStartApp();
 
         port.onDisconnect.addListener(async () =>  {
-            await app.exec('wallet', 'resetTransactions', -1);
             await app.exec('wallet', 'resetNames', -1);
         });
     });

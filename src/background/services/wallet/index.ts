@@ -13,6 +13,7 @@ const ChainEntry = require("hsd/lib/blockchain/chainentry");
 const MTX = require("hsd/lib/primitives/mtx");
 const Output = require('hsd/lib/primitives/output');
 const Outpoint = require("hsd/lib/primitives/outpoint");
+const MasterKey = require('hsd/lib/wallet/masterkey');
 const BN = require('bcrypto/lib/bn.js');
 const bdb = require('bdb');
 const DB = require('bdb/lib/DB');
@@ -25,12 +26,12 @@ import {ActionType as AppActionType} from "@src/ui/ducks/app";
 import {setTransactions, Transaction} from "@src/ui/ducks/transactions";
 import {ActionTypes, setDomainNames} from "@src/ui/ducks/domains";
 import {ActionType as QueueActionType, setTXQueue } from "@src/ui/ducks/queue";
-import {ActionType as TXActionType } from "@src/ui/ducks/transactions";
 import {toDollaryDoos} from "@src/util/number";
 import BlindBid from "@src/background/services/wallet/blind-bid";
 import BidReveal from "@src/background/services/wallet/bid-reveal";
 import {UpdateRecordType} from "@src/contentscripts/bob3";
 import {getTXAction} from "@src/util/transaction";
+import {setInfo} from "@src/ui/ducks/node";
 const {types} = rules;
 const bsocket = require("bsock");
 
@@ -212,8 +213,30 @@ export default class WalletService extends GenericService {
     return this._getNameNonce;
   };
 
-  resetTransactions = async () => {
-    this._getTxNonce++;
+  revealSeed = async (passphrase: string) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const data = await wallet.master.getJSON(this.network, true);
+
+    // should always be encrypted - seed cannot be revealed via the UI until
+    // the user has finished onboarding. checking here for completeness' sake
+    if (!data.encrypted) {
+      return data.key.mnemonic.phrase;
+    }
+
+    const parsedData = {
+      encrypted: data.encrypted,
+      alg: data.algorithm,
+      iv: Buffer.from(data.iv, 'hex'),
+      ciphertext: Buffer.from(data.ciphertext, 'hex'),
+      n: data.n,
+      r: data.r,
+      p: data.p,
+    };
+
+    const mk = new MasterKey(parsedData);
+    await mk.unlock(passphrase, 100);
+    return mk.mnemonic.getPhrase();
   };
 
   resetNames = async () => {
@@ -1253,8 +1276,10 @@ export default class WalletService extends GenericService {
       console.log('disconnected');
     });
 
-    socket.bind('block connect', (data: any) => {
+    socket.bind('block connect', async (data: any) => {
       setTimeout(() => this.checkForRescan(), 1000);
+      const {hash, height, time} = await this.exec('node', 'getLatestBlock');
+      await pushMessage(setInfo(hash, height, time));
     });
 
     socket.connect(apiHost);

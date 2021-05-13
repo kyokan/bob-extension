@@ -7,11 +7,13 @@ import WalletMenu from "@src/ui/components/WalletMenu";
 import {useBobMessage, useBobMoving} from "@src/ui/ducks/app";
 import classNames from "classnames";
 import {useWalletState} from "@src/ui/ducks/wallet";
+import {useCurrentBlockHeight} from "@src/ui/ducks/node";
 
 export default function AppHeader(): ReactElement {
   const {rescanning} = useWalletState();
   const bobMessage = useBobMessage();
   const bobMoving = useBobMoving();
+  const currentBlockHeight = useCurrentBlockHeight();
   const [isShowing, setShowing] = useState(false);
 
   return (
@@ -42,6 +44,13 @@ export default function AppHeader(): ReactElement {
         }
       </div>
       <div className="app-header__r">
+        <div
+          className="app-header__block-height"
+          onClick={() => window.open(`https://e.hnsfans.com/block/${currentBlockHeight}`)}
+        >
+          <div className="app-header__block-height__label">Current Block:</div>
+          <div className="app-header__block-height__value">{currentBlockHeight}</div>
+        </div>
         <WalletMenu />
       </div>
     </div>

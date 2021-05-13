@@ -33,6 +33,25 @@
     }
   }
 
+  &__block-height {
+    @extend %row-nowrap;
+    @extend %clickable;
+    font-size: .6875rem;
+    padding: .25rem .5rem;
+    background-color: rgba($primary-blue, .1);
+    color: $primary-blue;
+    margin-right: .5rem;
+    border-radius: .5rem;
+
+    &__label {
+      margin-right: .25rem;
+    }
+
+    &__value {
+      font-weight: 600;
+    }
+  }
+
   &__speech-bubble {
     z-index: 300;
     font-size: .6875rem;

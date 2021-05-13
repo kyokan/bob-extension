@@ -24,6 +24,11 @@
     width: 2rem;
     height: 2rem;
   }
+
+  &--small {
+    padding: .25rem .75rem;
+    height: auto;
+  }
 }
 
 .button--primary {

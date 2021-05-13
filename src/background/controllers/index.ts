@@ -283,8 +283,8 @@ const controllers: {
     return app.exec('wallet', 'getTransactions', message.payload);
   },
 
-  [MessageTypes.RESET_TRANSACTIONS]: async (app, message) => {
-    return app.exec('wallet', 'resetTransactions');
+  [MessageTypes.REVEAL_SEED]: async (app, message) => {
+    return app.exec('wallet', 'revealSeed', message.payload);
   },
 
   [MessageTypes.RESET_DOMAINS]: async (app, message) => {
