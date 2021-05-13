@@ -2,6 +2,7 @@ import {browser} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
+import DatabaseService from "@src/background/services/db";
 import SettingService from "@src/background/services/setting";
 import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
@@ -32,6 +33,7 @@ import AnalyticsService from "@src/background/services/analytics";
     });
 
     const startedApp = new AppService();
+    startedApp.add('db', new DatabaseService());
     startedApp.add('setting', new SettingService());
     startedApp.add('analytics', new AnalyticsService());
     startedApp.add('node', new NodeService());

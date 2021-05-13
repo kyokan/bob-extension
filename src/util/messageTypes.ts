@@ -46,6 +46,9 @@ enum MessageTypes {
   // analytics
   MP_TRACK = 'mp_track',
 
+  // SQL
+  READ_DB_AS_BUFFER = 'read_db_as_buffer',
+
   // Bob3
   CONNECT = 'connect',
   DISCONNECTED = 'disconnected',

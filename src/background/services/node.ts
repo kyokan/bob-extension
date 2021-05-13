@@ -3,6 +3,8 @@ const bdb = require('bdb');
 const DB = require('bdb/lib/DB');
 import {get, put} from '@src/util/db';
 
+const NAME_CACHE: string[] = [];
+const NAME_MAP: { [hash: string]: string } = {};
 export default class NodeService extends GenericService {
   store: typeof DB;
 
@@ -115,6 +117,8 @@ export default class NodeService extends GenericService {
   }
 
   async getNameByHash(hash: string) {
+    if (NAME_MAP[hash]) return NAME_MAP[hash];
+
     const cachedEntry = await get(this.store, `namehash-${hash}`);
     if (cachedEntry) return cachedEntry;
 
@@ -131,13 +135,16 @@ export default class NodeService extends GenericService {
 
     const name = await resp.json();
     await put(this.store, `namehash-${hash}`, name);
+    NAME_CACHE.push(hash);
+    NAME_MAP[hash] = name;
+    if (NAME_CACHE.length > 50000) {
+      const first = NAME_CACHE.shift();
+      delete NAME_MAP[first as string];
+    }
     return name;
   }
 
   async getNameInfo(tld: string) {
-    // const cachedEntry = await get(this.store, `nameinfo-${tld}`);
-    // if (cachedEntry) return cachedEntry;
-
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
     const resp = await fetch(apiHost, {

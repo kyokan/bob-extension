@@ -1,9 +1,13 @@
 const webpack = require('webpack');
 const path = require("path");
+const CopyPlugin = require('copy-webpack-plugin');
 
 const envPlugin = new webpack.EnvironmentPlugin(['NODE_ENV', 'NETWORK_TYPE']);
 
 module.exports = {
+    node: {
+        fs: 'empty',
+    },
     entry: {
         bob3: path.join(__dirname, "src/contentscripts/bob3.ts"),
         content: path.join(__dirname, "src/contentscripts/index.ts"),
@@ -14,7 +18,17 @@ module.exports = {
         path: path.join(__dirname, "dist/js"),
         filename: "[name].js",
     },
-    plugins: [envPlugin],
+    plugins: [
+      envPlugin,
+      new CopyPlugin({
+          patterns: [
+              {
+                  from: path.join(__dirname, 'node_modules/sql.js/dist/sql-wasm.wasm'),
+                  to: path.join(__dirname, 'dist/wasm/sql-wasm.wasm'),
+              },
+          ],
+      }),
+    ],
     module: {
         rules: [
             {

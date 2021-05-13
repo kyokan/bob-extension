@@ -7,7 +7,7 @@ import Input from "@src/ui/components/Input";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import Button, {ButtonProps, ButtonType} from "@src/ui/components/Button";
-import {useWalletState} from "@src/ui/ducks/wallet";
+import {useCurrentWallet, useWalletState} from "@src/ui/ducks/wallet";
 const pkg = require('../../../../package.json');
 
 export default function Settings(): ReactElement {
@@ -168,14 +168,33 @@ function NetworkContent(): ReactElement {
 
 function WalletContent(): ReactElement {
   const {rescanning} = useWalletState();
+  const currentWallet = useCurrentWallet();
 
   const rescan = useCallback(() => {
     if (rescanning) return;
 
     postMessage({
-      type: MessageTypes.CHECK_FOR_RESCAN,
+      type: MessageTypes.FULL_RESCAN,
     });
   }, [rescanning]);
+
+  const download = useCallback(async () => {
+    const buf = await postMessage({
+      type: MessageTypes.READ_DB_AS_BUFFER,
+      payload: currentWallet,
+    });
+    const blob = new Blob([new Uint8Array(buf.data)], {
+      type: 'application/octet-stream',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bob.db';
+    document.body.appendChild(a);
+    a.style.display = 'none';
+    a.click();
+    a.remove();
+  }, [currentWallet]);
 
   return (
     <>
@@ -186,6 +205,15 @@ function WalletContent(): ReactElement {
           onClick: rescan,
           disabled: rescanning,
           loading: rescanning,
+        }}
+      >
+        <small>Perform a full rescan.</small>
+      </SettingGroup>
+      <SettingGroup
+        name="Download Database"
+        primaryBtnProps={{
+          children: 'Download',
+          onClick: download,
         }}
       >
         <small>Perform a full rescan.</small>

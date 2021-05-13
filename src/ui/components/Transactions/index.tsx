@@ -15,15 +15,15 @@ import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import classNames from "classnames";
 import Name from "@src/ui/components/Name";
 import {getTXAction, getTXNameHash, getTXValue} from "@src/util/transaction";
-import {Loader} from "@src/ui/components/Loader";
 import {useDispatch} from "react-redux";
 import {fetchTXQueue} from "@src/ui/ducks/queue";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
+import {Loader} from "@src/ui/components/Loader";
 
 export default function Transactions(): ReactElement {
   const offset = useTXOffset();
-  const order = useTXOrder(offset);
+  const order = useTXOrder();
   const pending = usePendingTXs();
   const fetching = useTXFetching();
   const dispatch = useDispatch();
@@ -33,10 +33,6 @@ export default function Transactions(): ReactElement {
       await dispatch(fetchTXQueue());
       await dispatch(fetchPendingTransactions());
     })();
-
-    return () => {
-      dispatch(setOffset(20));
-    }
   }, []);
 
   return (

@@ -35,7 +35,7 @@ const initialState: State = {
   pending: [],
   order: [],
   map: {},
-  offset: 20,
+  offset: 0,
   fetching: false,
 };
 
@@ -73,17 +73,31 @@ export type TxOutput = {
   };
 }
 
-let getTxNonce = 0;
+export const fetchMoreTransactions = () => async (dispatch: Dispatch, getState: () => AppRootState) => {
+  const state = getState();
+  const {offset, fetching} = state.transactions;
 
-export const fetchTransactions = () => async (dispatch: Dispatch) => {
+  if (fetching) return;
+
   dispatch(setFetching(true));
-  getTxNonce = await postMessage({ type: MessageTypes.GET_TX_NONCE });
-  await postMessage({
+
+  const resp = await postMessage({
     type: MessageTypes.GET_TRANSACTIONS,
     payload: {
-      nonce: getTxNonce,
+      offset: offset,
     },
   });
+
+  console.log(resp);
+  dispatch({
+    type: ActionType.APPEND_TRANSACTIONS,
+    payload: resp,
+  });
+
+  if (resp.length >= 25) {
+    dispatch(setOffset(offset + 25));
+  }
+
   dispatch(setFetching(false));
 };
 
@@ -110,9 +124,8 @@ export const setOffset = (offset: number) => {
 };
 
 export const resetTransactions = () => async (dispatch: Dispatch) => {
-  await postMessage({ type: MessageTypes.RESET_TRANSACTIONS, payload: getTxNonce });
-  getTxNonce = await postMessage({ type: MessageTypes.GET_TX_NONCE });
-  dispatch(setOffset(20));
+  dispatch(setOffset(0));
+  dispatch(setTransactions([]));
 };
 
 export const setTransactions = (transactions: any[]) => {
@@ -205,10 +218,6 @@ function handleTransactions(state: State, action: Action, pending = false): Stat
 }
 
 function handleAppendTransactions(state: State, action: Action): State {
-  if (getTxNonce !== action.meta.nonce) {
-    return state;
-  }
-
   return handleTransactions(state, action);
 }
 
@@ -218,9 +227,9 @@ export const usePendingTXs = (): string[] => {
   }, deepEqual)
 };
 
-export const useTXOrder = (offset: number): string[] => {
+export const useTXOrder = (): string[] => {
   return useSelector((state: AppRootState) => {
-    return state.transactions.order.slice(0, offset);
+    return state.transactions.order;
   }, deepEqual)
 };
 

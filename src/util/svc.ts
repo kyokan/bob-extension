@@ -39,8 +39,9 @@ export class GenericService extends EventEmitter2 implements Service {
       const method = service[methodName];
 
       try {
+        console.log({ serviceName, methodName, params });
         const response = await method.apply(service, params);
-        console.log({ serviceName, methodName, response })
+        console.log({ serviceName, methodName, response });
         resolve(response);
       } catch (e) {
         console.error(e, { serviceName, methodName });

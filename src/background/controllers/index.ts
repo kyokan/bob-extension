@@ -359,6 +359,10 @@ const controllers: {
     return app.exec('setting', 'setRPCKey', message.payload);
   },
 
+  [MessageTypes.READ_DB_AS_BUFFER]: async (app, message) => {
+    return app.exec('db', 'readDBAsBuffer', message.payload);
+  },
+
   [MessageTypes.MP_TRACK]: async (app, message) => {
     return app.exec('analytics', 'track', message.payload.name, message.payload.data);
   },

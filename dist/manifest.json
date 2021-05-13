@@ -32,6 +32,7 @@
         "48": "icon-48.png",
         "128": "icon-128.png"
     },
+    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
     "permissions": [
         "tabs",
         "activeTab",
@@ -44,6 +45,7 @@
         "unlimitedStorage"
     ],
     "web_accessible_resources": [
-        "js/bob3.js"
+        "js/bob3.js",
+        "wasm/sql-wasm.wasm"
     ]
 }
