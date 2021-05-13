@@ -43,6 +43,8 @@ enum MessageTypes {
   GET_API = 'get_api',
   SET_RPC_HOST = 'set_rpc_host',
   SET_RPC_KEY = 'set_rpc_key',
+  GET_ANALYTICS = 'getAnalytics',
+  SET_ANALYTICS = 'setAnalytics',
 
   // analytics
   MP_TRACK = 'mp_track',

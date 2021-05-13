@@ -641,6 +641,15 @@ function OptInAnalytics(props: {
   const initialized = useInitialized();
 
   useEffect(() => {
+    (async function() {
+      const res = await postMessage({
+        type: MessageTypes.GET_ANALYTICS,
+      });
+      setOptIn(res);
+    })();
+  }, []);
+
+  useEffect(() => {
     postMessage({
       type: MessageTypes.MP_TRACK,
       payload: {

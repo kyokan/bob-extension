@@ -10,6 +10,7 @@ import Button, {ButtonProps, ButtonType} from "@src/ui/components/Button";
 import {useCurrentWallet, useWalletState} from "@src/ui/ducks/wallet";
 import Modal from "@src/ui/components/Modal";
 import Textarea from "@src/ui/components/Textarea";
+import SwitchButton from "@src/ui/components/SwitchButton";
 
 const pkg = require('../../../../package.json');
 
@@ -241,6 +242,27 @@ function SecurityContent(): ReactElement {
   const [password, setPassword] = useState('');
   const [revealError, setRevealError] = useState('');
   const [mnemonic, setMnemonic] = useState('');
+  const [optInAnalytics, setOptInAnalytics] = useState(false);
+
+  useEffect(() => {
+    (async function() {
+      const optIn = await postMessage({
+        type: MessageTypes.GET_ANALYTICS,
+      });
+      setOptInAnalytics(optIn);
+    })();
+  }, []);
+
+  const updateAnalytics = useCallback(async (e) => {
+    await postMessage({
+      type: MessageTypes.SET_ANALYTICS,
+      payload: e.target.checked,
+    });
+    const optIn = await postMessage({
+      type: MessageTypes.GET_ANALYTICS,
+    });
+    setOptInAnalytics(optIn);
+  }, [optInAnalytics]);
 
   const revealSeed = useCallback(async () => {
     try {
@@ -328,6 +350,11 @@ function SecurityContent(): ReactElement {
         name="Analytics Opt-in"
       >
         <small>Send analytics to Kyokan to help improve Bob.</small>
+        <SwitchButton
+          className="analytics__toggle"
+          onChange={updateAnalytics}
+          checked={optInAnalytics}
+        />
       </SettingGroup>
     </>
   );

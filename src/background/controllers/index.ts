@@ -359,6 +359,14 @@ const controllers: {
     return app.exec('setting', 'setRPCKey', message.payload);
   },
 
+  [MessageTypes.GET_ANALYTICS]: async (app, message) => {
+    return app.exec('setting', 'getAnalytics');
+  },
+
+  [MessageTypes.SET_ANALYTICS]: async (app, message) => {
+    return app.exec('setting', 'setAnalytics', message.payload);
+  },
+
   [MessageTypes.READ_DB_AS_BUFFER]: async (app, message) => {
     return app.exec('db', 'readDBAsBuffer', message.payload);
   },

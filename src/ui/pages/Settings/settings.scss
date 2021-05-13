@@ -38,6 +38,7 @@
   }
 
   &__children {
+    @extend %col-nowrap;
     margin-top: .5rem;
   }
 
@@ -101,5 +102,11 @@
   &__confirm-button {
     width: 100%;
     justify-content: center;
+  }
+}
+
+.analytics {
+  &__toggle {
+    align-self: flex-end;
   }
 }
