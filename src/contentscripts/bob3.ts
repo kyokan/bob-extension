@@ -144,6 +144,11 @@ async function assertunLocked() {
   if (res && res.locked) throw new Error('wallet is locked.');
 }
 
+async function isLocked() {
+  const res: any = await post({ type: MessageTypes.GET_WALLET_STATE });
+  return !!(res && res.locked);
+}
+
 
 /**
  * Wallet Client
@@ -162,12 +167,14 @@ const wallet = {
 
 window.bob3 = {
   connect,
+  isLocked,
 };
 
 declare global {
   interface Window {
     bob3: {
       connect: () => Promise<typeof wallet>;
+      isLocked: () => Promise<boolean>;
     };
   }
 }
