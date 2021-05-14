@@ -31,6 +31,13 @@ import MessageTypes from "@src/util/messageTypes";
           nonce: 'disconnect',
         }, '*');
         return;
+      case MessageTypes.NEW_BLOCK:
+        window.postMessage({
+          target: 'bob3-injectedscript',
+          payload: [null, action.payload],
+          nonce: 'newBlock',
+        }, '*');
+        return;
     }
   });
 

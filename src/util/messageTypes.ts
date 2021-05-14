@@ -19,6 +19,7 @@ enum MessageTypes {
   GET_PENDING_TRANSACTIONS = 'get_pending_transactions',
   GET_DOMAIN_NAMES = 'get_domain_names',
   GET_NAME_NONCE = 'get_name_nonce',
+  GET_BIDS_BY_NAME = 'get_bids_by_name',
   CREATE_TX = 'create_tx',
   CREATE_SEND = 'create_send',
   CREATE_OPEN = 'create_open',
@@ -37,6 +38,7 @@ enum MessageTypes {
   // node
   GET_LATEST_BLOCK = 'get_latest_block',
   GET_NAME_BY_HASH = 'get_name_by_hash',
+  HASH_NAME = 'hashName',
   ESTIMATE_SMART_FEE = 'estimate_smart_fee',
 
   // settings
@@ -55,6 +57,7 @@ enum MessageTypes {
   // Bob3
   CONNECT = 'connect',
   DISCONNECTED = 'disconnected',
+  NEW_BLOCK = 'new_block',
   SEND_TX = 'send_tx',
   SEND_OPEN = 'send_open',
   SEND_BID = 'send_bid',

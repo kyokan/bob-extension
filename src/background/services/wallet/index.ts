@@ -92,6 +92,7 @@ export default class WalletService extends GenericService {
     this.emit('unlocked', this.selectedID);
   };
 
+
   getState = async () => {
     const tip = await this.wdb.getTip();
     return {
@@ -182,7 +183,7 @@ export default class WalletService extends GenericService {
     return wallet.getJSON(false, balance).balance;
   };
 
-  getPendingTransactions = async (id: string) => {
+  getPendingTransactions = async (id: string, shouldBroadcast = true) => {
     const walletId = id || this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const wtxs = await wallet.getPending();
@@ -198,8 +199,10 @@ export default class WalletService extends GenericService {
 
     await this._addPrevoutCoinToPending(txs);
 
-    for (const tx of sorted) {
-      await this.exec('node', 'sendRawTransaction', tx.toHex());
+    if (shouldBroadcast) {
+      for (const tx of sorted) {
+        await this.exec('node', 'sendRawTransaction', tx.toHex());
+      }
     }
 
     return txs;
@@ -328,6 +331,13 @@ export default class WalletService extends GenericService {
     }
 
     return true;
+  };
+
+  getBidsByName = async (name: string) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    if (!name) throw new Error('name must not be empty');
+    return wallet.getBidsByName(name);
   };
 
   addNameState = async (name: string) => {
@@ -1020,8 +1030,9 @@ export default class WalletService extends GenericService {
         await this.wdb._addTX(tx, entry);
 
         const wids = await this.wdb.getWalletsByTX(tx);
+        const wid = await this.wdb.getWID(this.selectedID);
 
-        if (wids) {
+        if (wids && wids.has(wid)) {
           await this.exec('db', 'insertTX', {
             ...transactions[i],
             time: entry.time,
@@ -1180,8 +1191,9 @@ export default class WalletService extends GenericService {
         await this.wdb._addTX(tx, entry);
 
         const wids = await this.wdb.getWalletsByTX(tx);
+        const wid = await this.wdb.getWID(this.selectedID);
 
-        if (wids) {
+        if (wids && wids.has(wid)) {
           await this.exec('db', 'insertTX', {
             ...transactions[i],
             time: entry.time,
@@ -1280,6 +1292,7 @@ export default class WalletService extends GenericService {
       setTimeout(() => this.checkForRescan(), 1000);
       const {hash, height, time} = await this.exec('node', 'getLatestBlock');
       await pushMessage(setInfo(hash, height, time));
+      this.emit('newBlock', {hash, height, time});
     });
 
     socket.connect(apiHost);

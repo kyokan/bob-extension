@@ -268,7 +268,12 @@ const controllers: {
   },
 
   [MessageTypes.GET_PENDING_TRANSACTIONS]: async (app, message) => {
-    return app.exec('wallet', 'getPendingTransactions');
+    return app.exec(
+      'wallet',
+      'getPendingTransactions',
+      message.payload.id,
+      message.payload.shouldBroadcast,
+    );
   },
 
   [MessageTypes.GET_NAME_NONCE]: async (app, message) => {
@@ -297,6 +302,10 @@ const controllers: {
 
   [MessageTypes.CHECK_FOR_RESCAN]: async (app, message) => {
     return app.exec('wallet', 'checkForRescan', message.payload);
+  },
+
+  [MessageTypes.GET_BIDS_BY_NAME]: async (app, message) => {
+    return app.exec('wallet', 'getBidsByName', message.payload);
   },
 
   [MessageTypes.FULL_RESCAN]: async (app, message) => {
@@ -333,6 +342,10 @@ const controllers: {
 
   [MessageTypes.CREATE_SEND]: async (app, message) => {
     return app.exec('wallet', 'createSend', message.payload);
+  },
+
+  [MessageTypes.HASH_NAME]: async (app, message) => {
+    return app.exec('node', 'hashName', message.payload);
   },
 
   [MessageTypes.GET_NAME_BY_HASH]: async (app, message) => {

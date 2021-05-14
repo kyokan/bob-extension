@@ -40,6 +40,16 @@ import AnalyticsService from "@src/background/services/analytics";
     await startedApp.start();
     app = startedApp;
 
+    app.on('wallet.newBlock', async (block) => {
+        const tabs = await browser.tabs.query({ active: true });
+        for (let tab of tabs) {
+            await browser.tabs.sendMessage(tab.id as number, {
+                type: MessageTypes.NEW_BLOCK,
+                payload: block,
+            });
+        }
+    });
+
     app.on('wallet.locked', async () => {
         const tabs = await browser.tabs.query({ active: true });
         for (let tab of tabs) {

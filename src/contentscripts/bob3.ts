@@ -130,12 +130,58 @@ async function sendUpdate(name: string, records: UpdateRecordType[]) {
  * Event listener for when wallet is disconnected. Only invoked once.
  * @param callback - invoke when wallet is locked
  */
+async function onNewBlock(callback: () => void) {
+  promises.newBlock = {
+    resolve: callback,
+    reject: callback,
+  };
+  return null;
+}
+
+/**
+ * Event listener for when wallet is disconnected. Only invoked once.
+ * @param callback - invoke when wallet is locked
+ */
 async function onDisconnect(callback: () => void) {
   promises.disconnect = {
     resolve: callback,
     reject: callback,
   };
   return null;
+}
+
+/**
+ * Get Pending Tx
+ */
+async function getPending(name: string) {
+  return await post({
+    type: MessageTypes.GET_PENDING_TRANSACTIONS,
+    payload: {
+      shouldBroadcast: true,
+    },
+  });
+}
+
+/**
+ * Get Bids by Name
+ * @param name - name to get bids for
+ */
+async function getBidsByName(name: string) {
+  return await post({
+    type: MessageTypes.GET_BIDS_BY_NAME,
+    payload: name,
+  });
+}
+
+/**
+ * Get namehash by name
+ * @param name - name to get hash for
+ */
+async function hashName(name: string) {
+  return await post({
+    type: MessageTypes.HASH_NAME,
+    payload: name,
+  });
 }
 
 // utilities
@@ -163,6 +209,10 @@ const wallet = {
   sendRedeem,
   sendUpdate,
   onDisconnect,
+  onNewBlock,
+  getBidsByName,
+  getPending,
+  hashName,
 };
 
 window.bob3 = {
@@ -206,6 +256,11 @@ window.addEventListener('message', (event) => {
     }
 
     resolve(res);
+
+    if (data.nonce === 'newBlock') {
+      return;
+    }
+
     delete promises[data.nonce];
   }
 });

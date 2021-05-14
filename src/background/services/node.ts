@@ -1,6 +1,7 @@
 import {GenericService} from "@src/util/svc";
 const bdb = require('bdb');
 const DB = require('bdb/lib/DB');
+const rules = require("hsd/lib/covenants/rules");
 import {get, put} from '@src/util/db';
 
 const NAME_CACHE: string[] = [];
@@ -114,6 +115,10 @@ export default class NodeService extends GenericService {
 
   async addNameHash(name: string, hash: string) {
     return put(this.store, `namehash-${hash}`, {result: name});
+  }
+
+  async hashName(name: string) {
+    return rules.hashName(name).toString('hex');
   }
 
   async getNameByHash(hash: string) {
