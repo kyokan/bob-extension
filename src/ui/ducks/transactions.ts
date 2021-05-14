@@ -88,7 +88,6 @@ export const fetchMoreTransactions = () => async (dispatch: Dispatch, getState: 
     },
   });
 
-  console.log(resp);
   dispatch({
     type: ActionType.APPEND_TRANSACTIONS,
     payload: resp,

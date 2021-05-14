@@ -336,8 +336,29 @@ export default class WalletService extends GenericService {
   getBidsByName = async (name: string) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
+
     if (!name) throw new Error('name must not be empty');
-    return wallet.getBidsByName(name);
+
+    const latestBlock = await this.exec('node', 'getLatestBlock');
+    const nameHash = rules.hashName(name);
+    const results: any[] = await this.exec('db', 'queryBidsByNameHash', nameHash.toString('hex'));
+    const records = [];
+
+    for (let bid of results) {
+      const record = await wallet.txdb.getTX(Buffer.from(bid.hash, 'hex'));
+      records.push(record);
+    }
+
+    const details = await wallet.toDetails(records);
+
+    const bids = [];
+
+    for (const item of details) {
+      const json: Transaction = item.getJSON(this.network, latestBlock.height);
+      bids.push(json);
+    }
+
+    return bids;
   };
 
   addNameState = async (name: string) => {
@@ -1034,7 +1055,9 @@ export default class WalletService extends GenericService {
 
         if (wids && wids.has(wid)) {
           await this.exec('db', 'insertTX', {
-            ...transactions[i],
+            ...tx.toJSON(),
+            fee: transactions[i].fee,
+            rate: transactions[i].rate,
             time: entry.time,
             height: entry.height,
           });
@@ -1195,7 +1218,9 @@ export default class WalletService extends GenericService {
 
         if (wids && wids.has(wid)) {
           await this.exec('db', 'insertTX', {
-            ...transactions[i],
+            ...tx.toJSON(),
+            fee: transactions[i].fee,
+            rate: transactions[i].rate,
             time: entry.time,
             height: entry.height,
           });
@@ -1289,10 +1314,13 @@ export default class WalletService extends GenericService {
     });
 
     socket.bind('block connect', async (data: any) => {
-      setTimeout(() => this.checkForRescan(), 1000);
-      const {hash, height, time} = await this.exec('node', 'getLatestBlock');
-      await pushMessage(setInfo(hash, height, time));
-      this.emit('newBlock', {hash, height, time});
+      setTimeout(async () => {
+        await this.checkForRescan();
+        const {hash, height, time} = await this.exec('node', 'getLatestBlock');
+        await pushMessage(setInfo(hash, height, time));
+        this.emit('newBlock', {hash, height, time});
+      }, 1000);
+
     });
 
     socket.connect(apiHost);

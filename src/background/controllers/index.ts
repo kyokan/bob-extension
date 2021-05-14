@@ -271,8 +271,8 @@ const controllers: {
     return app.exec(
       'wallet',
       'getPendingTransactions',
-      message.payload.id,
-      message.payload.shouldBroadcast,
+      message.payload?.id,
+      message.payload?.shouldBroadcast,
     );
   },
 

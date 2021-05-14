@@ -86,6 +86,18 @@ async function sendBid(name: string, amount: number, lockup: number) {
 }
 
 /**
+ * Create reveal
+ * @param name - name to reveal bid for (`null` for all names)
+ */
+async function createReveal(name: string) {
+  await assertunLocked();
+  return post({
+    type: MessageTypes.CREATE_REVEAL,
+    payload: {name},
+  });
+}
+
+/**
  * Send reveal
  * @param name - name to reveal bid for (`null` for all names)
  */
@@ -202,6 +214,7 @@ async function isLocked() {
 const wallet = {
   getBalance,
   getAddress,
+  createReveal,
   send,
   sendOpen,
   sendBid,

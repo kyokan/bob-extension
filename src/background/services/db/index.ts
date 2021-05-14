@@ -28,7 +28,6 @@ export default class DatabaseService extends GenericService {
   async readDBAsBuffer(wid: string): Promise<Buffer> {
     if (!wid) throw new Error('wallet not selected');
     const buf = await get(this.store, `SQL_DB_${wid}`);
-    // return Buffer.alloc(0);
     if (!buf) return Buffer.alloc(0);
     return Buffer.from(buf, 'hex');
   }
@@ -38,6 +37,35 @@ export default class DatabaseService extends GenericService {
     const buf = await this.db.export();
     const hex = Array.prototype.map.call(buf, x => ('00' + x.toString(16)).slice(-2)).join('');
     await put(this.store, `SQL_DB_${wid}`, hex);
+  }
+
+  async queryBidsByNameHash(nameHash: string) {
+    if (!this.db) throw new Error('db is not initialized');
+
+    const [res] = await this.db.exec(`
+      SELECT * FROM transactions
+      WHERE transactions.action = "BID" AND transactions.name_hash = :nameHash
+      ORDER BY transactions.block_height DESC
+    `, {
+      ':nameHash': nameHash,
+    });
+
+    if (res) {
+      return res.values.map(([hash, fee, rate, mtime, time, blockHeight, action, nameHash]) => {
+        return {
+          hash,
+          fee,
+          rate,
+          mtime,
+          time,
+          blockHeight,
+          action,
+          nameHash,
+        };
+      })
+    }
+
+    return [];
   }
 
   async queryTransactions(limit = 20, offset = 0) {
