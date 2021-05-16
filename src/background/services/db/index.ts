@@ -39,6 +39,13 @@ export default class DatabaseService extends GenericService {
     await put(this.store, `SQL_DB_${wid}`, hex);
   }
 
+  async resetDB(wid: string) {
+    if (!this.SQL) throw new Error('SQL not initialized');
+    if (!this.db) throw new Error('db is not initialized');
+    await put(this.store, `SQL_DB_${wid}`, Buffer.alloc(0));
+    this.db = new this.SQL.Database(await this.readDBAsBuffer(wid));
+  }
+
   async queryBidsByNameHash(nameHash: string) {
     if (!this.db) throw new Error('db is not initialized');
 

@@ -53,6 +53,7 @@ enum MessageTypes {
 
   // SQL
   READ_DB_AS_BUFFER = 'read_db_as_buffer',
+  RESET_DB = 'reset_db',
 
   // Bob3
   CONNECT = 'connect',

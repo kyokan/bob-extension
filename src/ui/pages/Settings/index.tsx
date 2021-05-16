@@ -183,6 +183,7 @@ function NetworkContent(): ReactElement {
 
 function WalletContent(): ReactElement {
   const {rescanning} = useWalletState();
+  const [resetting, setResetting] = useState(false);
   const currentWallet = useCurrentWallet();
 
   const rescan = useCallback(() => {
@@ -192,6 +193,15 @@ function WalletContent(): ReactElement {
       type: MessageTypes.FULL_RESCAN,
     });
   }, [rescanning]);
+
+  const resetDB = useCallback(async () => {
+    setResetting(true);
+    await postMessage({
+      type: MessageTypes.RESET_DB,
+      payload: currentWallet,
+    });
+    setResetting(false);
+  }, [currentWallet]);
 
   const download = useCallback(async () => {
     const buf = await postMessage({
@@ -232,6 +242,16 @@ function WalletContent(): ReactElement {
         }}
       >
         <small>Download SQL Database for the selected wallet.</small>
+      </SettingGroup>
+      <SettingGroup
+        name="Reset Database"
+        primaryBtnProps={{
+          children: 'Reset',
+          onClick: resetDB,
+          loading: resetting,
+        }}
+      >
+        <small>Reset SQL Database for the selected wallet.</small>
       </SettingGroup>
     </>
   )

@@ -10,6 +10,9 @@ Bob extension uses the address indexer to make wallet rescan faster and more per
 
 ## Development
 
+**Requirement**
+- Node v12+
+
 **Install**
 ```
 npm install 

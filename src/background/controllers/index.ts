@@ -380,6 +380,10 @@ const controllers: {
     return app.exec('setting', 'setAnalytics', message.payload);
   },
 
+  [MessageTypes.RESET_DB]: async (app, message) => {
+    return app.exec('db', 'resetDB', message.payload);
+  },
+
   [MessageTypes.READ_DB_AS_BUFFER]: async (app, message) => {
     return app.exec('db', 'readDBAsBuffer', message.payload);
   },

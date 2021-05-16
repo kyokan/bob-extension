@@ -1233,7 +1233,7 @@ export default class WalletService extends GenericService {
         if (retries > 10000) {
           throw e;
         }
-        i = i - 2;
+        i = Math.max(i - 2, 0);
       } finally {
         await unlock();
       }
@@ -1348,6 +1348,7 @@ export default class WalletService extends GenericService {
     if (!this.selectedID) {
       const walletIDs = await this.getWalletIDs();
       this.selectedID = walletIDs.filter(id => id !== 'primary')[0];
+      await this.exec('db', 'setDB', this.selectedID);
     }
 
     this.checkForRescan();
