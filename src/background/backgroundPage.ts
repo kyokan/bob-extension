@@ -1,4 +1,4 @@
-import {browser} from "webextension-polyfill-ts";
+import {browser, WebRequest} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
@@ -8,6 +8,9 @@ import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
 import MessageTypes from "@src/util/messageTypes";
 import AnalyticsService from "@src/background/services/analytics";
+import BlockingResponseOrPromise = WebRequest.BlockingResponseOrPromise;
+import BlockingResponse = WebRequest.BlockingResponse;
+import resolve from "@src/background/resolve";
 
 (async function() {
     let app: AppService;
@@ -30,6 +33,12 @@ import AnalyticsService from "@src/background/services/analytics";
             await app.exec('wallet', 'resetNames', -1);
         });
     });
+
+    browser.webRequest.onBeforeRequest.addListener(
+      resolve,
+      {urls: ["<all_urls>"]},
+      ["blocking"]
+    );
 
     const startedApp = new AppService();
     startedApp.add('db', new DatabaseService());

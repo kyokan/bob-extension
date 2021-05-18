@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "Bob Extension",
     "description": "Chrome Extension for Handshake",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "browser_action": {
         "default_icon": "icon-16.png",
         "default_popup": "popup.html"
@@ -41,8 +41,11 @@
         "https://*/",
         "fileSystem",
         "webRequest",
+        "webRequestBlocking",
+        "proxy",
         "storage",
-        "unlimitedStorage"
+        "unlimitedStorage",
+        "<all_urls>"
     ],
     "web_accessible_resources": [
         "js/bob3.js",

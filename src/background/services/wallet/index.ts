@@ -1073,7 +1073,7 @@ export default class WalletService extends GenericService {
           throw e;
         }
 
-        i = i - 2;
+        i = Math.max(i - 2, 0);
       } finally {
         await unlock();
       }
