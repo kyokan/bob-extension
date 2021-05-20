@@ -152,6 +152,58 @@ export function getTXAction(tx: Transaction): string {
   return 'SEND';
 }
 
+
+export function getBidBlind(tx: Transaction): string | undefined {
+  for (let i = 0; i < tx.outputs.length; i++) {
+    const output = tx.outputs[i];
+
+    // Find outputs to the wallet's receive branch
+    if (output.path && output.path.change)
+      continue;
+
+    const covenant = output.covenant;
+
+    // Track normal receive amounts for later
+    if (covenant.action === 'BID') {
+      return covenant.items[3];
+    }
+  }
+}
+
+export function getBidValue(tx: Transaction): number | undefined {
+  for (let i = 0; i < tx.outputs.length; i++) {
+    const output = tx.outputs[i];
+
+    // Find outputs to the wallet's receive branch
+    if (output.path && output.path.change)
+      continue;
+
+    const covenant = output.covenant;
+
+    // Track normal receive amounts for later
+    if (covenant.action === 'BID') {
+      return output.value;
+    }
+  }
+}
+
+export function getBidAddress(tx: Transaction): string | undefined {
+  for (let i = 0; i < tx.outputs.length; i++) {
+    const output = tx.outputs[i];
+
+    // Find outputs to the wallet's receive branch
+    if (output.path && output.path.change)
+      continue;
+
+    const covenant = output.covenant;
+
+    // Track normal receive amounts for later
+    if (covenant.action === 'BID') {
+      return output.address;
+    }
+  }
+}
+
 export function getTXRecipient(tx: Transaction): string {
   // Look for covenants. A TX with multiple covenant types is not supported
   let covAction = null;

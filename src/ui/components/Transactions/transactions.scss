@@ -99,6 +99,7 @@
   &__value {
     @extend %col-nowrap;
     height: 100%;
+    align-items: flex-end;
 
     &__amount {
       @extend %regular-font;

@@ -30,7 +30,7 @@ import {toDollaryDoos} from "@src/util/number";
 import BlindBid from "@src/background/services/wallet/blind-bid";
 import BidReveal from "@src/background/services/wallet/bid-reveal";
 import {UpdateRecordType} from "@src/contentscripts/bob3";
-import {getTXAction} from "@src/util/transaction";
+import {getBidBlind, getTXAction} from "@src/util/transaction";
 import {setInfo} from "@src/ui/ducks/node";
 const {types} = rules;
 const bsocket = require("bsock");
@@ -62,6 +62,8 @@ export default class WalletService extends GenericService {
 
   _getNameNonce: number;
 
+  forceStopRescan: boolean;
+
   private passphrase: string | undefined;
 
   constructor() {
@@ -69,6 +71,7 @@ export default class WalletService extends GenericService {
     this.selectedID = '';
     this.locked = true;
     this.rescanning = false;
+    this.forceStopRescan = false;
     this._getTxNonce = 0;
     this._getNameNonce = 0;
   }
@@ -270,6 +273,14 @@ export default class WalletService extends GenericService {
 
     for (const item of details) {
       const json: Transaction = item.getJSON(this.network, latestBlock.height);
+      const action = getTXAction(json);
+      const blind = action === 'BID' && getBidBlind(json);
+
+      if (blind) {
+        const bv = await wallet.txdb.getBlind(Buffer.from(blind, 'hex'));
+        json.blind = bv;
+      }
+
       transactions.push(json);
     }
 
@@ -380,6 +391,47 @@ export default class WalletService extends GenericService {
     }
 
     await b.write();
+  };
+
+  getNonce = async (nameHash: string, addr: string, bid: number) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const address = Address.fromString(addr, this.network);
+
+    const name = await this.exec('node', 'getNameByHash', nameHash);
+    const nameHashBuf = Buffer.from(nameHash, 'hex');
+    const nonce = await wallet.generateNonce(nameHashBuf, address, bid);
+    const blind = rules.blind(bid, nonce);
+
+    return {
+      address: address.toString(this.network),
+      blind: blind.toString('hex'),
+      nonce: nonce.toString('hex'),
+      bid: bid,
+      name: name,
+      nameHash: nameHash,
+    };
+  };
+
+  importNonce = async (nameHash: string, addr: string, value: number) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+
+    if (!nameHash)
+      throw new Error('Invalid name.');
+
+    if (addr == null)
+      throw new Error('Invalid value.');
+
+    if (value == null)
+      throw new Error('Invalid value.');
+
+    const nameHashBuf = Buffer.from(nameHash, 'hex');
+    const address = Address.fromString(addr, this.network);
+
+    const blind = await wallet.generateBlind(nameHashBuf, address, value);
+
+    return blind.toString('hex');
   };
 
   createWallet = async (options: {
@@ -1025,6 +1077,10 @@ export default class WalletService extends GenericService {
 
     let retries = 0;
     for (let i = 0; i < transactions.length; i++) {
+      if (this.forceStopRescan) {
+        this.forceStopRescan = false;
+        break;
+      }
       const unlock = await this.wdb.txLock.lock();
       try {
         const tx = mapOneTx(transactions[i]);
@@ -1164,6 +1220,10 @@ export default class WalletService extends GenericService {
     return await this.getAllChangeTXs(startDepth + 1000, endDepth + 1000, transactions);
   };
 
+  stopRescan = async () => {
+    this.forceStopRescan = true;
+  };
+
   fullRescan = async () => {
     this.rescanning = true;
     this.pushState();
@@ -1249,6 +1309,10 @@ export default class WalletService extends GenericService {
 
   rescanBlocks = async (startHeight: number, endHeight: number) => {
     for (let i = startHeight; i <= endHeight; i++) {
+      if (this.forceStopRescan) {
+        this.forceStopRescan = false;
+        break;
+      }
       await this.processBlock(i);
     }
   };
@@ -1268,10 +1332,8 @@ export default class WalletService extends GenericService {
         await this.pushBobMessage('I am synchronized.');
       } else if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
         await this.rescanBlocks(latestBlockLast.height + 1, latestBlockNow.height);
-        await this.checkForRescan();
       } else {
         await this.fullRescan();
-        await this.checkForRescan();
       }
 
       this.rescanning = false;

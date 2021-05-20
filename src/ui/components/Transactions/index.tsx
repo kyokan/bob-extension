@@ -1,14 +1,6 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import moment from "moment";
-import {
-  fetchPendingTransactions,
-  setOffset,
-  Transaction, usePendingTXs,
-  useTXByHash,
-  useTXFetching,
-  useTXOffset,
-  useTXOrder
-} from "@src/ui/ducks/transactions";
+import {fetchPendingTransactions, useTXByHash, useTXFetching, useTXOrder} from "@src/ui/ducks/transactions";
 import Icon from "@src/ui/components/Icon";
 import "./transactions.scss";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
@@ -20,11 +12,11 @@ import {fetchTXQueue} from "@src/ui/ducks/queue";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import {Loader} from "@src/ui/components/Loader";
+import Button, {ButtonType} from "@src/ui/components/Button";
+import RepairBidModal from "@src/ui/components/RepairBidModal";
 
 export default function Transactions(): ReactElement {
-  const offset = useTXOffset();
   const order = useTXOrder();
-  const pending = usePendingTXs();
   const fetching = useTXFetching();
   const dispatch = useDispatch();
 
@@ -75,6 +67,7 @@ const ActionToFA: {[actionType: string]: string} = {
 
 export const TransactionRow = (props: { hash: string }): ReactElement => {
   const {hash} = props;
+  const [showRepairModal, setRepairModal] = useState(false);
   const tx = useTXByHash(hash);
   const value = getTXValue(tx!);
   const action = getTXAction(tx!);
@@ -82,7 +75,7 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
   const pending = !tx!.height || tx!.height < 0;
 
   const openExplorer = useCallback(() => {
-    window.open(`https://e.hnsfans.com/tx/${tx!.hash}`, '_blank');
+    window.open(`https://blockexplorer.com/tx/${tx!.hash}`, '_blank');
   }, [tx!.hash]);
 
   const openExplorerName = useCallback(async (e) => {
@@ -91,10 +84,15 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
       type: MessageTypes.GET_NAME_BY_HASH,
       payload: nameHash,
     });
-    window.open(`https://e.hnsfans.com/name/${result}`, '_blank');
+    window.open(`https://blockexplorer.com/name/${result}`, '_blank');
   }, [nameHash]);
 
   const displayValue = formatNumber(fromDollaryDoos(value));
+
+  const openRepairModal = useCallback((e) => {
+    e.stopPropagation();
+    setRepairModal(true);
+  }, [tx!.hash]);
 
   return (
     <div
@@ -103,6 +101,7 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
       })}
       onClick={openExplorer}
     >
+      { showRepairModal && <RepairBidModal txHash={tx!.hash}  onClose={() => setRepairModal(false)}/>}
       <div className="transaction__icon">
         <Icon
           fontAwesome={ActionToFA[action] || 'fa-handshake'}
@@ -136,7 +135,15 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
           {displayValue}
         </div>
         <div className="transaction__value__action">
-
+          {action === 'BID' && !tx?.blind && (
+            <Button
+              btnType={ButtonType.secondary}
+              onClick={openRepairModal}
+              tiny
+            >
+              Repair Bid
+            </Button>
+          )}
         </div>
       </div>
     </div>

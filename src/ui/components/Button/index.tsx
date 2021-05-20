@@ -14,6 +14,7 @@ export type ButtonProps = {
   loading?: boolean;
   btnType?: ButtonType;
   small?: boolean;
+  tiny?: boolean;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 export default function Button (props: ButtonProps): ReactElement {
@@ -23,6 +24,7 @@ export default function Button (props: ButtonProps): ReactElement {
     children,
     btnType = ButtonType.primary,
     small,
+    tiny,
     ...btnProps
   } = props;
 
@@ -30,6 +32,7 @@ export default function Button (props: ButtonProps): ReactElement {
     <button
       className={classNames('button', className, {
         'button--small': small,
+        'button--tiny': tiny,
         'button--loading': loading,
         'button--primary': btnType === ButtonType.primary,
         'button--secondary': btnType === ButtonType.secondary,

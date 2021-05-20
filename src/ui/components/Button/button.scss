@@ -29,6 +29,13 @@
     padding: .25rem .75rem;
     height: auto;
   }
+
+  &--tiny {
+    font-size: 0.6875rem;
+    padding: .125rem .25rem;
+    font-weight: 600;
+    height: auto;
+  }
 }
 
 .button--primary {

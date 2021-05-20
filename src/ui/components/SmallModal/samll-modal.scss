@@ -1,0 +1,12 @@
+@import 'src/util/variables';
+
+.small-modal {
+  @extend %col-nowrap;
+  padding: 1rem 1.5rem;
+  width: 18rem;
+  margin: 25vh auto;
+
+  p:nth-of-type(1) {
+    margin-top: 0;
+  }
+}

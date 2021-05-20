@@ -194,6 +194,14 @@ function WalletContent(): ReactElement {
     });
   }, [rescanning]);
 
+  const stopRescan = useCallback(() => {
+    if (!rescanning) return;
+
+    postMessage({
+      type: MessageTypes.STOP_RESCAN,
+    });
+  }, [rescanning]);
+
   const resetDB = useCallback(async () => {
     setResetting(true);
     await postMessage({
@@ -226,9 +234,8 @@ function WalletContent(): ReactElement {
       <SettingGroup
         name="Rescan"
         primaryBtnProps={{
-          children: 'Rescan',
-          onClick: rescan,
-          disabled: rescanning,
+          children: rescanning ? 'Stop Rescan' : 'Rescan',
+          onClick: rescanning ? stopRescan : rescan,
           loading: rescanning,
         }}
       >

@@ -12,6 +12,7 @@ export enum ActionType {
   APPEND_TRANSACTIONS = 'transaction/appendTransactions',
   SET_FETCHING = 'transaction/setFetching',
   SET_OFFSET = 'transaction/setOffset',
+  SET_BLIND_BY_HASH = 'transaction/setBlindByHash',
 }
 
 type Action = {
@@ -52,6 +53,7 @@ export type Transaction = {
   time: number;
   tx: string;
   bid?: number;
+  blind?: number;
 }
 
 export type TxInput = {
@@ -122,6 +124,16 @@ export const setOffset = (offset: number) => {
   }
 };
 
+export const setBlindByHash = (blind: {nonce: string; value: number}, hash: string) => {
+  return {
+    type: ActionType.SET_BLIND_BY_HASH,
+    payload: {
+      blind,
+      hash,
+    }
+  }
+};
+
 export const resetTransactions = () => async (dispatch: Dispatch) => {
   dispatch(setOffset(0));
   dispatch(setTransactions([]));
@@ -147,6 +159,17 @@ export default function transactions(state = initialState, action: Action): Stat
         offset: action.payload > state.order.length
           ? Math.max(20, state.order.length)
           : action.payload,
+      };
+    case ActionType.SET_BLIND_BY_HASH:
+      return {
+        ...state,
+        map: {
+          ...state.map,
+          [action.payload.hash]: {
+            ...state.map[action.payload.hash] || {},
+            blind: action.payload,
+          },
+        },
       };
     case ActionType.SET_PENDING_TRANSACTIONS:
       return handleTransactions(state, action, true);

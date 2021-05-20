@@ -308,8 +308,30 @@ const controllers: {
     return app.exec('wallet', 'getBidsByName', message.payload);
   },
 
+  [MessageTypes.STOP_RESCAN]: async (app, message) => {
+    return app.exec('wallet', 'stopRescan');
+  },
+
   [MessageTypes.FULL_RESCAN]: async (app, message) => {
     return app.exec('wallet', 'fullRescan');
+  },
+
+  [MessageTypes.GET_NONCE]: async (app, message) => {
+    return app.exec(
+      'wallet', 'getNonce',
+      message.payload.name,
+      message.payload.address,
+      message.payload.bid,
+    );
+  },
+
+  [MessageTypes.IMPORT_NONCE]: async (app, message) => {
+    return app.exec(
+      'wallet', 'importNonce',
+      message.payload.name,
+      message.payload.address,
+      message.payload.value,
+    );
   },
 
   [MessageTypes.GET_DOMAIN_NAMES]: async (app, message) => {

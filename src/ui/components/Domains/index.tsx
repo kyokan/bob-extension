@@ -46,7 +46,7 @@ export function DomainRow(props: {name: string}): ReactElement {
   return (
     <div
       className="domain"
-      onClick={() => window.open(`https://e.hnsfans.com/name/${props.name}`)}
+      onClick={() => window.open(`https://blockexplorer.com/name/${props.name}`)}
     >
       <div className="domain__info">
         <div className="domain__info__name">

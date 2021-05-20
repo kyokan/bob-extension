@@ -4,13 +4,13 @@ import './modal.scss';
 
 let modalRoot: HTMLDivElement | null;
 
-type Props = {
+export type ModalProps = {
   onClose?: MouseEventHandler;
   className?: string;
-  children: ReactNode | ReactNode[];
+  children?: ReactNode | ReactNode[];
 }
 
-export default function Modal(props: Props): ReactElement {
+export default function Modal(props: ModalProps): ReactElement {
   const { className = '', onClose, children } = props;
 
   modalRoot = document.querySelector('#modal');

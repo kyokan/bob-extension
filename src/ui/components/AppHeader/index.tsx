@@ -46,7 +46,7 @@ export default function AppHeader(): ReactElement {
       <div className="app-header__r">
         <div
           className="app-header__block-height"
-          onClick={() => window.open(`https://e.hnsfans.com/block/${currentBlockHeight}`)}
+          onClick={() => window.open(`https://blockexplorer.com/block/${currentBlockHeight}`)}
         >
           <div className="app-header__block-height__label">Current Block:</div>
           <div className="app-header__block-height__value">{currentBlockHeight}</div>
