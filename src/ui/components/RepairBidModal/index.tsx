@@ -37,7 +37,6 @@ export default function RepairBidModal(props: Props): ReactElement {
       });
 
       if (attempt.blind === blind) {
-
         await postMessage({
           type: MessageTypes.IMPORT_NONCE,
           payload: {
@@ -53,6 +52,8 @@ export default function RepairBidModal(props: Props): ReactElement {
         }, props.txHash));
 
         props.onClose && props.onClose(e);
+      } else {
+        setError('Invalid bid value');
       }
     } catch (e) {
       setError(e.message);
