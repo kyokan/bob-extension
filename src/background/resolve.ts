@@ -57,10 +57,12 @@ export default function resolve(details: OnBeforeRequestDetailsType) {
 
   // Get the IP from the session storage.
   const ip = sessionStorage.getItem(hostname);
+  console.log(ip, typeof ip);
   const config = {
     mode: "pac_script",
     pacScript: {
       data: "function FindProxyForURL(url, host) {\n" +
+        "  if ('"+ip+"' === 'undefined') return 'DIRECT';\n" +
         "  if (dnsDomainIs(host, '"+hostname+"'))\n" +
         "    return '"+access+" "+ip+":"+port+"';\n" +
         "  return 'DIRECT';\n" +
