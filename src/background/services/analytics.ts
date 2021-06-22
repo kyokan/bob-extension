@@ -1,7 +1,7 @@
 import mixpanel, {Mixpanel} from 'mixpanel-browser';
 import {GenericService} from "@src/util/svc";
 const bdb = require('bdb');
-const DB = require('bdb/lib/DB');
+const DB = require('bdb/lib/db');
 import {get, put} from '@src/util/db';
 import crypto from "crypto";
 import * as os from "os";
