@@ -9,7 +9,7 @@ import "./home.scss";
 import {ReceiveButton, RedeemButton, RevealButton, SendButton} from "@src/ui/components/HomeActionButton";
 import classNames from "classnames";
 import {
-  fetchMoreTransactions,
+  fetchTransactions,
   resetTransactions,
   setOffset as setTXOffset,
   useTXOffset
@@ -59,7 +59,7 @@ export default function Home(): ReactElement {
         });
         setCurrentAddress(address);
         await dispatch(fetchTXQueue());
-        dispatch(fetchMoreTransactions());
+        dispatch(fetchTransactions());
         dispatch(fetchDomainNames());
       } catch (e) {
         console.error(e);
@@ -84,7 +84,7 @@ export default function Home(): ReactElement {
     } = pageElement.current;
     if (((scrollTop + offsetHeight) / scrollHeight) > .8) {
       if (tab === 'activity') {
-        dispatch(fetchMoreTransactions());
+        dispatch(setTXOffset(txOffset + 20));
       } else {
         dispatch(setDomainOffset(domainOffset + 20));
       }

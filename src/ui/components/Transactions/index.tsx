@@ -1,6 +1,12 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import moment from "moment";
-import {fetchPendingTransactions, useTXByHash, useTXFetching, useTXOrder} from "@src/ui/ducks/transactions";
+import {
+  fetchPendingTransactions,
+  useTXByHash,
+  useTXFetching,
+  useTXOffset,
+  useTXOrder
+} from "@src/ui/ducks/transactions";
 import Icon from "@src/ui/components/Icon";
 import "./transactions.scss";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
@@ -18,6 +24,7 @@ import RepairBidModal from "@src/ui/components/RepairBidModal";
 export default function Transactions(): ReactElement {
   const order = useTXOrder();
   const fetching = useTXFetching();
+  const offset = useTXOffset();
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -30,7 +37,7 @@ export default function Transactions(): ReactElement {
   return (
     <div className="transactions">
       {/*{pending.map(txHash => <TransactionRow key={txHash} hash={txHash} />)}*/}
-      {order.map(txHash => <TransactionRow key={txHash} hash={txHash} />)}
+      {order.slice(0, offset).map(txHash => <TransactionRow key={txHash} hash={txHash} />)}
       {!order.length && !fetching && <div className="transactions__empty">No transactions</div>}
       {fetching && <Loader size={3} />}
     </div>

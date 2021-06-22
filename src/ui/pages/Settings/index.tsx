@@ -183,8 +183,6 @@ function NetworkContent(): ReactElement {
 
 function WalletContent(): ReactElement {
   const {rescanning} = useWalletState();
-  const [resetting, setResetting] = useState(false);
-  const currentWallet = useCurrentWallet();
 
   const rescan = useCallback(() => {
     if (rescanning) return;
@@ -202,33 +200,6 @@ function WalletContent(): ReactElement {
     });
   }, [rescanning]);
 
-  const resetDB = useCallback(async () => {
-    setResetting(true);
-    await postMessage({
-      type: MessageTypes.RESET_DB,
-      payload: currentWallet,
-    });
-    setResetting(false);
-  }, [currentWallet]);
-
-  const download = useCallback(async () => {
-    const buf = await postMessage({
-      type: MessageTypes.READ_DB_AS_BUFFER,
-      payload: currentWallet,
-    });
-    const blob = new Blob([new Uint8Array(buf.data)], {
-      type: 'application/octet-stream',
-    });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'bob.db';
-    document.body.appendChild(a);
-    a.style.display = 'none';
-    a.click();
-    a.remove();
-  }, [currentWallet]);
-
   return (
     <>
       <SettingGroup
@@ -240,25 +211,6 @@ function WalletContent(): ReactElement {
         }}
       >
         <small>Perform a full rescan.</small>
-      </SettingGroup>
-      <SettingGroup
-        name="Download Database"
-        primaryBtnProps={{
-          children: 'Download',
-          onClick: download,
-        }}
-      >
-        <small>Download SQL Database for the selected wallet.</small>
-      </SettingGroup>
-      <SettingGroup
-        name="Reset Database"
-        primaryBtnProps={{
-          children: 'Reset',
-          onClick: resetDB,
-          loading: resetting,
-        }}
-      >
-        <small>Reset SQL Database for the selected wallet.</small>
       </SettingGroup>
     </>
   )

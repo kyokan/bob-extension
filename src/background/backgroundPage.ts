@@ -2,14 +2,11 @@ import {browser, WebRequest} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
-import DatabaseService from "@src/background/services/db";
 import SettingService from "@src/background/services/setting";
 import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
 import MessageTypes from "@src/util/messageTypes";
 import AnalyticsService from "@src/background/services/analytics";
-import BlockingResponseOrPromise = WebRequest.BlockingResponseOrPromise;
-import BlockingResponse = WebRequest.BlockingResponse;
 import resolve from "@src/background/resolve";
 
 (async function() {
@@ -41,7 +38,6 @@ import resolve from "@src/background/resolve";
     );
 
     const startedApp = new AppService();
-    startedApp.add('db', new DatabaseService());
     startedApp.add('setting', new SettingService());
     startedApp.add('analytics', new AnalyticsService());
     startedApp.add('node', new NodeService());

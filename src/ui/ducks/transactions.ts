@@ -36,7 +36,7 @@ const initialState: State = {
   pending: [],
   order: [],
   map: {},
-  offset: 0,
+  offset: 20,
   fetching: false,
 };
 
@@ -75,9 +75,9 @@ export type TxOutput = {
   };
 }
 
-export const fetchMoreTransactions = () => async (dispatch: Dispatch, getState: () => AppRootState) => {
+export const fetchTransactions = () => async (dispatch: Dispatch, getState: () => AppRootState) => {
   const state = getState();
-  const {offset, fetching} = state.transactions;
+  const {fetching} = state.transactions;
 
   if (fetching) return;
 
@@ -85,19 +85,12 @@ export const fetchMoreTransactions = () => async (dispatch: Dispatch, getState: 
 
   const resp = await postMessage({
     type: MessageTypes.GET_TRANSACTIONS,
-    payload: {
-      offset: offset,
-    },
   });
 
   dispatch({
-    type: ActionType.APPEND_TRANSACTIONS,
+    type: ActionType.SET_TRANSACTIONS,
     payload: resp,
   });
-
-  if (resp.length >= 25) {
-    dispatch(setOffset(offset + 25));
-  }
 
   dispatch(setFetching(false));
 };
@@ -135,7 +128,7 @@ export const setBlindByHash = (blind: {nonce: string; value: number}, hash: stri
 };
 
 export const resetTransactions = () => async (dispatch: Dispatch) => {
-  dispatch(setOffset(0));
+  dispatch(setOffset(20));
   dispatch(setTransactions([]));
 };
 
