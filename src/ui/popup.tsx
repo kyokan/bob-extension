@@ -4,7 +4,6 @@ import { browser } from "webextension-polyfill-ts";
 import Popup from "@src/ui/pages/Popup";
 import {Provider} from "react-redux";
 import configureAppStore from "@src/ui/store/configureAppStore";
-import {MemoryRouter} from "react-router";
 import {HashRouter} from "react-router-dom";
 
 const store = configureAppStore();

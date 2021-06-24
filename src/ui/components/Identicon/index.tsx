@@ -21,12 +21,16 @@ const Identicon = ({ value = 'test', size = '100%', className = '' }) => {
 
   return (
     <div className={`identicon ${className}`}>
-      <svg
-        data-jdenticon-value={value}
-        height={size}
-        ref={icon}
-        width={size}
-      />
+      {
+        value && (
+          <svg
+            data-jdenticon-value={value}
+            height={size}
+            ref={icon}
+            width={size}
+          />
+        )
+      }
     </div>
   );
 };

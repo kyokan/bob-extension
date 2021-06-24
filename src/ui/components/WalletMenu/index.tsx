@@ -46,7 +46,7 @@ export default function WalletMenu(): ReactElement {
       className="wallet-menu"
       onClick={() => setOpen(!isOpen)}
     >
-      <Identicon value={currentAddress}/>
+      <Identicon value={currentAddress} />
       {
         isOpen && (
           <div className="wallet-menu__overlay" onClick={() => setOpen(false)} />

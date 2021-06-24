@@ -540,7 +540,11 @@ function ConfirmSeedphrase(props: {
       return seed;
     });
     setEnteredSeeds(newSeeds);
-  }, [enteredSeeds.join(' ')]);
+
+    if (props.isImporting) {
+      props.setSeedphrase(newSeeds.join(' '));
+    }
+  }, [enteredSeeds.join(' '), props.isImporting]);
 
   const onBack = useCallback(() => {
     if (props.isImporting) {
@@ -605,6 +609,7 @@ function ConfirmSeedphrase(props: {
                         newSeeds[i+j] = seed;
                       }
                     });
+
                     setEnteredSeeds(newSeeds);
 
                     if (props.isImporting) {

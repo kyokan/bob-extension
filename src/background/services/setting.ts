@@ -7,6 +7,9 @@ const RPC_HOST_DB_KEY = 'rpc_host';
 const RPC_API_KEY_DB_KEY = 'rpc_api_key';
 const ANALYTICS_OPT_IN_KEY = 'analytics_opt_in_key';
 
+const DEFAULT_HOST = process.env.DEFAULT_HOST || 'https://5pi.io/hsd';
+const DEFAULT_API_KEY = process.env.DEFAULT_API_KEY || '';
+
 export default class SettingService extends GenericService {
   store: typeof DB;
 
@@ -15,8 +18,8 @@ export default class SettingService extends GenericService {
     const apiKey = await get(this.store, RPC_API_KEY_DB_KEY);
 
     return {
-      apiHost: apiHost || 'https://5pi.io/hsd',
-      apiKey: apiKey || '',
+      apiHost: apiHost || DEFAULT_HOST,
+      apiKey: apiKey || DEFAULT_API_KEY,
     };
   };
 

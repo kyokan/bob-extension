@@ -74,6 +74,7 @@ export default function Popup (): ReactElement {
   if (!initialized) {
     return (
       <div className="popup">
+        <AppHeader/>
         <Onboarding />
       </div>
     );
