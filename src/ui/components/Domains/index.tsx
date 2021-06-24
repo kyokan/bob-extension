@@ -54,7 +54,7 @@ export function DomainRow(props: {name: string}): ReactElement {
         <div className="domain__info__name">
           <Name name={domain.name} />
           {
-            ['REGISTER', 'FINALIZE', 'RENEW', 'UPDATE'].includes(domain?.ownerCovenantType || '') && (
+            ['REGISTER', 'FINALIZE', 'RENEW', 'UPDATE', 'TRANSFER'].includes(domain?.ownerCovenantType || '') && (
               <div className="domain__info__name__status">
                 Registered
               </div>

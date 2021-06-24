@@ -334,6 +334,10 @@ const controllers: {
     );
   },
 
+  [MessageTypes.GET_COIN]: async (app, message) => {
+    return app.exec('wallet', 'getCoin', message.payload.hash, message.payload.index);
+  },
+
   [MessageTypes.GET_DOMAIN_NAME]: async (app, message) => {
     return app.exec('wallet', 'getDomainName', message.payload);
   },

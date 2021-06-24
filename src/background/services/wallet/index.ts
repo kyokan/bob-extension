@@ -288,6 +288,12 @@ export default class WalletService extends GenericService {
     return this.transactions;
   };
 
+  getCoin = async (hash: string, index: number) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    return wallet.getCoin(Buffer.from(hash, 'hex'), index);
+  }
+
   getDomainName = async (name: string) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
@@ -452,48 +458,31 @@ export default class WalletService extends GenericService {
   };
 
   createReveal = async (opts: {name: string; rate?: number}) => {
-    const {name, rate} = opts;
+    const {name, rate} = opts || {};
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const latestBlockNow = await this.exec('node', 'getLatestBlock');
-    await this.addNameState(name);
+
     this.wdb.height = latestBlockNow.height;
 
-    if (!rules.verifyName(name)) {
+    if (name && !rules.verifyName(name)) {
       throw new Error('Invalid name.');
     }
 
-    const rawName = Buffer.from(name, 'ascii');
-    const nameHash = rules.hashName(rawName);
-    const ns = await wallet.getNameState(nameHash);
+    const rawName = name && Buffer.from(name, 'ascii');
+    const inputNameHash = name && rules.hashName(rawName);
     const height = this.wdb.height + 1;
     const network = this.network;
 
-    if (!ns) {
-      throw new Error('Auction not found.');
-    }
-
-    ns.maybeExpire(height, network);
-
-    const state = ns.state(height, network);
-
-    if (state < states.REVEAL) {
-      throw new Error('Cannot reveal yet.');
-    }
-
-    if (state > states.REVEAL) {
-      throw new Error('Reveal period has passed.');
-    }
-
     const iter = wallet.txdb.bucket.iterator({
-      gte: nameHash ? layout.i.min(nameHash) : layout.i.min(),
-      lte: nameHash ? layout.i.max(nameHash) : layout.i.max(),
+      gte: inputNameHash ? layout.i.min(inputNameHash) : layout.i.min(),
+      lte: inputNameHash ? layout.i.max(inputNameHash) : layout.i.max(),
       values: true
     });
 
     const iter2 = wallet.txdb.bucket.iterator({
-      gte: nameHash ? layout.i.min(nameHash) : layout.i.min(),
-      lte: nameHash ? layout.i.max(nameHash) : layout.i.max(),
+      gte: inputNameHash ? layout.i.min(inputNameHash) : layout.i.min(),
+      lte: inputNameHash ? layout.i.max(inputNameHash) : layout.i.max(),
       values: true
     });
 
@@ -505,6 +494,25 @@ export default class WalletService extends GenericService {
       const raw = raws[i];
       const key = keys[i];
       const [nameHash, hash, index] = layout.i.decode(key);
+
+      const ns = await wallet.getNameState(nameHash);
+
+      if (!ns) {
+        throw new Error('Auction not found.');
+      }
+
+      ns.maybeExpire(height, network);
+
+      const state = ns.state(height, network);
+
+      if (state < states.REVEAL) {
+        continue;
+      }
+
+      if (state > states.REVEAL) {
+        continue;
+      }
+
       const bb = BlindBid.decode(raw);
 
       bb.nameHash = nameHash;
@@ -535,6 +543,25 @@ export default class WalletService extends GenericService {
         continue;
       }
 
+      const nameHash = rules.hashName(coin.covenant.items[2].toString('utf-8'));
+      const ns = await wallet.getNameState(nameHash);
+
+      if (!ns) {
+        throw new Error('Auction not found.');
+      }
+
+      ns.maybeExpire(height, network);
+
+      const state = ns.state(height, network);
+
+      if (state < states.REVEAL) {
+        continue;
+      }
+
+      if (state > states.REVEAL) {
+        continue;
+      }
+
       // Is local?
       if (coin.height < ns.height) {
         continue;
@@ -543,8 +570,9 @@ export default class WalletService extends GenericService {
       const blind = coin.covenant.getHash(3);
       const bv = await wallet.getBlind(blind);
 
-      if (!bv)
+      if (!bv) {
         throw new Error('Blind value not found.');
+      }
 
       const {value, nonce} = bv;
 

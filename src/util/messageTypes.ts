@@ -20,6 +20,7 @@ enum MessageTypes {
   RESET_TRANSACTIONS = 'reset_transactions',
   RESET_DOMAINS = 'reset_domains',
   GET_PENDING_TRANSACTIONS = 'get_pending_transactions',
+  GET_COIN = 'get_coin',
   GET_DOMAIN_NAME = 'get_domain_name',
   GET_DOMAIN_NAMES = 'get_domain_names',
   GET_NAME_NONCE = 'get_name_nonce',

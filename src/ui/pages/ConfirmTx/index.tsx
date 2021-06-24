@@ -343,12 +343,16 @@ function ConfirmContent(props: { hash: string }): ReactElement {
             value={fromDollaryDoos(pendingTx.fee, 6)}
             disabled
           />
-          <Textarea
-            label="Records"
-            value={bindFormattedRecords.join('\n')}
-            rows={bindFormattedRecords.length}
-            disabled
-          />
+          {
+            !!bindFormattedRecords.length && (
+              <Textarea
+                label="Records"
+                value={bindFormattedRecords.join('\n')}
+                rows={bindFormattedRecords.length}
+                disabled
+              />
+            )
+          }
         </>
       );
     default:

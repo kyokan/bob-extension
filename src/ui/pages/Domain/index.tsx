@@ -6,7 +6,11 @@ import {fetchDomainName, useDomainByName} from "@src/ui/ducks/domains";
 import Name from "@src/ui/components/Name";
 import {heightToMoment} from "@src/util/number";
 import {useDispatch} from "react-redux";
-import {RedeemButton, RenewButton, RevealButton, TransferButton} from "@src/ui/components/HomeActionButton";
+import {
+  RedeemButton,
+  RegisterButton,
+  RenewButton,
+} from "@src/ui/components/HomeActionButton";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
 const Network = require("hsd/lib/protocol/network");
@@ -37,6 +41,14 @@ export default function DomainPage(props: Props): ReactElement {
     })()
   }, [name]);
 
+  useEffect(() => {
+    if (!domain) return;
+    const { ownerCovenantType } = domain;
+
+    console.log({ownerCovenantType});
+
+  }, [domain]);
+
   if (!domain) {
     return <></>;
   }
@@ -62,8 +74,8 @@ export default function DomainPage(props: Props): ReactElement {
             {`Expired on ${expiry}`}
           </div>
           <div className="domain-page__header__content__buttons">
-            <RedeemButton/>
-            <RevealButton/>
+            { !domain?.ownerCovenantType && <RedeemButton name={name}/> }
+            { domain?.ownerCovenantType === 'REVEAL' && <RegisterButton name={name}/> }
             <RenewButton/>
           </div>
         </div>

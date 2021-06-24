@@ -1,8 +1,11 @@
-import React, {MouseEventHandler, ReactElement} from "react";
+import React, {MouseEventHandler, ReactElement, useCallback, useEffect, useState} from "react";
 import classNames from "classnames";
 import Icon from "@src/ui/components/Icon";
 import {useHistory} from "react-router";
 import "./home-action-btn.scss";
+import postMessage from "@src/util/postMessage";
+import MessageTypes from "@src/util/messageTypes";
+import {useDomainByName} from "@src/ui/ducks/domains";
 
 type Props = {
   color: 'blue' | 'orange' | 'green';
@@ -64,25 +67,112 @@ export function ReceiveButton(): ReactElement {
 }
 
 export function RevealButton(): ReactElement {
+  const [tx, setTx] = useState(null);
+
+  const sendReveal = useCallback(async () => {
+    try {
+      if (!tx) {
+        return;
+      }
+      await postMessage({
+        type: MessageTypes.ADD_TX_QUEUE,
+        payload: tx,
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  }, [tx]);
+
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const resp = await postMessage({
+          type: MessageTypes.CREATE_REVEAL,
+        });
+        setTx(resp);
+      } catch (e) {
+        setTx(null);
+      }
+    })();
+  }, []);
+
   return (
     <HomeActionButton
       color="orange"
       text="Reveal"
       fontAwesome="fa-eye"
-      onClick={() => null}
-      disabled
+      onClick={sendReveal}
+      disabled={!tx}
     />
   )
 }
 
-export function RedeemButton(): ReactElement {
+export function RedeemButton(props: { name: string }): ReactElement {
+  const domain = useDomainByName(props.name);
+
+  const sendTx = useCallback(async () => {
+    try {
+      const tx = await postMessage({
+        type: MessageTypes.CREATE_REDEEM,
+        payload: { name: props.name },
+      });
+
+      if (!tx) {
+        return;
+      }
+
+      await postMessage({
+        type: MessageTypes.ADD_TX_QUEUE,
+        payload: tx,
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  }, [props.name]);
+
+
   return (
     <HomeActionButton
       color="orange"
       text="Redeem"
       fontAwesome="fa-coins"
-      onClick={() => null}
-      disabled
+      onClick={sendTx}
+      disabled={!!domain?.ownerCovenantType}
+    />
+  )
+}
+
+export function RegisterButton(props: { name: string }): ReactElement {
+  const domain = useDomainByName(props.name);
+
+  const sendTx = useCallback(async () => {
+    try {
+      const tx = await postMessage({
+        type: MessageTypes.CREATE_UPDATE,
+        payload: { name: props.name, data: { records: [] } },
+      });
+
+      if (!tx) {
+        return;
+      }
+
+      await postMessage({
+        type: MessageTypes.ADD_TX_QUEUE,
+        payload: tx,
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  }, [props.name]);
+
+  return (
+    <HomeActionButton
+      color="orange"
+      text="Register"
+      fontAwesome="fa-cash-register"
+      onClick={sendTx}
+      disabled={domain?.ownerCovenantType !== 'REVEAL'}
     />
   )
 }
