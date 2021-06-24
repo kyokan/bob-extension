@@ -23,14 +23,6 @@ import resolve from "@src/background/resolve";
         }
     });
 
-    browser.runtime.onConnect.addListener(async port => {
-        await waitForStartApp();
-
-        port.onDisconnect.addListener(async () =>  {
-            await app.exec('wallet', 'resetNames', -1);
-        });
-    });
-
     browser.webRequest.onBeforeRequest.addListener(
       resolve,
       {urls: ["<all_urls>"]},

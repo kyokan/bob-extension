@@ -334,6 +334,10 @@ const controllers: {
     );
   },
 
+  [MessageTypes.GET_DOMAIN_NAME]: async (app, message) => {
+    return app.exec('wallet', 'getDomainName', message.payload);
+  },
+
   [MessageTypes.GET_DOMAIN_NAMES]: async (app, message) => {
     return app.exec('wallet', 'getDomainNames', message.payload);
   },
@@ -368,6 +372,10 @@ const controllers: {
 
   [MessageTypes.HASH_NAME]: async (app, message) => {
     return app.exec('node', 'hashName', message.payload);
+  },
+
+  [MessageTypes.GET_NAME_RESOURCE]: async (app, message) => {
+    return app.exec('node', 'getNameResource', message.payload);
   },
 
   [MessageTypes.GET_NAME_BY_HASH]: async (app, message) => {

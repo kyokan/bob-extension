@@ -1,0 +1,117 @@
+@import "./src/util/variables";
+
+.domain-page {
+  @extend %col-nowrap;
+  cursor: default;
+  overflow-y: auto;
+
+  &__header {
+    @extend %col-nowrap;
+    padding: 1.25rem;
+
+    &__action {
+      @extend %row-nowrap;
+      cursor: default;
+
+      .icon {
+        margin-right: .5rem;
+      }
+
+      > span {
+        @extend %regular-font;
+        cursor: pointer;
+        font-weight: 600;
+      }
+    }
+
+    &__content {
+      @extend %col-nowrap;
+      margin: .5rem 0;
+
+      &__name {
+        @extend %h2-font;
+        font-weight: 600;
+      }
+
+      &__expiry {
+        @extend %small-font;
+        color: $secondary-text;
+        margin-bottom: .5rem;
+      }
+
+      &__buttons {
+        @extend %row-nowrap;
+        margin-top: .5rem;
+
+        .home-action-btn {
+          flex: 0 0 auto;
+          padding-right: 1.25rem;
+        }
+      }
+    }
+  }
+
+  &__content {
+    @extend %col-nowrap;
+    padding: 0 1.25rem 1.25rem;
+
+
+  }
+
+  &__records-group {
+    @extend %col-nowrap;
+
+    &__header {
+      @extend %row-nowrap;
+      margin-bottom: .25rem;
+
+      &__label {
+        font-weight: 600;
+      }
+    }
+  }
+
+  &__record {
+    @extend %col-nowrap;
+    border: 1px solid $border-gray;
+    padding: .5rem .75rem;
+    overflow: hidden;
+    border-radius: 2px;
+    margin: .25rem auto;
+    width: calc(100% - 2rem);
+
+    &__empty {
+      text-align: center;
+      margin: 1rem auto;
+      @extend %regular-font;
+      font-weight: 700;
+      color: $border-gray;
+    }
+
+    &__type {
+      @extend %lite-font;
+      font-weight: 600;
+      margin-bottom: .25rem;
+    }
+
+    &__kvs {
+      @extend %row-nowrap;
+      overflow-x: auto;
+    }
+
+    &__kv {
+      @extend %col-nowrap;
+      margin-right: .75rem;
+    }
+
+    &__key {
+      @extend %h5-font;
+      color: $label-text;
+      text-transform: uppercase;
+    }
+
+    &__value {
+      @extend %regular-font;
+    }
+  }
+}

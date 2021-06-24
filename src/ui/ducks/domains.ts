@@ -6,6 +6,7 @@ import {AppRootState} from "@src/ui/store/configureAppStore";
 import deepEqual from "fast-deep-equal";
 
 export enum ActionTypes {
+  SET_DOMAIN_NAME = 'domains/setDomainName',
   SET_DOMAIN_NAMES = 'domains/setDomainNames',
   APPEND_DOMAIN_NAMES = 'domains/appendDomainNames',
   SET_FETCHING = 'domains/setFetching',
@@ -47,6 +48,8 @@ type Domain = {
   transfer: number;
   value: number;
   weak: boolean;
+  owned: boolean;
+  ownerCovenantType?: string;
 }
 
 const initialState: State = {
@@ -55,8 +58,6 @@ const initialState: State = {
   fetching: false,
   offset: 20,
 };
-
-let getNameNonce = 0;
 
 export const setFetching = (fetching: boolean) => ({
   type: ActionTypes.SET_FETCHING,
@@ -71,25 +72,36 @@ export const setOffset = (offset: number) => {
 };
 
 export const resetDomains = () => async (dispatch: Dispatch) => {
-  await postMessage({ type: MessageTypes.RESET_DOMAINS, payload: getNameNonce });
-  getNameNonce = await postMessage({ type: MessageTypes.GET_TX_NONCE });
   dispatch(setDomainNames([]));
   dispatch(setOffset(20));
 };
 
+export const fetchDomainName = (name: string) => async (dispatch: Dispatch) => {
+  await dispatch(setFetching(true));
+  const domain: Domain = await postMessage({
+    type: MessageTypes.GET_DOMAIN_NAME,
+    payload: name,
+  });
+  await dispatch(setDomainName(domain));
+  await dispatch(setFetching(false));
+}
+
 export const fetchDomainNames = () => async (dispatch: Dispatch) => {
   await dispatch(setFetching(true));
-  getNameNonce = await postMessage({ type: MessageTypes.GET_NAME_NONCE });
   await postMessage({
     type: MessageTypes.GET_DOMAIN_NAMES,
-    payload: {
-      nonce: getNameNonce,
-    },
   });
   await dispatch(setFetching(false));
 };
 
-export const setDomainNames = (domains: any) => {
+export const setDomainName = (domain: Domain) => {
+  return {
+    type: ActionTypes.SET_DOMAIN_NAME,
+    payload: domain,
+  };
+};
+
+export const setDomainNames = (domains: Domain[]) => {
   return {
     type: ActionTypes.SET_DOMAIN_NAMES,
     payload: domains,
@@ -110,15 +122,16 @@ export default function domains(state = initialState, action: Action): State {
           ? Math.max(20, state.order.length)
           : action.payload,
       };
-    case ActionTypes.SET_DOMAIN_NAMES:
+    case ActionTypes.SET_DOMAIN_NAME:
       return {
         ...state,
-        order: action.payload.map((domain: Domain) => domain.name),
-        map: action.payload.reduce((map: {[n: string]: Domain}, domain: Domain) => {
-          map[domain.name] = domain;
-          return map;
-        }, []),
+        map: {
+          ...state.map,
+          [action.payload.name]: action.payload,
+        },
       };
+    case ActionTypes.SET_DOMAIN_NAMES:
+      return handleSetDomainNames(state, action);
     case ActionTypes.APPEND_DOMAIN_NAMES:
       return handleAppendDomainNames(state, action);
     default:
@@ -126,11 +139,18 @@ export default function domains(state = initialState, action: Action): State {
   }
 }
 
-function handleAppendDomainNames(state: State, action: Action): State {
-  if (getNameNonce !== action.meta.nonce) {
-    return state;
-  }
+function handleSetDomainNames(state: State, action: Action): State {
+  return {
+    ...state,
+    order: action.payload.map((domain: Domain) => domain.name),
+    map: action.payload.reduce((map: {[n: string]: Domain}, domain: Domain) => {
+      map[domain.name] = domain;
+      return map;
+    }, []),
+  };
+}
 
+function handleAppendDomainNames(state: State, action: Action): State {
   return {
     ...state,
     order: [

@@ -32,7 +32,7 @@ import BidReveal from "@src/background/services/wallet/bid-reveal";
 import {UpdateRecordType} from "@src/contentscripts/bob3";
 import {getBidBlind, getTXAction} from "@src/util/transaction";
 import {setInfo} from "@src/ui/ducks/node";
-const {types} = rules;
+const {types, typesByVal} = rules;
 const bsocket = require("bsock");
 
 const networkType = process.env.NETWORK_TYPE || 'main';
@@ -209,14 +209,6 @@ export default class WalletService extends GenericService {
     return txs;
   };
 
-  getTXNonce = () => {
-    return this._getTxNonce;
-  };
-
-  getNameNonce = () => {
-    return this._getNameNonce;
-  };
-
   revealSeed = async (passphrase: string) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
@@ -296,19 +288,40 @@ export default class WalletService extends GenericService {
     return this.transactions;
   };
 
+  getDomainName = async (name: string) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const res = await this.exec('node', 'getNameInfo', name);
+    const { result } = res || {};
+    const { info } = result || {};
+
+    const {owner} = info;
+    const coin = await wallet.getCoin(Buffer.from(owner.hash, 'hex'), owner.index);
+
+    return {
+      ...info,
+      owned: !!coin,
+      ownerCovenantType: typesByVal[coin?.covenant.type],
+    }
+  };
+
   getDomainNames = async (opts?: {id?: string, nonce: number}) => {
     const {
       id,
-      nonce = 0,
     } = opts || {};
     const walletId = id || this.selectedID;
     const wallet = await this.wdb.get(walletId);
 
+    if (this.domains?.length) {
+      await pushMessage({
+        type: ActionTypes.SET_DOMAIN_NAMES,
+        payload: this.domains,
+      });
+    }
+
     let domains = await wallet.getNames();
 
     const latestBlock = await this.exec('node', 'getLatestBlock');
-
-    this._getNameNonce = nonce;
 
     domains = Object.keys(domains).map((name: string) => domains[name]);
 
@@ -318,37 +331,36 @@ export default class WalletService extends GenericService {
       return 0;
     });
 
-    for (let i = 0; i < domains.length; i = i + 250) {
-      if (nonce !== this._getNameNonce) {
-        return false;
-      }
-      const partials = domains.slice(i, i + 250);
-      const result = [];
+    const result = [];
 
-      for (let j = 0; j < partials.length; j++) {
-        const domain = partials[j];
-        const {owner} = domain;
-        const state = domain.state(latestBlock?.height, this.network);
+    for (let i = 0; i < domains.length; i++) {
+      const domain = domains[i];
+      const {owner} = domain;
+      const state = domain.state(latestBlock?.height, this.network);
 
-        if (state !== 4) {
-          continue;
-        }
+      const coin = await wallet.getCoin(owner.hash, owner.index);
 
-        const coin = await wallet.getCoin(owner.hash, owner.index);
-
-        if (coin) {
-          result.push(domain);
-        }
+      if (!coin) {
+        continue;
       }
 
-      await pushMessage({
-        type: ActionTypes.APPEND_DOMAIN_NAMES,
-        payload: result,
-        meta: {
-          nonce,
-        },
+      if (state !== 4) {
+        continue;
+      }
+
+      result.push({
+        ...domain.format(latestBlock?.height, this.network),
+        owned: !!coin,
+        ownerCovenantType: typesByVal[coin.covenant.type],
       });
     }
+
+    this.domains = result;
+
+    await pushMessage({
+      type: ActionTypes.SET_DOMAIN_NAMES,
+      payload: this.domains,
+    });
 
     return true;
   };
@@ -359,8 +371,6 @@ export default class WalletService extends GenericService {
 
     if (!name) throw new Error('name must not be empty');
 
-    const latestBlock = await this.exec('node', 'getLatestBlock');
-    const nameHash = rules.hashName(name);
     const bids = await wallet.getBids();
     return bids;
   };

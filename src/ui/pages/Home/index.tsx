@@ -23,13 +23,17 @@ import {
 } from "@src/ui/ducks/domains";
 import Domains from "@src/ui/components/Domains";
 import {fetchTXQueue} from "@src/ui/ducks/queue";
+import {useLocation} from "react-router";
+import queryString from 'querystring';
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
   const txOffset = useTXOffset();
   const domainOffset = useDomainOffset();
   const currentWallet = useCurrentWallet();
-  const [tab, setTab] = useState<'domains'|'activity'>('activity');
+  const loc = useLocation();
+  const parsed = queryString.parse(loc.search.slice(1));
+  const [tab, setTab] = useState<'domains'|'activity'>(parsed.defaultTab as any || 'activity');
   const { spendable, lockedUnconfirmed } = useWalletBalance();
   const [currentAddress, setCurrentAddress] = useState('');
   const listElement = useRef<HTMLDivElement>(null);
@@ -123,7 +127,6 @@ export default function Home(): ReactElement {
         <SendButton />
         <ReceiveButton />
         <RevealButton />
-        <RedeemButton />
       </div>
       <div
         className="home__list"

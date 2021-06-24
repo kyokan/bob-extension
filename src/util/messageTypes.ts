@@ -20,6 +20,7 @@ enum MessageTypes {
   RESET_TRANSACTIONS = 'reset_transactions',
   RESET_DOMAINS = 'reset_domains',
   GET_PENDING_TRANSACTIONS = 'get_pending_transactions',
+  GET_DOMAIN_NAME = 'get_domain_name',
   GET_DOMAIN_NAMES = 'get_domain_names',
   GET_NAME_NONCE = 'get_name_nonce',
   GET_BIDS_BY_NAME = 'get_bids_by_name',
@@ -40,6 +41,7 @@ enum MessageTypes {
 
   // node
   GET_LATEST_BLOCK = 'get_latest_block',
+  GET_NAME_RESOURCE = 'get_name_resource',
   GET_NAME_BY_HASH = 'get_name_by_hash',
   HASH_NAME = 'hashName',
   ESTIMATE_SMART_FEE = 'estimate_smart_fee',

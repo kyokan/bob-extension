@@ -165,6 +165,21 @@ export default class NodeService extends GenericService {
     return json;
   }
 
+  async getNameResource(tld: string) {
+    const { apiHost } = await this.exec('setting', 'getAPI');
+    const headers = await this.getHeaders();
+    const resp = await fetch(apiHost, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        method: 'getnameresource',
+        params: [tld],
+      }),
+    });
+    const json = await resp.json();
+    return json;
+  }
+
   async getCoin(txHash: string, txIndex: number) {
     const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();

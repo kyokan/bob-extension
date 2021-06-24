@@ -11,6 +11,7 @@ import {heightToMoment} from "@src/util/number";
 import Name from "@src/ui/components/Name";
 import {useDispatch} from "react-redux";
 import {Loader} from "@src/ui/components/Loader";
+import {useHistory} from "react-router";
 const Network = require("hsd/lib/protocol/network");
 const networkType = process.env.NETWORK_TYPE || 'main';
 
@@ -38,6 +39,7 @@ export default function Domains(): ReactElement {
 export function DomainRow(props: {name: string}): ReactElement {
   const domain = useDomainByName(props.name);
   const network = Network.get(networkType);
+  const history = useHistory();
 
   if (!domain) return <></>;
 
@@ -46,11 +48,18 @@ export function DomainRow(props: {name: string}): ReactElement {
   return (
     <div
       className="domain"
-      onClick={() => window.open(`https://blockexplorer.com/name/${props.name}`)}
+      onClick={() => history.push(`/domains/${props.name}`)}
     >
       <div className="domain__info">
         <div className="domain__info__name">
           <Name name={domain.name} />
+          {
+            ['REGISTER', 'FINALIZE', 'RENEW', 'UPDATE'].includes(domain?.ownerCovenantType || '') && (
+              <div className="domain__info__name__status">
+                Registered
+              </div>
+            )
+          }
         </div>
         <div className="domain__info__expiry">
           {`Expired on ${expiry}`}

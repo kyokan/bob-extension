@@ -8,10 +8,11 @@ type Props = {
   hash?: string;
   name?: string;
   onClick?: MouseEventHandler;
+  slash?: boolean;
 }
 
 export default function Name(props: Props): ReactElement {
-  const {name, hash} = props;
+  const {name, hash, slash} = props;
   const [domain, setDomain] = useState('');
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function Name(props: Props): ReactElement {
 
   return (
     <div className="name" title={domain} onClick={props.onClick}>
-      {domain}
+      {domain}{slash ? '/' : ''}
     </div>
   )
 }

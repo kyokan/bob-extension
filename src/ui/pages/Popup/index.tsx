@@ -17,6 +17,7 @@ import ConfirmTx from "@src/ui/pages/ConfirmTx";
 import postMessage from "@src/util/postMessage";
 import {useTXQueue} from "@src/ui/ducks/queue";
 import Settings from "@src/ui/pages/Settings";
+import DomainPage from "@src/ui/pages/Domain";
 
 export default function Popup (): ReactElement {
   const dispatch = useDispatch();
@@ -117,6 +118,9 @@ export default function Popup (): ReactElement {
         </Route>
         <Route path="/settings">
           <Settings />
+        </Route>
+        <Route path="/domains/:name">
+          <DomainPage />
         </Route>
         <Route path="/">
           <Home />

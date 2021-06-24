@@ -40,8 +40,19 @@
     flex: 1 0 auto;
 
     &__name {
+      @extend %row-nowrap;
       @extend %lite-font;
+      align-items: center;
       font-weight: 600;
+
+      &__status {
+        margin-left: .25rem;
+        font-size: .75rem;
+        padding: .125rem .25rem;
+        border-radius: .125rem;
+        color: rgba($primary-blue, .75);
+        background-color: rgba($primary-blue, .1);
+      }
     }
 
     &__expiry {
