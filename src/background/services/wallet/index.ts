@@ -1074,7 +1074,7 @@ export default class WalletService extends GenericService {
         this.forceStopRescan = false;
         this.rescanning = false;
         await this.pushState();
-        break;
+        throw new Error('rescan stopped.');
       }
       const unlock = await this.wdb.txLock.lock();
       try {
@@ -1152,6 +1152,12 @@ export default class WalletService extends GenericService {
 
     let b;
     for (let i = startDepth; i < endDepth; i++) {
+      if (this.forceStopRescan) {
+        this.forceStopRescan = false;
+        this.rescanning = false;
+        await this.pushState();
+        throw new Error('rescan stopped.');
+      }
       const key = account.deriveReceive(i);
       const receive = key.getAddress().toString(this.network);
       const path = key.toPath();
@@ -1186,6 +1192,12 @@ export default class WalletService extends GenericService {
 
     let b;
     for (let i = startDepth; i < endDepth; i++) {
+      if (this.forceStopRescan) {
+        this.forceStopRescan = false;
+        this.rescanning = false;
+        await this.pushState();
+        throw new Error('rescan stopped.');
+      }
       const key = account.deriveChange(i);
       const change = key.getAddress().toString(this.network);
       const path = key.toPath();
@@ -1210,6 +1222,8 @@ export default class WalletService extends GenericService {
 
   stopRescan = async () => {
     this.forceStopRescan = true;
+    this.rescanning = false;
+    this.pushState();
   };
 
   fullRescan = async () => {
@@ -1292,7 +1306,7 @@ export default class WalletService extends GenericService {
         this.forceStopRescan = false;
         this.rescanning = false;
         await this.pushState();
-        break;
+        throw new Error('rescan stopped.');
       }
       await this.processBlock(i);
     }

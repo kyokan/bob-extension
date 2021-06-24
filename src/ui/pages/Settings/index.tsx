@@ -207,7 +207,7 @@ function WalletContent(): ReactElement {
         primaryBtnProps={{
           children: rescanning ? 'Stop Rescan' : 'Rescan',
           onClick: rescanning ? stopRescan : rescan,
-          loading: rescanning,
+          // loading: rescanning,
         }}
       >
         <small>Perform a full rescan.</small>
