@@ -9,7 +9,6 @@ import {useDispatch} from "react-redux";
 import {
   RedeemButton,
   RegisterButton,
-  RenewButton,
 } from "@src/ui/components/HomeActionButton";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
@@ -76,7 +75,6 @@ export default function DomainPage(props: Props): ReactElement {
           <div className="domain-page__header__content__buttons">
             { !domain?.ownerCovenantType && <RedeemButton name={name}/> }
             { domain?.ownerCovenantType === 'REVEAL' && <RegisterButton name={name}/> }
-            <RenewButton/>
           </div>
         </div>
       </div>

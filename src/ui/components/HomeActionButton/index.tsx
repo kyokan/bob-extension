@@ -178,6 +178,7 @@ export function RegisterButton(props: { name: string }): ReactElement {
 }
 
 export function RenewButton(): ReactElement {
+
   return (
     <HomeActionButton
       color="green"
