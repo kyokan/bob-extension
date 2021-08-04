@@ -36,6 +36,7 @@ const {types, typesByVal} = rules;
 const bsocket = require("bsock");
 
 const networkType = process.env.NETWORK_TYPE || 'main';
+const ACCOUNT_DEPTH = 100;
 
 export default class WalletService extends GenericService {
   network: typeof Network;
@@ -1180,7 +1181,7 @@ export default class WalletService extends GenericService {
     }
   };
 
-  getAllReceiveTXs = async (startDepth = 0, endDepth = 1000, transactions: any[] = []): Promise<any[]> => {
+  getAllReceiveTXs = async (startDepth = 0, endDepth = ACCOUNT_DEPTH, transactions: any[] = []): Promise<any[]> => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const account = await wallet.getAccount('default');
@@ -1217,10 +1218,10 @@ export default class WalletService extends GenericService {
     }
 
     transactions = transactions.concat(newTXs);
-    return await this.getAllReceiveTXs(startDepth + 1000, endDepth + 1000, transactions);
+    return await this.getAllReceiveTXs(startDepth + ACCOUNT_DEPTH, endDepth + ACCOUNT_DEPTH, transactions);
   };
 
-  getAllChangeTXs = async (startDepth = 0, endDepth = 1000, transactions: any[] = []): Promise<any[]> => {
+  getAllChangeTXs = async (startDepth = 0, endDepth = ACCOUNT_DEPTH, transactions: any[] = []): Promise<any[]> => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const account = await wallet.getAccount('default');
@@ -1255,7 +1256,7 @@ export default class WalletService extends GenericService {
     }
 
     transactions = transactions.concat(newTXs);
-    return await this.getAllChangeTXs(startDepth + 1000, endDepth + 1000, transactions);
+    return await this.getAllChangeTXs(startDepth + ACCOUNT_DEPTH, endDepth + ACCOUNT_DEPTH, transactions);
   };
 
   stopRescan = async () => {
