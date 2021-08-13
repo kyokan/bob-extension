@@ -7,7 +7,7 @@ const RPC_HOST_DB_KEY = 'rpc_host';
 const RPC_API_KEY_DB_KEY = 'rpc_api_key';
 const ANALYTICS_OPT_IN_KEY = 'analytics_opt_in_key';
 
-const DEFAULT_HOST = process.env.DEFAULT_HOST || 'http://dualstack.hapi-prod-lb-365851530.us-west-2.elb.amazonaws.com/hsd';
+const DEFAULT_HOST = process.env.DEFAULT_HOST || 'https://api.handshakeapi.com/hsd';
 const DEFAULT_API_KEY = process.env.DEFAULT_API_KEY || '775f8ca39e1748a7b47ff16ad4b1b9ad';
 
 export default class SettingService extends GenericService {

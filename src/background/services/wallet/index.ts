@@ -59,6 +59,8 @@ export default class WalletService extends GenericService {
 
   checkStatusTimeout?: any;
 
+  pollerTimeout?: any;
+
   _getTxNonce: number;
 
   _getNameNonce: number;
@@ -1181,7 +1183,7 @@ export default class WalletService extends GenericService {
     }
   };
 
-  getAllReceiveTXs = async (startDepth = 0, endDepth = ACCOUNT_DEPTH, transactions: any[] = []): Promise<any[]> => {
+  getAllReceiveTXs = async (startDepth = 0, endDepth = 24): Promise<any[]> => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const account = await wallet.getAccount('default');
@@ -1211,17 +1213,10 @@ export default class WalletService extends GenericService {
       await b.write();
     }
 
-    const newTXs = await this.exec('node', 'getTXByAddresses', addresses);
-
-    if (!newTXs.length) {
-      return transactions;
-    }
-
-    transactions = transactions.concat(newTXs);
-    return await this.getAllReceiveTXs(startDepth + ACCOUNT_DEPTH, endDepth + ACCOUNT_DEPTH, transactions);
+    return this.exec('node', 'getTXByAddresses', addresses, startDepth, endDepth);
   };
 
-  getAllChangeTXs = async (startDepth = 0, endDepth = ACCOUNT_DEPTH, transactions: any[] = []): Promise<any[]> => {
+  getAllChangeTXs = async (startDepth = 0, endDepth = 24): Promise<any[]> => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const account = await wallet.getAccount('default');
@@ -1249,14 +1244,8 @@ export default class WalletService extends GenericService {
     if (b) {
       await b.write();
     }
-    const newTXs = await this.exec('node', 'getTXByAddresses', addresses);
 
-    if (!newTXs.length) {
-      return transactions;
-    }
-
-    transactions = transactions.concat(newTXs);
-    return await this.getAllChangeTXs(startDepth + ACCOUNT_DEPTH, endDepth + ACCOUNT_DEPTH, transactions);
+    return this.exec('node', 'getTXByAddresses', addresses, startDepth, endDepth);
   };
 
   stopRescan = async () => {
@@ -1265,17 +1254,22 @@ export default class WalletService extends GenericService {
     this.pushState();
   };
 
-  fullRescan = async () => {
+  fullRescan = async (start: number = 0) => {
     this.rescanning = true;
     this.pushState();
     await this.pushBobMessage('Start rescanning...');
     const latestBlockEnd = await this.exec('node', 'getLatestBlock');
-    const changeTXs = await this.getAllChangeTXs();
-    const receiveTXs = await this.getAllReceiveTXs();
+
+    for (let i = start; i < latestBlockEnd.height; i+=25) {
+      const end = Math.min(latestBlockEnd.height, i+24);
+      const changeTXs = await this.getAllChangeTXs(i, end);
+      const receiveTXs = await this.getAllReceiveTXs(i, end);
     const transactions: any[] = receiveTXs.concat(changeTXs);
     await this.wdb.watch();
     await this.insertTransactions(transactions);
-    await put(this.store,`latest_block_${this.selectedID}`, latestBlockEnd);
+      await put(this.store,`latest_block_${this.selectedID}`, end);
+    }
+
     this.rescanning = false;
     this.pushState();
     await this.pushBobMessage('');
@@ -1367,7 +1361,7 @@ export default class WalletService extends GenericService {
       } else if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
         await this.rescanBlocks(latestBlockLast.height + 1, latestBlockNow.height);
       } else {
-        await this.fullRescan();
+        await this.fullRescan(latestBlockLast ? latestBlockLast.height : 0);
       }
 
       this.rescanning = false;
@@ -1386,47 +1380,13 @@ export default class WalletService extends GenericService {
     }
   };
 
-  async initSocket() {
-    const { apiHost, apiKey } = await this.exec('setting', 'getAPI');
-    const {hostname} = new URL(apiHost);
-    const is5pi = ['5pi.io', 'www.5pi.io'].includes(hostname);
-    const socket = bsocket.socket();
-    socket.on('connect', async () => {
-      try {
-        await socket.call(
-          'auth',
-          is5pi
-            ? '775f8ca39e1748a7b47ff16ad4b1b9ad'
-            : apiKey,
-        );
-        await socket.call('watch chain');
-      } catch (e) {
-        console.error(e);
-        return;
-      }
-    });
-
-    socket.on('error', (err: any) => {
-      console.error(err);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('disconnected');
-    });
-
-    socket.bind('block connect', async (data: any) => {
-      setTimeout(async () => {
+  async initPoller() {
+    return setInterval(() => (async () => {
         await this.checkForRescan();
         const {hash, height, time} = await this.exec('node', 'getLatestBlock');
         await pushMessage(setInfo(hash, height, time));
         this.emit('newBlock', {hash, height, time});
-      }, 1000);
-
-    });
-
-    socket.connect(apiHost);
-
-    this.socket = socket;
+    })(), 5000);
   }
 
   async start() {
@@ -1452,12 +1412,15 @@ export default class WalletService extends GenericService {
     }
 
     this.checkForRescan();
-    this.initSocket();
+    this.pollerTimeout = this.initPoller();
   }
 
   async stop() {
     if (this.checkStatusTimeout) {
       clearInterval(this.checkStatusTimeout);
+    }
+    if (this.pollerTimeout) {
+      clearInterval(this.pollerTimeout);
     }
   }
 }
