@@ -5,10 +5,11 @@ const isValidAddress = (address: string) => {
   const {networks} = protocol;
   const inputAddressPrefix = address.slice(0, 2);
   const expectedAddressPrefix = networks[networkType].addressPrefix;
+
   if (inputAddressPrefix !== expectedAddressPrefix) {
     return false;
   }
-
+  
   try {
     new Address(address);
     return true;
