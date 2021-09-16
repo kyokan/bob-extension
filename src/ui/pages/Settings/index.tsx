@@ -1,18 +1,28 @@
-import React, {ReactElement, ReactNode, useCallback, useEffect, useState} from "react";
-import {RegularView, RegularViewContent, RegularViewHeader} from "@src/ui/components/RegularView";
-import {Route, Switch, useHistory} from "react-router";
+import React, {
+  ReactElement,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import {
+  RegularView,
+  RegularViewContent,
+  RegularViewHeader,
+} from "@src/ui/components/RegularView";
+import { Route, Switch, useHistory } from "react-router";
 import Icon from "@src/ui/components/Icon";
 import "./settings.scss";
 import Input from "@src/ui/components/Input";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
-import Button, {ButtonProps, ButtonType} from "@src/ui/components/Button";
-import {useCurrentWallet, useWalletState} from "@src/ui/ducks/wallet";
+import Button, { ButtonProps, ButtonType } from "@src/ui/components/Button";
+import { useCurrentWallet, useWalletState } from "@src/ui/ducks/wallet";
 import Modal from "@src/ui/components/Modal";
 import Textarea from "@src/ui/components/Textarea";
 import SwitchButton from "@src/ui/components/SwitchButton";
 
-const pkg = require('../../../../package.json');
+const pkg = require("../../../../package.json");
 
 export default function Settings(): ReactElement {
   const history = useHistory();
@@ -21,9 +31,9 @@ export default function Settings(): ReactElement {
     postMessage({
       type: MessageTypes.MP_TRACK,
       payload: {
-        name: 'Screen View',
+        name: "Screen View",
         data: {
-          view: 'Settings',
+          view: "Settings",
         },
       },
     });
@@ -33,41 +43,47 @@ export default function Settings(): ReactElement {
     <RegularView className="settings">
       <Switch>
         <Route path="/settings/network">
-          <RegularViewHeader
-            onClose={() => history.push('/')}
-          >
-            <Icon size={1.25} fontAwesome="fa-arrow-left" onClick={() => history.goBack()}/>
+          <RegularViewHeader onClose={() => history.push("/")}>
+            <Icon
+              size={1.25}
+              fontAwesome="fa-arrow-left"
+              onClick={() => history.goBack()}
+            />
             <div className="settings__title">Network</div>
           </RegularViewHeader>
         </Route>
         <Route path="/settings/wallet">
-          <RegularViewHeader
-            onClose={() => history.push('/')}
-          >
-            <Icon size={1.25} fontAwesome="fa-arrow-left" onClick={() => history.goBack()}/>
+          <RegularViewHeader onClose={() => history.push("/")}>
+            <Icon
+              size={1.25}
+              fontAwesome="fa-arrow-left"
+              onClick={() => history.goBack()}
+            />
             <div className="settings__title">Wallet</div>
           </RegularViewHeader>
         </Route>
         <Route path="/settings/security">
-          <RegularViewHeader
-            onClose={() => history.push('/')}
-          >
-            <Icon size={1.25} fontAwesome="fa-arrow-left" onClick={() => history.goBack()}/>
+          <RegularViewHeader onClose={() => history.push("/")}>
+            <Icon
+              size={1.25}
+              fontAwesome="fa-arrow-left"
+              onClick={() => history.goBack()}
+            />
             <div className="settings__title">Security</div>
           </RegularViewHeader>
         </Route>
         <Route path="/settings/about">
-          <RegularViewHeader
-            onClose={() => history.push('/')}
-          >
-            <Icon size={1.25} fontAwesome="fa-arrow-left" onClick={() => history.goBack()}/>
+          <RegularViewHeader onClose={() => history.push("/")}>
+            <Icon
+              size={1.25}
+              fontAwesome="fa-arrow-left"
+              onClick={() => history.goBack()}
+            />
             <div className="settings__title">About</div>
           </RegularViewHeader>
         </Route>
         <Route path="/settings">
-          <RegularViewHeader
-            onClose={() => history.push('/')}
-          >
+          <RegularViewHeader onClose={() => history.push("/")}>
             Settings
           </RegularViewHeader>
         </Route>
@@ -84,9 +100,7 @@ export default function Settings(): ReactElement {
             <SecurityContent />
           </Route>
           <Route path="/settings/about">
-            <SettingGroup name="Version">
-              {pkg.version}
-            </SettingGroup>
+            <SettingGroup name="Version">{pkg.version}</SettingGroup>
           </Route>
           <Route path="/settings">
             <SettingsSelectContent />
@@ -94,26 +108,38 @@ export default function Settings(): ReactElement {
         </Switch>
       </RegularViewContent>
     </RegularView>
-  )
+  );
 }
 
 function NetworkContent(): ReactElement {
-  const [rpcUrl, setRPCUrl] = useState('');
-  const [defaultRpcUrl, setDefaultRPCUrl] = useState('');
-  const [rpcAPIKey, setAPIKey] = useState('');
-  const [defaultRpcAPIKey, setDefaultAPIKey] = useState('');
-  const [rpcURLError, setRPCUrlError] = useState('');
-  const [rpcAPIKeyError, setRPCApiKeyError] = useState('');
+  const [rpcUrl, setRPCUrl] = useState("");
+  const [defaultRpcUrl, setDefaultRPCUrl] = useState("");
+  const [rpcAPIKey, setAPIKey] = useState("");
+  const [defaultRpcAPIKey, setDefaultAPIKey] = useState("");
+  const [rpcURLError, setRPCUrlError] = useState("");
+  const [rpcAPIKeyError, setRPCApiKeyError] = useState("");
   const [savingUrl, setSavingUrl] = useState(false);
   const [savingAPIKey, setSavingApiKey] = useState(false);
+  const [activeResolver, setActiveResolver] = useState(false);
 
   useEffect(() => {
     (async function onNetworkContentMount() {
-      const { apiHost, apiKey } = await postMessage({ type: MessageTypes.GET_API });
+      const { apiHost, apiKey } = await postMessage({
+        type: MessageTypes.GET_API,
+      });
       setDefaultRPCUrl(apiHost);
       setRPCUrl(apiHost);
       setAPIKey(apiKey);
       setDefaultAPIKey(apiKey);
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async function () {
+      const optIn = await postMessage({
+        type: MessageTypes.GET_RESOLVER,
+      });
+      setActiveResolver(optIn);
     })();
   }, []);
 
@@ -145,12 +171,26 @@ function NetworkContent(): ReactElement {
     setSavingApiKey(false);
   }, [rpcAPIKey]);
 
+  const updateResolver = useCallback(
+    async (e) => {
+      await postMessage({
+        type: MessageTypes.SET_RESOLVER,
+        payload: e.target.checked,
+      });
+      const optIn = await postMessage({
+        type: MessageTypes.GET_RESOLVER,
+      });
+      setActiveResolver(optIn);
+    },
+    [activeResolver]
+  );
+
   return (
     <>
       <SettingGroup
         name="RPC URL"
         primaryBtnProps={{
-          children: 'Save',
+          children: "Save",
           onClick: onSaveURL,
           disabled: defaultRpcUrl === rpcUrl || savingUrl,
           loading: savingUrl,
@@ -159,13 +199,13 @@ function NetworkContent(): ReactElement {
         <Input
           value={rpcUrl}
           errorMessage={rpcURLError}
-          onChange={e => setRPCUrl(e.target.value)}
+          onChange={(e) => setRPCUrl(e.target.value)}
         />
       </SettingGroup>
       <SettingGroup
         name="RPC API Key"
         primaryBtnProps={{
-          children: 'Save',
+          children: "Save",
           onClick: onSaveAPIKey,
           disabled: defaultRpcAPIKey === rpcAPIKey || savingAPIKey,
           loading: savingAPIKey,
@@ -174,7 +214,15 @@ function NetworkContent(): ReactElement {
         <Input
           value={rpcAPIKey}
           errorMessage={rpcAPIKeyError}
-          onChange={e => setAPIKey(e.target.value)}
+          onChange={(e) => setAPIKey(e.target.value)}
+        />
+      </SettingGroup>
+      <SettingGroup name="HNS Resolver">
+        <small>Resolve DNS over Handshake.</small>
+        <SwitchButton
+          className="network__toggle"
+          onChange={updateResolver}
+          checked={activeResolver}
         />
       </SettingGroup>
     </>
@@ -182,7 +230,7 @@ function NetworkContent(): ReactElement {
 }
 
 function WalletContent(): ReactElement {
-  const {rescanning} = useWalletState();
+  const { rescanning } = useWalletState();
 
   const rescan = useCallback(() => {
     if (rescanning) return;
@@ -205,7 +253,7 @@ function WalletContent(): ReactElement {
       <SettingGroup
         name="Rescan"
         primaryBtnProps={{
-          children: rescanning ? 'Stop Rescan' : 'Rescan',
+          children: rescanning ? "Stop Rescan" : "Rescan",
           onClick: rescanning ? stopRescan : rescan,
           // loading: rescanning,
         }}
@@ -213,18 +261,18 @@ function WalletContent(): ReactElement {
         <small>Perform a full rescan.</small>
       </SettingGroup>
     </>
-  )
+  );
 }
 
 function SecurityContent(): ReactElement {
   const [isShowingRevealModal, setShowingRevealModal] = useState(false);
-  const [password, setPassword] = useState('');
-  const [revealError, setRevealError] = useState('');
-  const [mnemonic, setMnemonic] = useState('');
+  const [password, setPassword] = useState("");
+  const [revealError, setRevealError] = useState("");
+  const [mnemonic, setMnemonic] = useState("");
   const [optInAnalytics, setOptInAnalytics] = useState(false);
 
   useEffect(() => {
-    (async function() {
+    (async function () {
       const optIn = await postMessage({
         type: MessageTypes.GET_ANALYTICS,
       });
@@ -232,16 +280,19 @@ function SecurityContent(): ReactElement {
     })();
   }, []);
 
-  const updateAnalytics = useCallback(async (e) => {
-    await postMessage({
-      type: MessageTypes.SET_ANALYTICS,
-      payload: e.target.checked,
-    });
-    const optIn = await postMessage({
-      type: MessageTypes.GET_ANALYTICS,
-    });
-    setOptInAnalytics(optIn);
-  }, [optInAnalytics]);
+  const updateAnalytics = useCallback(
+    async (e) => {
+      await postMessage({
+        type: MessageTypes.SET_ANALYTICS,
+        payload: e.target.checked,
+      });
+      const optIn = await postMessage({
+        type: MessageTypes.GET_ANALYTICS,
+      });
+      setOptInAnalytics(optIn);
+    },
+    [optInAnalytics]
+  );
 
   const revealSeed = useCallback(async () => {
     try {
@@ -250,84 +301,78 @@ function SecurityContent(): ReactElement {
         payload: password,
       });
       setMnemonic(mnemonic);
-      setRevealError('');
+      setRevealError("");
     } catch (e) {
       setRevealError(e.message);
     }
   }, [password]);
 
   const closeRevealModal = useCallback(() => {
-    setMnemonic('');
-    setPassword('');
-    setRevealError('');
+    setMnemonic("");
+    setPassword("");
+    setRevealError("");
     setShowingRevealModal(false);
   }, []);
 
   return (
     <>
-      {
-        isShowingRevealModal && (
-          <Modal
-            className="confirm-modal reveal-seed"
-            onClose={closeRevealModal}
-          >
-            {
-              mnemonic
-                ? (
-                  <>
-                    <p>Reveal your seed phrase</p>
-                    <small>You need this to restore your wallet if use change browser or computer.</small>
-                    <Textarea
-                      value={mnemonic}
-                    />
-                    <Button
-                      className="reveal-seed__confirm-button"
-                      onClick={closeRevealModal}
-                      small
-                    >
-                      Close
-                    </Button>
-                  </>
-                )
-                : (
-                  <>
-                    <p>Reveal your seed phrase</p>
-                    <small>You need this to restore your wallet if use change browser or computer.</small>
-                    <Input
-                      type="password"
-                      className="reveal-seed__password-input"
-                      label="Enter password to continue"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                    />
-                    { revealError && <small className="error-message">{revealError}</small> }
-                    <Button
-                      className="reveal-seed__confirm-button"
-                      disabled={!password}
-                      onClick={revealSeed}
-                      small
-                    >
-                      Reveal Seedphrase
-                    </Button>
-                  </>
-                )
-            }
-
-          </Modal>
-        )
-      }
+      {isShowingRevealModal && (
+        <Modal className="confirm-modal reveal-seed" onClose={closeRevealModal}>
+          {mnemonic ? (
+            <>
+              <p>Reveal your seed phrase</p>
+              <small>
+                You need this to restore your wallet if use change browser or
+                computer.
+              </small>
+              <Textarea value={mnemonic} />
+              <Button
+                className="reveal-seed__confirm-button"
+                onClick={closeRevealModal}
+                small
+              >
+                Close
+              </Button>
+            </>
+          ) : (
+            <>
+              <p>Reveal your seed phrase</p>
+              <small>
+                You need this to restore your wallet if use change browser or
+                computer.
+              </small>
+              <Input
+                type="password"
+                className="reveal-seed__password-input"
+                label="Enter password to continue"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              {revealError && (
+                <small className="error-message">{revealError}</small>
+              )}
+              <Button
+                className="reveal-seed__confirm-button"
+                disabled={!password}
+                onClick={revealSeed}
+                small
+              >
+                Reveal Seedphrase
+              </Button>
+            </>
+          )}
+        </Modal>
+      )}
       <SettingGroup
         name="Reveal Seedphrase"
         primaryBtnProps={{
-          children: 'Reveal',
+          children: "Reveal",
           onClick: () => setShowingRevealModal(true),
         }}
       >
         <small>Reveal wallet seed phrase.</small>
       </SettingGroup>
-      <SettingGroup
-        name="Analytics Opt-in"
-      >
+      <SettingGroup name="Analytics Opt-in">
         <small>Send analytics to Kyokan to help improve Bob.</small>
         <SwitchButton
           className="analytics__toggle"
@@ -347,43 +392,39 @@ function SettingsSelectContent(): ReactElement {
       <SettingSelectGroup
         name="Network"
         description="Edit RPC network"
-        onClick={() => history.push('/settings/network')}
+        onClick={() => history.push("/settings/network")}
       />
       <SettingSelectGroup
         name="Wallet"
         description="Rescan, backup, seed phrase"
-        onClick={() => history.push('/settings/wallet')}
+        onClick={() => history.push("/settings/wallet")}
       />
       <SettingSelectGroup
-        name="Security & Privacy"
+        name="Security &amp; Privacy"
         description="Privacy settings and wallet seed phrase"
-        onClick={() => history.push('/settings/security')}
+        onClick={() => history.push("/settings/security")}
       />
       <SettingSelectGroup
         name="About"
         description="Version and general info"
-        onClick={() => history.push('/settings/about')}
+        onClick={() => history.push("/settings/about")}
       />
     </>
-  )
+  );
 }
 
 type SelectGroupProps = {
   name: string;
   description: string;
   onClick: () => void;
-}
+};
 
 function SettingSelectGroup(props: SelectGroupProps) {
   return (
     <div className="setting-group" onClick={props.onClick}>
       <div className="setting-group__l">
-        <div className="setting-group__title">
-          { props.name }
-        </div>
-        <div className="setting-group__description">
-          {props.description}
-        </div>
+        <div className="setting-group__title">{props.name}</div>
+        <div className="setting-group__description">{props.description}</div>
       </div>
       <Icon fontAwesome="fa-angle-right" size={1.25} />
     </div>
@@ -395,32 +436,22 @@ type GroupProps = {
   children: ReactNode;
   primaryBtnProps?: ButtonProps;
   secondaryBtnProps?: ButtonProps;
-}
+};
 
 function SettingGroup(props: GroupProps) {
   return (
     <div className="setting-group">
       <div className="setting-group__l">
-        <div className="setting-group__title">
-          { props.name }
-        </div>
-        <div className="setting-group__children">
-          {props.children}
-        </div>
+        <div className="setting-group__title">{props.name}</div>
+        <div className="setting-group__children">{props.children}</div>
         <div className="setting-group__actions">
           {props.secondaryBtnProps && (
-            <Button
-              btnType={ButtonType.secondary}
-              {...props.secondaryBtnProps}
-            >
+            <Button btnType={ButtonType.secondary} {...props.secondaryBtnProps}>
               {props.secondaryBtnProps.children}
             </Button>
           )}
           {props.primaryBtnProps && (
-            <Button
-              btnType={ButtonType.primary}
-              {...props.primaryBtnProps}
-            >
+            <Button btnType={ButtonType.primary} {...props.primaryBtnProps}>
               {props.primaryBtnProps.children}
             </Button>
           )}

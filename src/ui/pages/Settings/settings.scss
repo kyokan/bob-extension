@@ -39,17 +39,17 @@
 
   &__children {
     @extend %col-nowrap;
-    margin-top: .5rem;
+    margin-top: 0.5rem;
   }
 
   &__actions {
     @extend %row-nowrap;
-    margin-top: .5rem;
+    margin-top: 0.5rem;
     justify-content: flex-end;
 
     .button {
       height: auto;
-      padding: .25rem .75rem;
+      padding: 0.25rem 0.75rem;
 
       .loader {
         height: 1.1875rem !important;
@@ -81,7 +81,8 @@
 }
 
 .reveal-seed {
-  p, small {
+  p,
+  small {
     text-align: center;
   }
 
@@ -105,8 +106,10 @@
   }
 }
 
-.analytics {
+.analytics,
+.network {
   &__toggle {
     align-self: flex-end;
+    margin-top: 0.5rem;
   }
 }
