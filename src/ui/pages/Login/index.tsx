@@ -45,8 +45,12 @@ export default function Login(props: Props): ReactElement {
   return (
     <div className="login">
       <div className="login__content">
-        <Icon className="login__content__logo" url={BobIcon} size={8} />
-        <b>Welcome back to Bob!</b>
+        <div>
+          <Icon className="login__content__logo" url={BobIcon} size={8} />
+          <b>Welcome back to Bob!</b>
+        </div>
+      </div>
+      <div className="login__footer">
         <Input
           label="Set password"
           onChange={(e) => {
@@ -63,8 +67,6 @@ export default function Login(props: Props): ReactElement {
           fontAwesome={visible ? "fa-eye" : "fa-eye-slash"}
           onIconClick={() => setVisibility(!visible)}
         />
-      </div>
-      <div className="login__footer">
         <ErrorMessage>{errorMessage}</ErrorMessage>
         <Button onClick={onUnlockWallet} loading={loading} disabled={loading}>
           Unlock Wallet

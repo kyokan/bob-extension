@@ -28,7 +28,7 @@
   transition: background-color 150ms ease-in-out;
 
   &:hover {
-    background-color: rgba($black, .05);
+    background-color: $lightgray;
   }
 
   &:active {
@@ -37,7 +37,7 @@
 
   &--pending {
     opacity: .5;
-    background-color: rgba($black, .05);
+    background-color: $lightgray;
 
     &:hover {
       background-color: rgba($black, .075);

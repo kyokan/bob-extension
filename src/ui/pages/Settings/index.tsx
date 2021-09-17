@@ -217,13 +217,14 @@ function NetworkContent(): ReactElement {
           onChange={(e) => setAPIKey(e.target.value)}
         />
       </SettingGroup>
-      <SettingGroup name="HNS Resolver">
+      <SettingGroup
+        name="HNS Resolver"
+        switchBtnProps={{
+          update: updateResolver,
+          active: activeResolver,
+        }}
+      >
         <small>Resolve DNS over Handshake.</small>
-        <SwitchButton
-          className="network__toggle"
-          onChange={updateResolver}
-          checked={activeResolver}
-        />
       </SettingGroup>
     </>
   );
@@ -372,13 +373,14 @@ function SecurityContent(): ReactElement {
       >
         <small>Reveal wallet seed phrase.</small>
       </SettingGroup>
-      <SettingGroup name="Analytics Opt-in">
+      <SettingGroup
+        name="Analytics Opt-in"
+        switchBtnProps={{
+          update: updateAnalytics,
+          active: optInAnalytics,
+        }}
+      >
         <small>Send analytics to Kyokan to help improve Bob.</small>
-        <SwitchButton
-          className="analytics__toggle"
-          onChange={updateAnalytics}
-          checked={optInAnalytics}
-        />
       </SettingGroup>
     </>
   );
@@ -417,16 +419,20 @@ type SelectGroupProps = {
   name: string;
   description: string;
   onClick: () => void;
+  hover?: boolean;
 };
 
 function SettingSelectGroup(props: SelectGroupProps) {
   return (
-    <div className="setting-group" onClick={props.onClick}>
+    <div
+      className="setting-group  setting-group--clickable"
+      onClick={props.onClick}
+    >
       <div className="setting-group__l">
         <div className="setting-group__title">{props.name}</div>
         <div className="setting-group__description">{props.description}</div>
       </div>
-      <Icon fontAwesome="fa-angle-right" size={1.25} />
+      <Icon fontAwesome="fa-chevron-right" size={1} />
     </div>
   );
 }
@@ -436,6 +442,10 @@ type GroupProps = {
   children: ReactNode;
   primaryBtnProps?: ButtonProps;
   secondaryBtnProps?: ButtonProps;
+  switchBtnProps?: {
+    update: (e: any) => Promise<void>;
+    active: boolean;
+  };
 };
 
 function SettingGroup(props: GroupProps) {
@@ -443,18 +453,30 @@ function SettingGroup(props: GroupProps) {
     <div className="setting-group">
       <div className="setting-group__l">
         <div className="setting-group__title">{props.name}</div>
-        <div className="setting-group__children">{props.children}</div>
-        <div className="setting-group__actions">
-          {props.secondaryBtnProps && (
-            <Button btnType={ButtonType.secondary} {...props.secondaryBtnProps}>
-              {props.secondaryBtnProps.children}
-            </Button>
-          )}
-          {props.primaryBtnProps && (
-            <Button btnType={ButtonType.primary} {...props.primaryBtnProps}>
-              {props.primaryBtnProps.children}
-            </Button>
-          )}
+        <div className="setting-group__row">
+          <div className="setting-group__children">{props.children}</div>
+          <div className="setting-group__actions">
+            {props.switchBtnProps && (
+              <SwitchButton
+                className="setting-group__toggle"
+                onChange={props.switchBtnProps.update}
+                checked={props.switchBtnProps.active}
+              />
+            )}
+            {props.secondaryBtnProps && (
+              <Button
+                btnType={ButtonType.secondary}
+                {...props.secondaryBtnProps}
+              >
+                {props.secondaryBtnProps.children}
+              </Button>
+            )}
+            {props.primaryBtnProps && (
+              <Button btnType={ButtonType.primary} {...props.primaryBtnProps}>
+                {props.primaryBtnProps.children}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

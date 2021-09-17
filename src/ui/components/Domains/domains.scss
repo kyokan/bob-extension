@@ -28,7 +28,7 @@
   transition: background-color 150ms ease-in-out;
 
   &:hover {
-    background-color: rgba($black, .05);
+    background-color: $lightgray;
   }
 
   &:active {

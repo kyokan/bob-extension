@@ -4,17 +4,19 @@
   @extend %col-nowrap;
   flex: 1 1 auto;
   align-items: center;
-  padding: 0 1.25rem;
+  padding: 0 $gutter;
 
   &__content {
     @extend %col-nowrap;
     flex: 1 1 auto;
     align-items: center;
+    justify-content: center;
+    padding-bottom: 4rem;
     width: 100%;
     cursor: default;
 
     &__logo {
-      margin: 2rem auto 1rem;
+      margin: 0 auto;
     }
 
     .input-group {
@@ -26,7 +28,7 @@
   &__footer {
     @extend %col-nowrap;
     width: 100%;
-    padding: 0 1.25rem 1rem;
+    padding: 0 $gutter $gutter;
 
     .error-message {
       text-align: center;

@@ -1,16 +1,20 @@
 $white: #FFFFFF;
 $black: #000000;
+$lightgray: #EFEFEF;
 
 $primary-blue: #2580F8;
-$primary-text: rgba($black, .8);
-$secondary-text: rgba($black, .6);
+$primary-text: #141414;
+$secondary-text: #676767;
 $label-text: rgba($black, .25);
 
-$header-gray: rgba($black, .05);
-$border-gray: rgba($black, .1);
+$header-gray: $lightgray;
+$border-gray: #DEDEDE;
 $error-red: #f52525;
 $success-green: #2ED272;
 $warning-orange: #ffa31a;
+
+$gutter: 1.25rem;
+$border-radius: 0.15rem;
 
 %flex {
   display: flex;

@@ -1,6 +1,6 @@
 import React, {InputHTMLAttributes, MouseEventHandler} from "react";
 
-import "./index.scss";
+import "./input.scss";
 import Icon from "../Icon";
 import classNames from "classnames";
 
