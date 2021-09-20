@@ -273,7 +273,7 @@ export default class WalletService extends GenericService {
     });
 
     txs = txs.reverse();
-    txs = txs.slice(0, 50);
+
     let details = await wallet.toDetails(txs);
 
     const transactions = [];
@@ -1443,6 +1443,10 @@ export default class WalletService extends GenericService {
   };
 
   async initPoller() {
+    if (this.pollerTimeout) {
+      clearInterval(this.pollerTimeout);
+    }
+
     return setInterval(() => (async () => {
         await this.checkForRescan();
         const {hash, height, time} = await this.exec('node', 'getLatestBlock');
@@ -1478,9 +1482,6 @@ export default class WalletService extends GenericService {
   }
 
   async stop() {
-    if (this.checkStatusTimeout) {
-      clearInterval(this.checkStatusTimeout);
-    }
     if (this.pollerTimeout) {
       clearInterval(this.pollerTimeout);
     }

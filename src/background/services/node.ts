@@ -194,6 +194,7 @@ export default class NodeService extends GenericService {
   ): Promise<any[]> {
     const headers = await this.getHeaders();
     const { apiHost } = await this.exec('setting', 'getAPI');
+
     const resp = await fetch(`${apiHost}/tx/address`, {
       method: 'POST',
       headers: headers,
@@ -206,15 +207,19 @@ export default class NodeService extends GenericService {
 
     const json = await resp.json();
 
-    if (resp.status === 200 && endBlock === json.endBlock) {
-      return transactions.concat(json.txs);
-    }
+    if (apiHost.includes('api.handshakeapi.com')) {
+      if (resp.status === 200 && endBlock === json.endBlock) {
+        return transactions.concat(json.txs);
+      }
 
-    if (resp.status === 413) {
-      return this.getTXByAddresses(addresses, json.endBlock, endBlock, transactions.concat(json.txs))
-    }
+      if (resp.status === 413) {
+        return this.getTXByAddresses(addresses, json.endBlock, endBlock, transactions.concat(json.txs))
+      }
 
-    throw new Error(`Unknown response status: ${resp.status}`);
+      throw new Error(`Unknown response status: ${resp.status}`);
+    } else {
+      return json;
+    }
   }
 
   async start() {
