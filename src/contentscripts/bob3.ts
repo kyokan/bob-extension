@@ -186,6 +186,16 @@ async function getBidsByName(name: string) {
 }
 
 /**
+ * Get Names
+ * @param name - name to get bids for
+ */
+async function getNames() {
+  return await post({
+    type: MessageTypes.GET_DOMAIN_NAMES,
+  });
+}
+
+/**
  * Get namehash by name
  * @param name - name to get hash for
  */
@@ -224,6 +234,7 @@ const wallet = {
   onDisconnect,
   onNewBlock,
   getBidsByName,
+  getNames,
   getPending,
   hashName,
 };

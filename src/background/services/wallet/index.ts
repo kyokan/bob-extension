@@ -374,7 +374,7 @@ export default class WalletService extends GenericService {
       payload: this.domains,
     });
 
-    return true;
+    return this.domains;
   };
 
   getBidsByName = async (name: string) => {
