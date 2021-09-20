@@ -11,19 +11,13 @@ export default class NodeService extends GenericService {
 
   async getHeaders(): Promise<any> {
     const { apiHost, apiKey } = await this.exec('setting', 'getAPI');
-    const {hostname} = new URL(apiHost);
-    const is5pi = ['5pi.io', 'www.5pi.io'].includes(hostname);
 
-    const headers: any = {
+    return {
       'Content-Type': 'application/json',
       'Authorization': apiKey
         ? 'Basic ' + Buffer.from(`x:${apiKey}`).toString('base64')
-        : is5pi
-          ? 'Basic ' + Buffer.from(`x:775f8ca39e1748a7b47ff16ad4b1b9ad`).toString('base64')
-          : '',
+        : '',
     };
-
-    return headers;
   }
 
   async getTokenURL(): Promise<string> {
@@ -34,9 +28,8 @@ export default class NodeService extends GenericService {
   }
 
   estimateSmartFee = async (opt: number) => {
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
-    const resp = await fetch(apiHost, {
+    return this.fetch(null,{
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -44,8 +37,6 @@ export default class NodeService extends GenericService {
         params: [opt],
       }),
     });
-
-    return await resp.json();
   };
 
   getLatestBlock = async () => {
@@ -66,10 +57,9 @@ export default class NodeService extends GenericService {
   };
 
   async getBlockchainInfo () {
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
 
-    const resp = await fetch(apiHost, {
+    return this.fetch(null, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -77,15 +67,12 @@ export default class NodeService extends GenericService {
         params: [],
       }),
     });
-
-    return await resp.json();
   }
 
   async sendRawTransaction (txJSON: any) {
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
 
-    const resp = await fetch(apiHost, {
+    return this.fetch(null, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -93,22 +80,17 @@ export default class NodeService extends GenericService {
         params: [txJSON],
       }),
     });
-
-    return await resp.json();
   }
 
   async getBlockByHeight(blockHeight: number) {
     const cachedEntry = await get(this.store, `blockdata-${blockHeight}`);
     if (cachedEntry) return cachedEntry;
 
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
-    const resp = await fetch(`${apiHost}/block/${blockHeight}`, {
+    const block = await this.fetch(`block/${blockHeight}`, {
       method: 'GET',
       headers: headers,
     });
-
-    const block = await resp.json();
     await put(this.store, `blockdata-${blockHeight}`, block);
     return block;
   }
@@ -127,9 +109,8 @@ export default class NodeService extends GenericService {
     const cachedEntry = await get(this.store, `namehash-${hash}`);
     if (cachedEntry) return cachedEntry;
 
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
-    const resp = await fetch(apiHost, {
+    const name = await this.fetch(null, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -138,7 +119,6 @@ export default class NodeService extends GenericService {
       }),
     });
 
-    const name = await resp.json();
     await put(this.store, `namehash-${hash}`, name);
     NAME_CACHE.push(hash);
     NAME_MAP[hash] = name;
@@ -150,9 +130,8 @@ export default class NodeService extends GenericService {
   }
 
   async getNameInfo(tld: string) {
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
-    const resp = await fetch(apiHost, {
+    return this.fetch(null, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -160,15 +139,12 @@ export default class NodeService extends GenericService {
         params: [tld],
       }),
     });
-    const json = await resp.json();
     // await put(this.store, `nameinfo-${tld}`, json);
-    return json;
   }
 
   async getNameResource(tld: string) {
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
-    const resp = await fetch(apiHost, {
+    return this.fetch(null, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -176,63 +152,74 @@ export default class NodeService extends GenericService {
         params: [tld],
       }),
     });
-    const json = await resp.json();
-    return json;
   }
 
   async getCoin(txHash: string, txIndex: number) {
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
-    const resp = await fetch(`${apiHost}/coin/${txHash}/${txIndex}`, {
+    return this.fetch(`coin/${txHash}/${txIndex}`, {
       method: 'GET',
       headers: headers,
     });
-
-    return await resp.json();
   }
 
   async getTXByHash(txHash: string) {
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
-    const resp = await fetch(`${apiHost}/tx/${txHash}`, {
+    return this.fetch(`tx/${txHash}`, {
       method: 'GET',
       headers: headers,
     });
-
-    return await resp.json();
   }
 
   async getBlockEntry(height: number) {
     const cachedEntry = await get(this.store, `entry-${height}`);
     if (cachedEntry) return cachedEntry;
 
-    const { apiHost } = await this.exec('setting', 'getAPI');
     const headers = await this.getHeaders();
 
-    const resp = await fetch(`${apiHost}/header/${height}`, {
+    const blockEntry = await this.fetch(`header/${height}`, {
       method: 'GET',
       headers: headers,
     });
-
-    const blockEntry = await resp.json();
 
     await put(this.store, `entry-${height}`, blockEntry);
 
     return blockEntry;
   }
 
-  async getTXByAddresses(addresses: string[]) {
-    const { apiHost } = await this.exec('setting', 'getAPI');
+  async getTXByAddresses(
+    addresses: string[],
+    startBlock: number,
+    endBlock: number,
+    transactions: any[] = [],
+  ): Promise<any[]> {
     const headers = await this.getHeaders();
+    const { apiHost } = await this.exec('setting', 'getAPI');
+
     const resp = await fetch(`${apiHost}/tx/address`, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
         addresses,
+        startBlock,
+        endBlock
       }),
     });
 
-    return await resp.json();
+    const json = await resp.json();
+
+    if (apiHost.includes('api.handshakeapi.com')) {
+      if (resp.status === 200 && endBlock === json.endBlock) {
+        return transactions.concat(json.txs);
+      }
+
+      if (resp.status === 413) {
+        return this.getTXByAddresses(addresses, json.endBlock, endBlock, transactions.concat(json.txs))
+      }
+
+      throw new Error(`Unknown response status: ${resp.status}`);
+    } else {
+      return json;
+    }
   }
 
   async start() {
@@ -242,5 +229,25 @@ export default class NodeService extends GenericService {
 
   async stop() {
 
+  }
+
+  async fetch(path: string|null, init: RequestInit): Promise<any> {
+    const { apiHost } = await this.exec('setting', 'getAPI');
+    const resp = await fetch(path ? `${apiHost}/${path}` : apiHost, init);
+
+    if (resp.status !== 200) {
+      console.error(`Bad response code ${resp.status}.`);
+
+      try {
+        const json = resp.json();
+        console.error('Body JSON:', json);
+      } catch (e) {
+        console.error('Error printing body JSON.');
+      }
+
+      throw new Error(`Non-200 status code: ${resp.status}. Check the logs for more details.`);
+    }
+
+    return resp.json();
   }
 }

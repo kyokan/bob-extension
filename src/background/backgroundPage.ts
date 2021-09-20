@@ -1,4 +1,4 @@
-import {browser, WebRequest} from "webextension-polyfill-ts";
+import {browser} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
@@ -36,16 +36,6 @@ import resolve from "@src/background/resolve";
     startedApp.add('wallet', new WalletService());
     await startedApp.start();
     app = startedApp;
-
-    app.on('wallet.newBlock', async (block) => {
-        const tabs = await browser.tabs.query({ active: true });
-        for (let tab of tabs) {
-            await browser.tabs.sendMessage(tab.id as number, {
-                type: MessageTypes.NEW_BLOCK,
-                payload: block,
-            });
-        }
-    });
 
     app.on('wallet.locked', async () => {
         const tabs = await browser.tabs.query({ active: true });

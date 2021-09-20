@@ -36,7 +36,7 @@ const {types, typesByVal} = rules;
 const bsocket = require("bsock");
 
 const networkType = process.env.NETWORK_TYPE || 'main';
-const ACCOUNT_DEPTH = 100;
+const LOOKAHEAD = 100;
 
 export default class WalletService extends GenericService {
   network: typeof Network;
@@ -58,6 +58,8 @@ export default class WalletService extends GenericService {
   rescanning: boolean;
 
   checkStatusTimeout?: any;
+
+  pollerTimeout?: any;
 
   _getTxNonce: number;
 
@@ -256,15 +258,23 @@ export default class WalletService extends GenericService {
 
     const latestBlock = await this.exec('node', 'getLatestBlock');
 
-    const txs = await wallet.getHistory('default');
+    let txs = await wallet.getHistory('default');
 
     if (txs.length === this.transactions?.length) {
       return this.transactions;
     }
 
-    common.sortTX(txs);
+    txs = txs.sort((a: Transaction, b: Transaction) => {
+      if (a.height > b.height) return 1;
+      if (b.height > a.height) return -1;
+      if (a.time > b.time) return 1;
+      if (b.time > a.time) return -1;
+      return 0;
+    });
 
-    const details = await wallet.toDetails(txs);
+    txs = txs.reverse();
+
+    let details = await wallet.toDetails(txs);
 
     const transactions = [];
 
@@ -284,7 +294,7 @@ export default class WalletService extends GenericService {
       transactions.push(json);
     }
 
-    this.transactions = transactions.reverse();
+    this.transactions = transactions;
     this.pushBobMessage('');
     return this.transactions;
   };
@@ -378,7 +388,41 @@ export default class WalletService extends GenericService {
 
     if (!name) throw new Error('name must not be empty');
 
-    const bids = await wallet.getBids();
+    const inputNameHash = name && rules.hashName(name);
+    const iter = wallet.txdb.bucket.iterator({
+      gte: inputNameHash ? layout.i.min(inputNameHash) : layout.i.min(),
+      lte: inputNameHash ? layout.i.max(inputNameHash) : layout.i.max(),
+      values: true
+    });
+
+    const iter2 = wallet.txdb.bucket.iterator({
+      gte: inputNameHash ? layout.i.min(inputNameHash) : layout.i.min(),
+      lte: inputNameHash ? layout.i.max(inputNameHash) : layout.i.max(),
+      values: true
+    });
+
+    const raws = await iter.values();
+    const keys = await iter2.keys();
+    const bids: any[] = [];
+
+    for (let i = 0; i < raws.length; i++) {
+      const raw = raws[i];
+      const key = keys[i];
+      const [nameHash, hash, index] = layout.i.decode(key);
+
+      const bb = BlindBid.decode(raw);
+
+      bb.nameHash = nameHash;
+      bb.prevout = new Outpoint(hash, index);
+
+      const bv = await wallet.txdb.getBlind(bb.blind);
+
+      if (bv)
+        bb.value = bv.value;
+
+      bids.push(bb.getJSON());
+    }
+
     return bids;
   };
 
@@ -1181,23 +1225,26 @@ export default class WalletService extends GenericService {
     }
   };
 
-  getAllReceiveTXs = async (startDepth = 0, endDepth = ACCOUNT_DEPTH, transactions: any[] = []): Promise<any[]> => {
+  async shouldContinue() {
+    if (this.forceStopRescan) {
+      this.forceStopRescan = false;
+      this.rescanning = false;
+      await this.pushState();
+      throw new Error('rescan stopped.');
+    }
+  }
+
+  async genAddresses(startDepth: number, endDepth: number, changeOrReceive: 'change' | 'receive'): Promise<string[]> {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const account = await wallet.getAccount('default');
     const addresses = [];
 
-    await this.pushBobMessage(`Scanning receive depth ${startDepth}-${endDepth}...`);
-
     let b;
+
     for (let i = startDepth; i < endDepth; i++) {
-      if (this.forceStopRescan) {
-        this.forceStopRescan = false;
-        this.rescanning = false;
-        await this.pushState();
-        throw new Error('rescan stopped.');
-      }
-      const key = account.deriveReceive(i);
+      await this.shouldContinue();
+      const key = changeOrReceive === 'change' ? account.deriveChange(i) : account.deriveReceive(i);
       const receive = key.getAddress().toString(this.network);
       const path = key.toPath();
       if (!await this.wdb.hasPath(account.wid, path.hash)) {
@@ -1211,52 +1258,59 @@ export default class WalletService extends GenericService {
       await b.write();
     }
 
-    const newTXs = await this.exec('node', 'getTXByAddresses', addresses);
+    return addresses;
+  }
+
+  getAllReceiveTXs = async (
+    startBlock: number,
+    endBlock: number,
+    startDepth = 0,
+    endDepth = LOOKAHEAD,
+    transactions: any[] = [],
+  ): Promise<any[]> => {
+    await this.pushBobMessage(`Scanning receive depth ${startDepth}-${endDepth}...`);
+    const addresses = await this.genAddresses(startDepth, endDepth, 'receive');
+
+    const newTXs = await this.exec('node', 'getTXByAddresses', addresses, startBlock, endBlock);
 
     if (!newTXs.length) {
       return transactions;
     }
 
     transactions = transactions.concat(newTXs);
-    return await this.getAllReceiveTXs(startDepth + ACCOUNT_DEPTH, endDepth + ACCOUNT_DEPTH, transactions);
+    return await this.getAllReceiveTXs(
+      startBlock,
+      endBlock,
+      startDepth + LOOKAHEAD,
+      endDepth + LOOKAHEAD,
+      transactions,
+    );
   };
 
-  getAllChangeTXs = async (startDepth = 0, endDepth = ACCOUNT_DEPTH, transactions: any[] = []): Promise<any[]> => {
-    const walletId = this.selectedID;
-    const wallet = await this.wdb.get(walletId);
-    const account = await wallet.getAccount('default');
-    const addresses = [];
-
+  getAllChangeTXs = async (
+    startBlock: number,
+    endBlock: number,
+    startDepth = 0,
+    endDepth = LOOKAHEAD,
+    transactions: any[] = [],
+  ): Promise<any[]> => {
     await this.pushBobMessage(`Scanning change depth ${startDepth}-${endDepth}...`);
+    const addresses = await this.genAddresses(startDepth, endDepth, 'change');
 
-    let b;
-    for (let i = startDepth; i < endDepth; i++) {
-      if (this.forceStopRescan) {
-        this.forceStopRescan = false;
-        this.rescanning = false;
-        await this.pushState();
-        throw new Error('rescan stopped.');
-      }
-      const key = account.deriveChange(i);
-      const change = key.getAddress().toString(this.network);
-      const path = key.toPath();
-      if (!await this.wdb.hasPath(account.wid, path.hash)) {
-        b = b || this.wdb.db.batch();
-        await this.wdb.savePath(b, account.wid, path);
-      }
-      addresses.push(change);
-    }
-    if (b) {
-      await b.write();
-    }
-    const newTXs = await this.exec('node', 'getTXByAddresses', addresses);
+    const newTXs = await this.exec('node', 'getTXByAddresses', addresses, startBlock, endBlock);
 
     if (!newTXs.length) {
       return transactions;
     }
 
     transactions = transactions.concat(newTXs);
-    return await this.getAllChangeTXs(startDepth + ACCOUNT_DEPTH, endDepth + ACCOUNT_DEPTH, transactions);
+    return await this.getAllChangeTXs(
+      startBlock,
+      endBlock,
+      startDepth + LOOKAHEAD,
+      endDepth + LOOKAHEAD,
+      transactions,
+    );
   };
 
   stopRescan = async () => {
@@ -1265,17 +1319,19 @@ export default class WalletService extends GenericService {
     this.pushState();
   };
 
-  fullRescan = async () => {
+  fullRescan = async (start = 0) => {
     this.rescanning = true;
     this.pushState();
     await this.pushBobMessage('Start rescanning...');
     const latestBlockEnd = await this.exec('node', 'getLatestBlock');
-    const changeTXs = await this.getAllChangeTXs();
-    const receiveTXs = await this.getAllReceiveTXs();
+
+    const changeTXs = await this.getAllChangeTXs(start, latestBlockEnd.height);
+    const receiveTXs = await this.getAllReceiveTXs(start, latestBlockEnd.height);
     const transactions: any[] = receiveTXs.concat(changeTXs);
     await this.wdb.watch();
     await this.insertTransactions(transactions);
     await put(this.store,`latest_block_${this.selectedID}`, latestBlockEnd);
+
     this.rescanning = false;
     this.pushState();
     await this.pushBobMessage('');
@@ -1366,8 +1422,8 @@ export default class WalletService extends GenericService {
         await this.pushBobMessage('I am synchronized.');
       } else if (latestBlockLast && latestBlockNow.height - latestBlockLast.height <= 100) {
         await this.rescanBlocks(latestBlockLast.height + 1, latestBlockNow.height);
-      } else {
-        await this.fullRescan();
+      }  else {
+        await this.fullRescan(0);
       }
 
       this.rescanning = false;
@@ -1386,47 +1442,17 @@ export default class WalletService extends GenericService {
     }
   };
 
-  async initSocket() {
-    const { apiHost, apiKey } = await this.exec('setting', 'getAPI');
-    const {hostname} = new URL(apiHost);
-    const is5pi = ['5pi.io', 'www.5pi.io'].includes(hostname);
-    const socket = bsocket.socket();
-    socket.on('connect', async () => {
-      try {
-        await socket.call(
-          'auth',
-          is5pi
-            ? '775f8ca39e1748a7b47ff16ad4b1b9ad'
-            : apiKey,
-        );
-        await socket.call('watch chain');
-      } catch (e) {
-        console.error(e);
-        return;
-      }
-    });
+  async initPoller() {
+    if (this.pollerTimeout) {
+      clearInterval(this.pollerTimeout);
+    }
 
-    socket.on('error', (err: any) => {
-      console.error(err);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('disconnected');
-    });
-
-    socket.bind('block connect', async (data: any) => {
-      setTimeout(async () => {
+    return setInterval(() => (async () => {
         await this.checkForRescan();
         const {hash, height, time} = await this.exec('node', 'getLatestBlock');
         await pushMessage(setInfo(hash, height, time));
         this.emit('newBlock', {hash, height, time});
-      }, 1000);
-
-    });
-
-    socket.connect(apiHost);
-
-    this.socket = socket;
+    })(), 60000);
   }
 
   async start() {
@@ -1452,12 +1478,12 @@ export default class WalletService extends GenericService {
     }
 
     this.checkForRescan();
-    this.initSocket();
+    this.pollerTimeout = this.initPoller();
   }
 
   async stop() {
-    if (this.checkStatusTimeout) {
-      clearInterval(this.checkStatusTimeout);
+    if (this.pollerTimeout) {
+      clearInterval(this.pollerTimeout);
     }
   }
 }
