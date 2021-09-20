@@ -33,7 +33,6 @@ import {UpdateRecordType} from "@src/contentscripts/bob3";
 import {getBidBlind, getTXAction} from "@src/util/transaction";
 import {setInfo} from "@src/ui/ducks/node";
 const {types, typesByVal} = rules;
-const bsocket = require("bsock");
 
 const networkType = process.env.NETWORK_TYPE || 'main';
 const LOOKAHEAD = 100;
@@ -49,15 +48,11 @@ export default class WalletService extends GenericService {
 
   domains?: any[] | null;
 
-  socket?: typeof bsocket.Socket;
-
   selectedID: string;
 
   locked: boolean;
 
   rescanning: boolean;
-
-  checkStatusTimeout?: any;
 
   pollerTimeout?: any;
 

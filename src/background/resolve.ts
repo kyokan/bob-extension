@@ -38,7 +38,7 @@ export default function resolve(details: OnBeforeRequestDetailsType) {
   // Check the local cache to save having to fetch the value from the server again.
   if (sessionStorage.getItem(hostname) == undefined) {
     const xhr = new XMLHttpRequest();
-    const url = "https://api.handshakeapi.com/hsd/hsd/lookup/"+hostname;
+    const url = "https://api.handshakeapi.com/hsd/lookup/"+hostname;
     // synchronous XMLHttpRequest is actually asynchronous
     // check out https://developer.chrome.com/extensions/webRequest
     xhr.open("GET", url, false);
