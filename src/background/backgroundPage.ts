@@ -1,7 +1,7 @@
-import { browser, WebRequest } from "webextension-polyfill-ts";
+import {browser} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
-import { MessageAction } from "@src/util/postMessage";
-import { AppService } from "@src/util/svc";
+import {MessageAction} from "@src/util/postMessage";
+import {AppService} from "@src/util/svc";
 import SettingService from "@src/background/services/setting";
 import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
@@ -34,12 +34,12 @@ import resolve from "@src/background/resolve";
   browser.webRequest.onBeforeRequest.addListener(
     // @ts-ignore
     resolve.bind(this, app),
-    { urls: ["<all_urls>"] },
+    {urls: ["<all_urls>"]},
     ["blocking"]
   );
 
   app.on("wallet.newBlock", async (block) => {
-    const tabs = await browser.tabs.query({ active: true });
+    const tabs = await browser.tabs.query({active: true});
     for (let tab of tabs) {
       await browser.tabs.sendMessage(tab.id as number, {
         type: MessageTypes.NEW_BLOCK,
@@ -49,7 +49,7 @@ import resolve from "@src/background/resolve";
   });
 
   app.on("wallet.locked", async () => {
-    const tabs = await browser.tabs.query({ active: true });
+    const tabs = await browser.tabs.query({active: true});
     for (let tab of tabs) {
       await browser.tabs.sendMessage(tab.id as number, {
         type: MessageTypes.DISCONNECTED,

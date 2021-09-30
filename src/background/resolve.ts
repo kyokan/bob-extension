@@ -1,7 +1,7 @@
-import { browser, WebRequest } from "webextension-polyfill-ts";
+import {WebRequest} from "webextension-polyfill-ts";
 import normalTLDs from "../static/normal-tld.json";
 import OnBeforeRequestDetailsType = WebRequest.OnBeforeRequestDetailsType;
-import { AppService } from "@src/util/svc";
+import {AppService} from "@src/util/svc";
 
 function sleep(milliseconds: number, resolved: string) {
   // synchronous XMLHttpRequests from Chrome extensions are not blocking event handlers. That's why we use this
@@ -23,13 +23,13 @@ export default async function resolve(
   details: OnBeforeRequestDetailsType
 ) {
   const isResolverActive = await app.exec("setting", "getResolver");
-  if (!isResolverActive) {
-    return;
-  }
-
   const originalUrl = new URL(details.url);
   const hostname = originalUrl.hostname;
   const protocol = originalUrl.protocol;
+
+  if (!isResolverActive) {
+    return;
+  }
 
   if (!["http:", "https:"].includes(protocol)) {
     return;
@@ -95,10 +95,7 @@ export default async function resolve(
     },
   };
 
-  chrome.proxy.settings.set(
-    { value: config, scope: "regular" },
-    function () {}
-  );
+  chrome.proxy.settings.set({value: config, scope: "regular"}, function () {});
   console.log(
     "IP " +
       ip +
