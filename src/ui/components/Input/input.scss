@@ -8,7 +8,7 @@
   border: none;
   width: calc(100% - 2rem);
   color: $primary-text;
-  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  font-family: "Work Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
 
   &::placeholder {
     color: rgba($white, .2);
@@ -48,16 +48,16 @@
     }
 
     .icon {
-      opacity: .1;
+      opacity: .2;
       transition: opacity 150ms ease-in-out;
       margin-right: .75rem;
 
       &:hover {
-        opacity: .2;
+        opacity: .3;
       }
 
       &:active {
-        opacity: .3;
+        opacity: .4;
       }
     }
   }

@@ -23,7 +23,7 @@
 .domain {
   @extend %row-nowrap;
   align-items: center;
-  padding: 1rem 1.25rem;
+  padding: 1rem $gutter;
   cursor: pointer;
   transition: background-color 150ms ease-in-out;
 
