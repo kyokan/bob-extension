@@ -37,17 +37,7 @@ import resolve from "@src/background/resolve";
     {urls: ["<all_urls>"]},
     ["blocking"]
   );
-
-  app.on("wallet.newBlock", async (block) => {
-    const tabs = await browser.tabs.query({active: true});
-    for (let tab of tabs) {
-      await browser.tabs.sendMessage(tab.id as number, {
-        type: MessageTypes.NEW_BLOCK,
-        payload: block,
-      });
-    }
-  });
-
+  
   app.on("wallet.locked", async () => {
     const tabs = await browser.tabs.query({active: true});
     for (let tab of tabs) {

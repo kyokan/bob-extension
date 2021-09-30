@@ -50,9 +50,7 @@ export default async function resolve(
   // Check the local cache to save having to fetch the value from the server again.
   if (sessionStorage.getItem(hostname) == undefined) {
     const xhr = new XMLHttpRequest();
-    const url =
-      "http://dualstack.hapi-prod-lb-365851530.us-west-2.elb.amazonaws.com/hsd/lookup/" +
-      hostname;
+    const url = "https://api.handshakeapi.com/hsd/lookup/"+hostname;
     // synchronous XMLHttpRequest is actually asynchronous
     // check out https://developer.chrome.com/extensions/webRequest
     xhr.open("GET", url, false);
