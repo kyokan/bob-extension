@@ -10,14 +10,14 @@ import {
   RegularViewContent,
   RegularViewHeader,
 } from "@src/ui/components/RegularView";
-import { Route, Switch, useHistory } from "react-router";
+import {Route, Switch, useHistory} from "react-router";
 import Icon from "@src/ui/components/Icon";
 import "./settings.scss";
 import Input from "@src/ui/components/Input";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
-import Button, { ButtonProps, ButtonType } from "@src/ui/components/Button";
-import { useCurrentWallet, useWalletState } from "@src/ui/ducks/wallet";
+import Button, {ButtonProps, ButtonType} from "@src/ui/components/Button";
+import {useCurrentWallet, useWalletState} from "@src/ui/ducks/wallet";
 import Modal from "@src/ui/components/Modal";
 import Textarea from "@src/ui/components/Textarea";
 import SwitchButton from "@src/ui/components/SwitchButton";
@@ -124,7 +124,7 @@ function NetworkContent(): ReactElement {
 
   useEffect(() => {
     (async function onNetworkContentMount() {
-      const { apiHost, apiKey } = await postMessage({
+      const {apiHost, apiKey} = await postMessage({
         type: MessageTypes.GET_API,
       });
       setDefaultRPCUrl(apiHost);
@@ -231,7 +231,7 @@ function NetworkContent(): ReactElement {
 }
 
 function WalletContent(): ReactElement {
-  const { rescanning } = useWalletState();
+  const {rescanning} = useWalletState();
 
   const rescan = useCallback(() => {
     if (rescanning) return;

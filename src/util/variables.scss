@@ -1,18 +1,22 @@
-$white: #FFFFFF;
-$black: #000000;
-$lightgray: #EFEFEF;
+$primary-text: 	hsl(0, 0%, 8%);
+$secondary-text: 	hsl(0, 0%, 40%);
+$label-text: $secondary-text;
 
-$primary-blue: #2580F8;
-$primary-text: #141414;
-$secondary-text: #676767;
-$label-text: rgba($black, .25);
+$primary-blue: hsl(214, 94%, 56%);
 
+$white: 	hsl(0, 0%, 100%);
+$black: 	hsl(0, 0%, 0%);
+$lightgray: hsl(0, 0%, 94%);
 $header-gray: $lightgray;
-$border-gray: #DEDEDE;
-$error-red: #f52525;
-$success-green: #2ED272;
-$warning-orange: #ffa31a;
+$border-gray: hsl(0, 0%, 87%);
 
+$error-red: hsl(0, 91%, 55%);
+$success-green: hsl(145, 65%, 50%);
+$warning-orange: 	hsl(36, 100%, 55%);
+
+$text-base-size: 16px;
+$app-width: 357px;
+$app-height: 600px;
 $gutter: 1.25rem;
 $border-radius: 0.15rem;
 

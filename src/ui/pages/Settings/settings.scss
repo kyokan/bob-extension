@@ -45,13 +45,12 @@
 
   &__row {
     @extend %row-nowrap;
-    align-items: flex-start;
     justify-content: space-between;
   }
 
   &__children {
     @extend %row-nowrap;
-    margin-right: 0.75rem;
+    margin-right: 0.5rem;
     width: 100%;
   }
 
