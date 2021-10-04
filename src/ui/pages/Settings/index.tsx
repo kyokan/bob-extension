@@ -125,7 +125,7 @@ function NetworkContent(): ReactElement {
         payload: rpcUrl,
       });
       setDefaultRPCUrl(rpcUrl);
-    } catch (e) {
+    } catch (e: any) {
       setRPCUrlError(e.message);
     }
     setSavingUrl(false);
@@ -139,7 +139,7 @@ function NetworkContent(): ReactElement {
         payload: rpcAPIKey,
       });
       setDefaultAPIKey(rpcAPIKey);
-    } catch (e) {
+    } catch (e: any) {
       setRPCApiKeyError(e.message);
     }
     setSavingApiKey(false);
@@ -251,7 +251,7 @@ function SecurityContent(): ReactElement {
       });
       setMnemonic(mnemonic);
       setRevealError('');
-    } catch (e) {
+    } catch (e: any) {
       setRevealError(e.message);
     }
   }, [password]);

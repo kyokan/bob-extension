@@ -18,7 +18,7 @@ import resolve from "@src/background/resolve";
         try {
             const res = await handleMessage(app, request);
             return [null, res];
-        } catch (e) {
+        } catch (e: any) {
             return [e.message, null];
         }
     });
