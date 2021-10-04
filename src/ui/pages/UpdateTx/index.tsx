@@ -870,7 +870,7 @@ function UpdateRaw(props: Props): ReactElement {
         },
       });
       props.onCancel();
-    } catch (e) {
+    } catch (e: any) {
       setErrorMessage(e.message);
     }
     setSending(false);
