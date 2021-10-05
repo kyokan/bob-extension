@@ -1,5 +1,6 @@
 import {browser} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
+import LedgerService from "@src/background/services/ledger";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
 import SettingService from "@src/background/services/setting";
@@ -28,6 +29,7 @@ import resolve from "@src/background/resolve";
   startedApp.add("analytics", new AnalyticsService());
   startedApp.add("node", new NodeService());
   startedApp.add("wallet", new WalletService());
+  startedApp.add("ledger", new LedgerService());
   await startedApp.start();
   app = startedApp;
 
