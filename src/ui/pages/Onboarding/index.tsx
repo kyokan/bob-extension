@@ -794,7 +794,8 @@ function ConnectLedger(props: {
 }): ReactElement {
   const history = useHistory();
   const [loading, setLoading] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [xpub, setXpub] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
 
@@ -823,7 +824,6 @@ function ConnectLedger(props: {
   const onConnect = async () => {
     setLoading(true);
     setErrorMessage("");
-    const [xpub, setXpub] = useState("");
 
     try {
       const appVersion = await ledgerClient.getAppVersion(network);
@@ -832,7 +832,7 @@ function ConnectLedger(props: {
       );
       if (!semver.gte(appVersion, LEDGER_MINIMUM_VERSION)) {
         setLoading(false);
-        setIsCreating(false);
+        setCreating(false);
         setErrorMessage(
           `Ledger app version ${LEDGER_MINIMUM_VERSION} is required. (${appVersion} installed)`
         );
@@ -842,12 +842,12 @@ function ConnectLedger(props: {
     } catch (e) {
       console.error(e);
       setLoading(false);
-      setIsCreating(false);
+      setCreating(false);
       setErrorMessage("Error connecting to device.");
       return;
     }
 
-    setIsCreating(true);
+    setCreating(true);
 
     // set a small timeout to clearly show that this is
     // a two-phase process.
