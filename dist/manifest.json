@@ -45,6 +45,7 @@
         "proxy",
         "storage",
         "unlimitedStorage",
+        "usb",
         "<all_urls>"
     ],
     "web_accessible_resources": [

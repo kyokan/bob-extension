@@ -59,6 +59,16 @@ enum MessageTypes {
   // analytics
   MP_TRACK = 'mp_track',
 
+  // ledger
+  LOAD_DEVICES = 'open',
+  UNLOAD_DEVICES = 'close',
+  ADD_DEVICE = 'addDevice',
+  REMOVE_DEVICE = 'removeDevice',
+  GET_DEVICES = 'getDevices',
+  REQUEST_DEVICE = 'requestDevice',
+  OPEN_DEVICE = 'openDevice',
+  CLOSE_DEVICE = 'closeDevice',
+
   // SQL
   READ_DB_AS_BUFFER = 'read_db_as_buffer',
   RESET_DB = 'reset_db',

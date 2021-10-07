@@ -6,6 +6,7 @@ import {get, put} from '@src/util/db';
 
 const NAME_CACHE: string[] = [];
 const NAME_MAP: { [hash: string]: string } = {};
+
 export default class NodeService extends GenericService {
   store: typeof DB;
 

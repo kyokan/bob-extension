@@ -14,3 +14,4 @@ declare module "*.gif" {
 }
 
 declare module 'hsd-ledger'
+declare module 'hsd-ledger/lib/hsd-ledger-browser'

@@ -433,6 +433,38 @@ const controllers: {
   [MessageTypes.MP_TRACK]: async (app, message) => {
     return app.exec('analytics', 'track', message.payload.name, message.payload.data);
   },
+
+  [MessageTypes.LOAD_DEVICES]: async (app, message) => {
+    return app.exec('ledger', 'open');
+  },
+
+  [MessageTypes.UNLOAD_DEVICES]: async (app, message) => {
+    return app.exec('ledger', 'close');
+  },
+
+  [MessageTypes.ADD_DEVICE]: async (app, message) => {
+    return app.exec('ledger', 'addDevice', message.payload.data);
+  },
+
+  [MessageTypes.REMOVE_DEVICE]: async (app, message) => {
+    return app.exec('ledger', 'removeDevice', message.payload.data);
+  },
+
+  [MessageTypes.GET_DEVICES]: async (app, message) => {
+    return app.exec('ledger', 'getDevices');
+  },
+
+  [MessageTypes.REQUEST_DEVICE]: async (app, message) => {
+    return app.exec('ledger', 'requestDevice');
+  },
+
+  [MessageTypes.OPEN_DEVICE]: async (app, message) => {
+    return app.exec('ledger', 'openDevice', message.payload.data);
+  },
+
+  [MessageTypes.CLOSE_DEVICE]: async (app, message) => {
+    return app.exec('ledger', 'closeDevice', message.payload.data);
+  },
 };
 
 export default controllers;
