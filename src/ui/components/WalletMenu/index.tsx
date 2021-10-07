@@ -81,15 +81,6 @@ export default function WalletMenu(): ReactElement {
                 Add New Wallet
               </div>
             </div>
-            <div
-              className="wallet-menu__menu__row"
-              onClick={() => history.push('/onboarding/terms?type=connect')}
-            >
-              <Icon fontAwesome="fa-plus" size={1} />
-              <div className="wallet-menu__menu__row__name">
-                Connect Ledger
-              </div>
-            </div>
             {
               !locked && (
                 <div
