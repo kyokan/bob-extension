@@ -1,6 +1,8 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
-import "./onboarding.scss";
 import {Redirect, Route, Switch, useHistory, useLocation} from "react-router";
+import {useDispatch} from "react-redux";
+import semver from "semver";
+import "./onboarding.scss";
 import {
   OnboardingModal,
   OnboardingModalContent,
@@ -16,9 +18,9 @@ import Input from "@src/ui/components/Input";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
 import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
-import {useDispatch} from "react-redux";
 import ErrorMessage from "@src/ui/components/ErrorMessage";
 import {browser} from "webextension-polyfill-ts";
+import {LEDGER_MINIMUM_VERSION} from "../../../util/constants";
 
 export default function Onboarding(): ReactElement {
   const [onboardingType, setOnboardingType] = useState<
@@ -792,7 +794,8 @@ function ConnectLedger(props: {
 }): ReactElement {
   const history = useHistory();
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
 
   useEffect(() => {
@@ -806,6 +809,53 @@ function ConnectLedger(props: {
       },
     });
   }, []);
+
+  const onCreateWallet = useCallback(async () => {
+    setLoading(true);
+    try {
+      await props.onCreateWallet();
+    } catch (e: any) {
+      setErrorMessage(e.message);
+    }
+    setLoading(false);
+  }, [props.onCreateWallet]);
+
+  const onConnect = async () => {
+    setLoading(true);
+    setErrorMessage("");
+    const [xpub, setXpub] = useState("");
+
+    try {
+      const appVersion = await ledgerClient.getAppVersion(network);
+      console.log(
+        `HNS Ledger app verison is ${appVersion}, minimum is ${LEDGER_MINIMUM_VERSION}`
+      );
+      if (!semver.gte(appVersion, LEDGER_MINIMUM_VERSION)) {
+        setLoading(false);
+        setIsCreating(false);
+        setErrorMessage(
+          `Ledger app version ${LEDGER_MINIMUM_VERSION} is required. (${appVersion} installed)`
+        );
+        return;
+      }
+      setXpub(await ledgerClient.getXPub(network));
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+      setIsCreating(false);
+      setErrorMessage("Error connecting to device.");
+      return;
+    }
+
+    setIsCreating(true);
+
+    // set a small timeout to clearly show that this is
+    // a two-phase process.
+    setTimeout(async () => {
+      await onCreateWallet();
+      await onCompleteInitialization(); // Placeholder
+    }, 2000);
+  };
 
   return (
     <OnboardingModal>
@@ -824,13 +874,8 @@ function ConnectLedger(props: {
       </OnboardingModalContent>
       <OnboardingModalFooter>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-        connect button
-        <Button
-          onClick={(e) => e.preventDefault()}
-          disabled={loading}
-          loading={loading}
-        >
-          Next
+        <Button onClick={onConnect} disabled={loading} loading={loading}>
+          Connect Ledger
         </Button>
       </OnboardingModalFooter>
     </OnboardingModal>
