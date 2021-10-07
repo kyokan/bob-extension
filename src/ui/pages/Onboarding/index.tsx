@@ -2,24 +2,24 @@ import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {Redirect, Route, Switch, useHistory, useLocation} from "react-router";
 import {useDispatch} from "react-redux";
 import semver from "semver";
-import "./onboarding.scss";
+import {browser} from "webextension-polyfill-ts";
+import MessageTypes from "@src/util/messageTypes";
+import postMessage from "@src/util/postMessage";
+import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
+import TermsOfUse from "@src/ui/pages/Onboarding/terms";
+import Button, {ButtonType} from "@src/ui/components/Button";
+import Checkbox from "@src/ui/components/Checkbox";
+import Icon from "@src/ui/components/Icon";
+import Input from "@src/ui/components/Input";
+import ErrorMessage from "@src/ui/components/ErrorMessage";
 import {
   OnboardingModal,
   OnboardingModalContent,
   OnboardingModalFooter,
   OnboardingModalHeader,
 } from "@src/ui/components/OnboardingModal";
+import "./onboarding.scss";
 import BobIcon from "@src/static/icons/bob-black.png";
-import Button, {ButtonType} from "@src/ui/components/Button";
-import Checkbox from "@src/ui/components/Checkbox";
-import Icon from "@src/ui/components/Icon";
-import TermsOfUse from "@src/ui/pages/Onboarding/terms";
-import Input from "@src/ui/components/Input";
-import MessageTypes from "@src/util/messageTypes";
-import postMessage from "@src/util/postMessage";
-import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
-import ErrorMessage from "@src/ui/components/ErrorMessage";
-import {browser} from "webextension-polyfill-ts";
 import {LEDGER_MINIMUM_VERSION} from "../../../util/constants";
 
 export default function Onboarding(): ReactElement {
@@ -55,7 +55,7 @@ export default function Onboarding(): ReactElement {
     <div className="onboarding">
       <Switch>
         <Route path="/onboarding/welcome">
-          <WelcomeStep />
+          <Welcome />
         </Route>
         <Route path="/onboarding/terms">
           <Terms
@@ -114,7 +114,7 @@ export default function Onboarding(): ReactElement {
   );
 }
 
-function WelcomeStep(props: {}): ReactElement {
+function Welcome(props: {}): ReactElement {
   const history = useHistory();
   const initialized = useInitialized();
 
