@@ -1,6 +1,6 @@
 import {GenericService} from "@src/util/svc";
 const bdb = require('bdb');
-const DB = require('bdb/lib/DB');
+const DB = require('bdb/lib/db');
 import {get, put} from '@src/util/db';
 
 const RPC_HOST_DB_KEY = 'rpc_host';

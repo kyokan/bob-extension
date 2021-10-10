@@ -16,7 +16,7 @@ const Outpoint = require("hsd/lib/primitives/outpoint");
 const MasterKey = require('hsd/lib/wallet/masterkey');
 const BN = require('bcrypto/lib/bn.js');
 const bdb = require('bdb');
-const DB = require('bdb/lib/DB');
+const DB = require('bdb/lib/db');
 const layout = require('hsd/lib/wallet/layout').txdb;
 const {Resource} = require('hsd/lib/dns/resource');
 import {get, put} from '@src/util/db';

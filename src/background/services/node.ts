@@ -1,6 +1,6 @@
 import {GenericService} from "@src/util/svc";
 const bdb = require('bdb');
-const DB = require('bdb/lib/DB');
+const DB = require('bdb/lib/db');
 const rules = require("hsd/lib/covenants/rules");
 import {get, put} from '@src/util/db';
 
