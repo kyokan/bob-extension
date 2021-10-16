@@ -24,6 +24,7 @@ type State = {
   currentWallet: string;
   locked: boolean;
   rescanning: boolean;
+  watchOnly: boolean;
   tip: {
     hash: string;
     height: number;
@@ -40,6 +41,7 @@ const initialState: State = {
   currentWallet: '',
   locked: true,
   rescanning: false,
+  watchOnly: false,
   tip: {
     hash: '',
     height: -1,
@@ -61,6 +63,32 @@ export const createWallet = (opt: {
   if (!walletName) throw new Error('Wallet name cannot be empty.');
   if (!seedphrase) throw new Error('Invalid seedphrase.');
   if (!password) throw new Error('Password cannot be empty.');
+
+  const isLedger = false // Ledger stuff
+  const xPub = ""
+  if (isLedger) {
+    await postMessage({
+      type: MessageTypes.CREATE_NEW_WALLET,
+      payload: {
+        id: walletName,
+        passphrase: password,
+        optIn,
+        watchOnly: true,
+        accountKey: xPub,
+      },
+    });
+  } else {
+    await postMessage({
+      type: MessageTypes.CREATE_NEW_WALLET,
+      payload: {
+        id: walletName,
+        mnemonic: seedphrase,
+        passphrase: password,
+        optIn,
+        watchOnly: false,
+      },
+    });
+  }
 
   await postMessage({
     type: MessageTypes.CREATE_NEW_WALLET,
@@ -150,6 +178,7 @@ export default function wallet(state = initialState, action: Action): State {
         locked: action.payload.locked,
         tip: action.payload.tip,
         rescanning: action.payload.rescanning,
+        watchOnly: action.payload.watchOnly
       };
     default:
       return state;

@@ -1,15 +1,16 @@
 import {GenericService} from "@src/util/svc";
-const bdb = require('bdb');
-const DB = require('bdb/lib/DB');
-import {get, put} from '@src/util/db';
+const bdb = require("bdb");
+const DB = require("bdb/lib/DB");
+import {get, put} from "@src/util/db";
 
-const RPC_HOST_DB_KEY = 'rpc_host';
-const RPC_API_KEY_DB_KEY = 'rpc_api_key';
-const ANALYTICS_OPT_IN_KEY = 'analytics_opt_in_key';
-const RESOLVER_OPT_IN_KEY = 'resolver_opt_in_key';
+const RPC_HOST_DB_KEY = "rpc_host";
+const RPC_API_KEY_DB_KEY = "rpc_api_key";
+const ANALYTICS_OPT_IN_KEY = "analytics_opt_in_key";
+const RESOLVER_OPT_IN_KEY = "resolver_opt_in_key";
 
-const DEFAULT_HOST = process.env.DEFAULT_HOST || 'https://api.handshakeapi.com/hsd';
-const DEFAULT_API_KEY = process.env.DEFAULT_API_KEY || '';
+const DEFAULT_HOST =
+  process.env.DEFAULT_HOST || "https://api.handshakeapi.com/hsd";
+const DEFAULT_API_KEY = process.env.DEFAULT_API_KEY || "";
 
 export default class SettingService extends GenericService {
   store: typeof DB;
@@ -19,13 +20,13 @@ export default class SettingService extends GenericService {
 
   constructor() {
     super();
-    this.apiHost = '';
-    this.apiKey = '';
+    this.apiHost = "";
+    this.apiKey = "";
   }
 
   getAPI = async () => {
-    const apiHost = this.apiHost || await get(this.store, RPC_HOST_DB_KEY);
-    const apiKey = this.apiKey || await get(this.store, RPC_API_KEY_DB_KEY);
+    const apiHost = this.apiHost || (await get(this.store, RPC_HOST_DB_KEY));
+    const apiKey = this.apiKey || (await get(this.store, RPC_API_KEY_DB_KEY));
 
     return {
       apiHost: apiHost || DEFAULT_HOST,
@@ -66,14 +67,12 @@ export default class SettingService extends GenericService {
   };
 
   async start() {
-    this.store = bdb.create('/setting-store');
+    this.store = bdb.create("/setting-store");
     await this.store.open();
     const {apiKey, apiHost} = await this.getAPI();
     this.apiKey = apiKey;
     this.apiHost = apiHost;
   }
 
-  async stop() {
-
-  }
+  async stop() {}
 }

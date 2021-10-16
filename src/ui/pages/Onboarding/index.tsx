@@ -2,6 +2,7 @@ import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {Redirect, Route, Switch, useHistory, useLocation} from "react-router";
 import {useDispatch} from "react-redux";
 import semver from "semver";
+const Network = require("hsd/lib/protocol/network");
 import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
@@ -37,7 +38,12 @@ export default function Onboarding(): ReactElement {
     postMessage({
       type: MessageTypes.MP_TRACK,
       payload: {
-        name: onboardingType === "create" ? "create wallet" : "import wallet",
+        name:
+          onboardingType === "create"
+            ? "create wallet"
+            : onboardingType === "import"
+            ? "import wallet"
+            : "connect ledger",
       },
     });
     await dispatch(
@@ -798,6 +804,10 @@ function ConnectLedger(props: {
   const [xpub, setXpub] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
+  
+  // Is this right?
+  const networkType = process.env.NETWORK_TYPE || "main";
+  const network = Network.get(networkType);
 
   useEffect(() => {
     postMessage({

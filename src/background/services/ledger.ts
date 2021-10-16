@@ -1,31 +1,36 @@
 import {GenericService} from "@src/util/svc";
-import {LedgerHSD, USB} from 'hsd-ledger/lib/hsd-ledger-browser';
+import {LedgerHSD, USB} from "hsd-ledger/lib/hsd-ledger-browser";
 
 const bdb = require("bdb");
 const DB = require("bdb/lib/DB");
 
-const KeyRing = require('hsd/lib/primitives/keyring');
-const assert = require('bsert');
+const KeyRing = require("hsd/lib/primitives/keyring");
+const assert = require("bsert");
 
 // Not sure why this throws error
-// const {Device} = USB;
+const {Device} = USB;
 
-// Try chrome browser api for this???
 const usb = navigator.usb;
 
 if (!usb) {
-  alert('Could not find WebUSB.');
-  throw new Error('Could not find WebUSB.');
+  alert("Could not find WebUSB.");
+  throw new Error("Could not find WebUSB.");
 }
+
+/**
+ * @param {Device[]} devices
+ * @param {Device?} selected
+ * @param {Device?} device
+ */
 
 export default class LedgerService extends GenericService {
   store: typeof DB;
 
-  devices: any
-  wusbToDevice: any
-  selected: any
-  _addDevice: any
-  _removeDevice: any
+  devices: any;
+  wusbToDevice: any;
+  selected: any;
+  _addDevice: any;
+  _removeDevice: any;
 
   constructor() {
     super();
@@ -42,25 +47,25 @@ export default class LedgerService extends GenericService {
     this._addDevice = async (event) => {
       const device = Device.fromDevice(event.device);
       await this.addDevice(device);
-      this.emit('connect', device);
+      this.emit("connect", device);
     };
 
     this._removeDevice = async (event) => {
       const device = Device.fromDevice(event.device);
       await this.removeDevice(device);
-      this.emit('disconnect', device);
+      this.emit("disconnect", device);
     };
 
-    usb.addEventListener('connect', this._addDevice);
-    usb.addEventListener('disconnect', this._removeDevice);
+    usb.addEventListener("connect", this._addDevice);
+    usb.addEventListener("disconnect", this._removeDevice);
   }
 
   unbind() {
     assert(this._addDevice);
     assert(this._removeDevice);
 
-    usb.removeEventListener('connect', this._addDevice);
-    usb.removeEventListener('disconnect', this._removeDevice);
+    usb.removeEventListener("connect", this._addDevice);
+    usb.removeEventListener("disconnect", this._removeDevice);
 
     this._addDevice = null;
     this._removeDevice = null;
@@ -69,8 +74,7 @@ export default class LedgerService extends GenericService {
   async open() {
     const devices = await Device.getDevices();
 
-    for (const device of devices)
-      await this.addDevice(device);
+    for (const device of devices) await this.addDevice(device);
 
     this.bind();
   }
@@ -87,7 +91,7 @@ export default class LedgerService extends GenericService {
   }
 
   async addDevice(device) {
-    assert(device instanceof Device, 'Could not add device.');
+    assert(device instanceof Device, "Could not add device.");
 
     if (this.wusbToDevice.has(device.device))
       return this.wusbToDevice.get(device.device);
@@ -99,15 +103,13 @@ export default class LedgerService extends GenericService {
   }
 
   async removeDevice(device) {
-    assert(device.device, 'Could not remove device.');
+    assert(device.device, "Could not remove device.");
 
-    if (!Device.isLedgerDevice(device.device))
-      return;
+    if (!Device.isLedgerDevice(device.device)) return;
 
     const mappedDevice = this.wusbToDevice.get(device.device);
 
-    if (!mappedDevice)
-      return;
+    if (!mappedDevice) return;
 
     if (this.selected && this.selected.device === mappedDevice.device)
       await this.closeDevice(this.selected);
@@ -134,16 +136,16 @@ export default class LedgerService extends GenericService {
   }
 
   async openDevice(device, timeout = 20000) {
-    assert(!this.selected, 'Other device already in use.');
-    assert(this.devices.has(device), 'Could not find device.');
+    assert(!this.selected, "Other device already in use.");
+    assert(this.devices.has(device), "Could not find device.");
 
     this.selected = device;
 
-    device.set({ timeout });
+    device.set({timeout});
 
     try {
       await this.selected.open();
-      this.emit('device open', this.selected);
+      this.emit("device open", this.selected);
     } catch (e) {
       console.error(e);
       this.selected = null;
@@ -153,45 +155,32 @@ export default class LedgerService extends GenericService {
   }
 
   async closeDevice(device) {
-    assert(this.selected, 'No device in use.');
-    assert(this.devices.has(device), 'Could not find device.');
-    assert(this.selected === device, 'Can not close closed device.');
+    assert(this.selected, "No device in use.");
+    assert(this.devices.has(device), "Could not find device.");
+    assert(this.selected === device, "Can not close closed device.");
 
-    if (this.selected.opened)
-      await this.selected.close();
+    if (this.selected.opened) await this.selected.close();
 
     this.selected = null;
   }
 
-
-
   async start() {
-    // Not sure these are needed any longer
-    //
-    // const methods = {
-    //   getXPub,
-    //   getAppVersion,
-    // };
-    // const sName = "Ledger";
-
     this.store = bdb.create("/ledger-store");
     await this.store.open();
   }
 
-  async stop() {
-
-  }
+  async stop() {}
 }
 
 // const manager = new LedgerService();
-// const chooseBtn = document.getElementById('choose');
-// const chosenDiv = document.getElementById('chosen');
-// const devicesDiv = document.getElementById('devices');
+// const chooseBtn = document.getElementById("choose");
+// const chosenDiv = document.getElementById("chosen");
+// const devicesDiv = document.getElementById("devices");
 
-// manager.on('connect', renderManager);
-// manager.on('disconnect', renderManager);
+// manager.on("connect", renderManager);
+// manager.on("disconnect", renderManager);
 
-// chooseBtn.addEventListener('click', async () => {
+// chooseBtn.addEventListener("click", async () => {
 //   const device = await manager.requestDevice();
 
 //   await manager.openDevice(device);
@@ -199,7 +188,7 @@ export default class LedgerService extends GenericService {
 //   renderManager();
 // });
 
-// global.addEventListener('load', async () => {
+// global.addEventListener("load", async () => {
 //   await manager.open();
 
 //   renderManager();
@@ -224,15 +213,15 @@ export default class LedgerService extends GenericService {
 // }
 
 // function renderDevice(element, manager, device) {
-//   const container = document.createElement('div');
-//   const name = document.createElement('span');
-//   const choose = document.createElement('button');
+//   const container = document.createElement("div");
+//   const name = document.createElement("span");
+//   const choose = document.createElement("button");
 
-//   choose.innerText = 'Open.';
+//   choose.innerText = "Open.";
 //   name.innerText = deviceInfoMini(device);
 
 //   // we don't clean up listeners.. too much headache
-//   choose.addEventListener('click', async () => {
+//   choose.addEventListener("click", async () => {
 //     await manager.openDevice(device);
 
 //     renderManager();
@@ -247,45 +236,44 @@ export default class LedgerService extends GenericService {
 // function renderChosen(element, manager, device) {
 //   removeChildren(element);
 
-//   if (!device)
-//     return;
+//   if (!device) return;
 
-//   const closeBtn = document.createElement('button');
+//   const closeBtn = document.createElement("button");
 
-//   closeBtn.innerText = 'Close.';
-//   closeBtn.addEventListener('click', async function close() {
+//   closeBtn.innerText = "Close.";
+//   closeBtn.addEventListener("click", async function close() {
 //     await manager.closeDevice(device);
 
-//     closeBtn.removeEventListener('click', close);
+//     closeBtn.removeEventListener("click", close);
 
 //     renderManager();
 //   });
 
-//   const pubkeyBtn = document.createElement('button');
-//   pubkeyBtn.innerText = 'Get public key';
-//   pubkeyBtn.addEventListener('click', async () => {
+//   const pubkeyBtn = document.createElement("button");
+//   pubkeyBtn.innerText = "Get public key";
+//   pubkeyBtn.addEventListener("click", async () => {
 //     const device = manager.selected;
 
 //     if (!device) {
-//       alert('Could not find device.');
+//       alert("Could not find device.");
 //       return;
 //     }
 
-//     const ledger = new LedgerHSD({ device });
+//     const ledger = new LedgerHSD({device});
 //     const accountKey = await ledger.getAccountXPUB(0);
 //     const pubkeyInformation = `
 //     Account: m/44'/0'/0'
 //     xpub: ${accountKey.xpubkey()}
-//     First Receive Address: ${deriveAddress(accountKey, 0, 0, 'main')}
-//     First Change Address: ${deriveAddress(accountKey, 1, 0, 'main')}
+//     First Receive Address: ${deriveAddress(accountKey, 0, 0, "main")}
+//     First Change Address: ${deriveAddress(accountKey, 1, 0, "main")}
 //     `;
 
-//     const pubkeyElement = document.createElement('span');
+//     const pubkeyElement = document.createElement("span");
 //     pubkeyElement.innerText = pubkeyInformation;
 //     element.appendChild(pubkeyElement);
 //   });
 
-//   const information = document.createElement('span');
+//   const information = document.createElement("span");
 //   information.innerText = deviceInfoAll(device);
 
 //   element.appendChild(information);
@@ -307,8 +295,7 @@ export default class LedgerService extends GenericService {
 // }
 
 // function removeChildren(element) {
-//   while (element.firstChild)
-//     element.removeChild(element.firstChild);
+//   while (element.firstChild) element.removeChild(element.firstChild);
 // }
 
 // function deriveAddress(hd, change, index, network) {

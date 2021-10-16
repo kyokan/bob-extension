@@ -1,10 +1,8 @@
 import {GenericService} from "@src/util/svc";
-import {LedgerHSD, USB} from 'hsd-ledger';
+// import {LedgerHSD, USB} from "hsd-ledger/lib/hsd-ledger-browser";
 
 const bdb = require("bdb");
 const DB = require("bdb/lib/DB");
-const MTX = require("hsd/lib/primitives/mtx");
-
 
 const {Device} = USB;
 const ONE_MINUTE = 60000;
@@ -12,11 +10,15 @@ const ONE_MINUTE = 60000;
 export default class LedgerService extends GenericService {
   store: typeof DB;
 
+  network: string;
+
   constructor() {
     super();
+    this.network = "";
   }
 
-  async withLedger(network, action) {
+  // Fix these prop types
+  async withLedger(network: string, action: (ledger: any) => Promise<any>) {
     let device;
     let ledger;
 
@@ -45,28 +47,22 @@ export default class LedgerService extends GenericService {
     }
   }
 
-  async getXPub(network: any) {
-    return this.withLedger(network, async (ledger) => {
+  async getXPub(network: string) {
+    return this.withLedger(network, async (ledger) => {:
       return (await ledger.getAccountXPUB(0)).xpubkey(network);
     });
   }
 
-  async getAppVersion(network: any) {
+  async getAppVersion(network: string) {
     return this.withLedger(network, async (ledger) => {
       return ledger.getAppVersion();
     });
   }
 
   async start() {
-    // Not sure these are needed any longer
-    //
-    // const methods = {
-    //   getXPub,
-    //   getAppVersion,
-    // };
-    // const sName = "Ledger";
-
     this.store = bdb.create("/ledger-store");
     await this.store.open();
   }
+
+  async stop() {}
 }
