@@ -434,21 +434,33 @@ const controllers: {
     return app.exec('analytics', 'track', message.payload.name, message.payload.data);
   },
 
-  [MessageTypes.LOAD_DEVICES]: async (app, message) => {
+  [MessageTypes.GET_XPUB]: async (app, message) => {
+    return app.exec('ledger', 'getXPub', message.payload.network);
+  },
+
+  [MessageTypes.GET_APP_VERSION]: async (app, message) => {
+    return app.exec('ledger', 'getAppVersion', message.payload.network);
+  },
+
+  [MessageTypes.OPEN_DEVICES]: async (app, message) => {
     return app.exec('ledger', 'open');
   },
 
-  [MessageTypes.UNLOAD_DEVICES]: async (app, message) => {
-    return app.exec('ledger', 'close');
+  [MessageTypes.GET_SELECTED_DEVICE]: async (app, message) => {
+    return app.exec('ledger', 'getSelectedDevice');
   },
 
-  [MessageTypes.ADD_DEVICE]: async (app, message) => {
-    return app.exec('ledger', 'addDevice', message.payload.data);
-  },
+  // [MessageTypes.UNLOAD_DEVICES]: async (app, message) => {
+  //   return app.exec('ledger', 'close');
+  // },
 
-  [MessageTypes.REMOVE_DEVICE]: async (app, message) => {
-    return app.exec('ledger', 'removeDevice', message.payload.data);
-  },
+  // [MessageTypes.ADD_DEVICE]: async (app, message) => {
+  //   return app.exec('ledger', 'addDevice', message.payload.data);
+  // },
+
+  // [MessageTypes.REMOVE_DEVICE]: async (app, message) => {
+  //   return app.exec('ledger', 'removeDevice', message.payload.data);
+  // },
 
   [MessageTypes.GET_DEVICES]: async (app, message) => {
     return app.exec('ledger', 'getDevices');
@@ -459,11 +471,11 @@ const controllers: {
   },
 
   [MessageTypes.OPEN_DEVICE]: async (app, message) => {
-    return app.exec('ledger', 'openDevice', message.payload.data);
+    return app.exec('ledger', 'openDevice', message.payload.device);
   },
 
   [MessageTypes.CLOSE_DEVICE]: async (app, message) => {
-    return app.exec('ledger', 'closeDevice', message.payload.data);
+    return app.exec('ledger', 'closeDevice', message.payload.device);
   },
 };
 

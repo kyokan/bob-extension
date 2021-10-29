@@ -60,7 +60,9 @@ enum MessageTypes {
   MP_TRACK = 'mp_track',
 
   // ledger
-  LOAD_DEVICES = 'open',
+  GET_XPUB = 'getXPub',
+  GET_APP_VERSION = 'getAppVersion',
+  OPEN_DEVICES = 'open',
   UNLOAD_DEVICES = 'close',
   ADD_DEVICE = 'addDevice',
   REMOVE_DEVICE = 'removeDevice',
@@ -68,6 +70,7 @@ enum MessageTypes {
   REQUEST_DEVICE = 'requestDevice',
   OPEN_DEVICE = 'openDevice',
   CLOSE_DEVICE = 'closeDevice',
+  GET_SELECTED_DEVICE = 'getSelectedDevice',
 
   // SQL
   READ_DB_AS_BUFFER = 'read_db_as_buffer',

@@ -6,7 +6,7 @@ import {get, put} from "@src/util/db";
 const RPC_HOST_DB_KEY = "rpc_host";
 const RPC_API_KEY_DB_KEY = "rpc_api_key";
 const ANALYTICS_OPT_IN_KEY = "analytics_opt_in_key";
-const RESOLVER_OPT_IN_KEY = "resolver_opt_in_key";
+const RESOLVER_OPT_IN = "resolver_opt_in";
 
 const DEFAULT_HOST =
   process.env.DEFAULT_HOST || "https://api.handshakeapi.com/hsd";
@@ -57,13 +57,14 @@ export default class SettingService extends GenericService {
   };
 
   setResolver = async (optIn = false) => {
-    await put(this.store, RESOLVER_OPT_IN_KEY, optIn);
+    await put(this.store, RESOLVER_OPT_IN, optIn);
+    this.emit("setResolver");
     return true;
   };
 
   getResolver = async () => {
-    const optIn = await get(this.store, RESOLVER_OPT_IN_KEY);
-    return !!optIn;
+    const optIn = await get(this.store, RESOLVER_OPT_IN);
+    return optIn;
   };
 
   async start() {
@@ -74,5 +75,6 @@ export default class SettingService extends GenericService {
     this.apiHost = apiHost;
   }
 
+  
   async stop() {}
 }

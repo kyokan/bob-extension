@@ -1,4 +1,4 @@
-import {WebRequest} from "webextension-polyfill-ts";
+import {browser, WebRequest} from "webextension-polyfill-ts";
 import normalTLDs from "../static/normal-tld.json";
 import OnBeforeRequestDetailsType = WebRequest.OnBeforeRequestDetailsType;
 import {AppService} from "@src/util/svc";
@@ -17,19 +17,26 @@ function sleep(milliseconds: number, resolved: string) {
   }
 }
 
+function setResolver(isResolver: boolean) {
+  if (isResolver) {
+    browser.webRequest.onBeforeRequest.addListener(
+      // @ts-ignore
+      resolve,
+      {urls: ["<all_urls>"]},
+      ["blocking"]
+    );
+  } else {
+    browser.webRequest.onBeforeRequest.removeListener(resolve);
+  }
+}
+
 // run script when a request is about to occur
 export default async function resolve(
-  app: AppService,
   details: OnBeforeRequestDetailsType
 ) {
-  const isResolverActive = await app.exec("setting", "getResolver");
   const originalUrl = new URL(details.url);
   const hostname = originalUrl.hostname;
   const protocol = originalUrl.protocol;
-
-  if (!isResolverActive) {
-    return;
-  }
 
   if (!["http:", "https:"].includes(protocol)) {
     return;
@@ -50,7 +57,7 @@ export default async function resolve(
   // Check the local cache to save having to fetch the value from the server again.
   if (sessionStorage.getItem(hostname) == undefined) {
     const xhr = new XMLHttpRequest();
-    const url = "https://api.handshakeapi.com/hsd/lookup/"+hostname;
+    const url = "https://api.handshakeapi.com/hsd/lookup/" + hostname;
     // synchronous XMLHttpRequest is actually asynchronous
     // check out https://developer.chrome.com/extensions/webRequest
     xhr.open("GET", url, false);

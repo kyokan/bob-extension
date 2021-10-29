@@ -804,7 +804,7 @@ function ConnectLedger(props: {
   const [xpub, setXpub] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
-  
+
   // Is this right?
   const networkType = process.env.NETWORK_TYPE || "main";
   const network = Network.get(networkType);
@@ -836,19 +836,7 @@ function ConnectLedger(props: {
     setErrorMessage("");
 
     try {
-      const appVersion = await ledgerClient.getAppVersion(network);
-      console.log(
-        `HNS Ledger app verison is ${appVersion}, minimum is ${LEDGER_MINIMUM_VERSION}`
-      );
-      if (!semver.gte(appVersion, LEDGER_MINIMUM_VERSION)) {
-        setLoading(false);
-        setCreating(false);
-        setErrorMessage(
-          `Ledger app version ${LEDGER_MINIMUM_VERSION} is required. (${appVersion} installed)`
-        );
-        return;
-      }
-      setXpub(await ledgerClient.getXPub(network));
+      
     } catch (e) {
       console.error(e);
       setLoading(false);
@@ -858,13 +846,18 @@ function ConnectLedger(props: {
     }
 
     setCreating(true);
+  };
 
-    // set a small timeout to clearly show that this is
-    // a two-phase process.
-    setTimeout(async () => {
-      await onCreateWallet();
-      await onCompleteInitialization(); // Placeholder
-    }, 2000);
+  const testGetDevices = async () => {
+    try {
+      const devices = await postMessage({
+        type: MessageTypes.GET_DEVICES
+      });
+      console.log('devices:', devices)
+    } catch (e: any) {
+      console.log(e);
+      setErrorMessage(e.message);
+    }
   };
 
   return (
@@ -884,7 +877,7 @@ function ConnectLedger(props: {
       </OnboardingModalContent>
       <OnboardingModalFooter>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-        <Button onClick={onConnect} disabled={loading} loading={loading}>
+        <Button onClick={testGetDevices} disabled={loading} loading={loading}>
           Connect Ledger
         </Button>
       </OnboardingModalFooter>

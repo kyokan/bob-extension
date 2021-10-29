@@ -1,6 +1,6 @@
 import {browser} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
-import LedgerService from "@src/background/services/ledger";
+import LedgerService from "@src/background/services/ledgerWeb";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
 import SettingService from "@src/background/services/setting";
@@ -33,13 +33,22 @@ import resolve from "@src/background/resolve";
   await startedApp.start();
   app = startedApp;
 
-  browser.webRequest.onBeforeRequest.addListener(
-    // @ts-ignore
-    resolve.bind(this, app),
-    {urls: ["<all_urls>"]},
-    ["blocking"]
-  );
-  
+  app.on("setting.setResolver", async () => {
+    const isResolver = await app.exec("setting", "getResolver");
+    console.log(isResolver);
+    if (isResolver) {
+      browser.webRequest.onBeforeRequest.addListener(
+        // @ts-ignore
+        resolve,
+        {urls: ["<all_urls>"]},
+        ["blocking"]
+      );
+    } else {
+      // @ts-ignore
+      browser.webRequest.onBeforeRequest.removeListener(resolve);
+    }
+  });
+
   app.on("wallet.locked", async () => {
     const tabs = await browser.tabs.query({active: true});
     for (let tab of tabs) {
