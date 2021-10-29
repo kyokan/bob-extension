@@ -31,12 +31,21 @@ import resolve from "@src/background/resolve";
   await startedApp.start();
   app = startedApp;
 
-  browser.webRequest.onBeforeRequest.addListener(
-    // @ts-ignore
-    resolve.bind(this, app),
-    {urls: ["<all_urls>"]},
-    ["blocking"]
-  );
+  app.on("setting.setResolver", async () => {
+    const isResolving = await app.exec("setting", "getResolver");
+    console.log(isResolving);
+    if (isResolving) {
+      browser.webRequest.onBeforeRequest.addListener(
+        // @ts-ignore
+        resolve,
+        {urls: ["<all_urls>"]},
+        ["blocking"]
+      );
+    } else {
+      // @ts-ignore
+      browser.webRequest.onBeforeRequest.removeListener(resolve);
+    }
+  });
   
   app.on("wallet.locked", async () => {
     const tabs = await browser.tabs.query({active: true});
