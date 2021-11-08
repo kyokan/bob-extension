@@ -34,9 +34,10 @@ import resolve from "@src/background/resolve";
   app = startedApp;
 
   app.on("setting.setResolver", async () => {
-    const isResolver = await app.exec("setting", "getResolver");
-    console.log(isResolver);
-    if (isResolver) {
+    const isResolving = await app.exec("setting", "getResolver");
+    console.log("resolving:", isResolving);
+    
+    if (isResolving) {
       browser.webRequest.onBeforeRequest.addListener(
         // @ts-ignore
         resolve,

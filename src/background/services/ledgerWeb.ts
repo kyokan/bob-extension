@@ -1,7 +1,7 @@
 import {GenericService} from "@src/util/svc";
-import {USB} from "hsd-ledger/lib/hsd-ledger-browser";
+import {LedgerHSD, USB} from "hsd-ledger/lib/hsd-ledger-browser";
 import {get, put} from "@src/util/db";
-import {parse, stringify, toJSON, fromJSON} from "flatted";
+import {parse, stringify, toJSON} from "flatted";
 
 const bdb = require("bdb");
 const DB = require("bdb/lib/DB");
@@ -24,14 +24,20 @@ const SELECTED_DEVICE = "selected_device";
  * @param {Device?} device
  */
 
-export default class LedgerService extends GenericService {
-  store: typeof DB;
-
+declare interface LedgerService {
   devices: Set<any>;
-  wusbToDevice: any;
-  selected: any;
+  wusbToDevice: Map<string, any>;
+  selected: USBDevice | null;
+
   _addDevice: any;
   _removeDevice: any;
+
+  on(event: "connect", listener: (device: any) => void): this;
+  on(event: "disconnect", listener: (device: any) => void): this;
+}
+
+class LedgerService extends GenericService {
+  store: typeof DB;
 
   constructor() {
     super();
@@ -45,17 +51,18 @@ export default class LedgerService extends GenericService {
   }
 
   bind = () => {
-    this._addDevice = async (event) => {
+    this._addDevice = async (event: USBConnectionEvent) => {
       const device = Device.fromDevice(event.device);
       await this.addDevice(device);
       this.emit("connect", device);
-      console.log("emit addDevice");
+      console.log("emit connect");
     };
 
-    this._removeDevice = async (event: {device: any}) => {
+    this._removeDevice = async (event: USBConnectionEvent) => {
       const device = Device.fromDevice(event.device);
       await this.removeDevice(device);
       this.emit("disconnect", device);
+      console.log("emit disconnect");
     };
 
     usb.addEventListener("connect", this._addDevice);
@@ -75,7 +82,12 @@ export default class LedgerService extends GenericService {
 
   open = async () => {
     const devices = await Device.getDevices();
-    for (const device of devices) await this.addDevice(device);
+
+    for (const device of devices) {
+      await this.addDevice(device);
+      console.log("open USB:", device);
+    }
+
     this.bind();
   };
 
@@ -90,7 +102,7 @@ export default class LedgerService extends GenericService {
     this.selected = null;
   }
 
-  addDevice = async (device: any) => {
+  addDevice = async (device) => {
     assert(device instanceof Device, "Could not add device.");
 
     if (this.wusbToDevice.has(device.device))
@@ -99,11 +111,7 @@ export default class LedgerService extends GenericService {
     this.wusbToDevice.set(device.device, device);
     this.devices.add(device);
 
-    // await put(this.store, SELECTED_DEVICE, this.devices);
-
-    console.log("addDevice:", device.device);
-    console.log("this.devices:", this.devices.values());
-    console.log("this.wusbToDevice", this.wusbToDevice);
+    console.log("addDevice:", device);
 
     return device;
   };
@@ -127,9 +135,14 @@ export default class LedgerService extends GenericService {
   };
 
   async getDevices() {
-    // console.log("devices", this.devices.values());
-    // console.log(this.devices);
-    return this.devices.values()
+    const devicesArray = usb.getDevices();
+    console.log("getDevices:", devicesArray);
+    return devicesArray;
+  }
+
+  async getSelected() {
+    console.log("getSelected:", this.selected);
+    return stringify(this.selected);
   }
 
   /**
@@ -144,22 +157,25 @@ export default class LedgerService extends GenericService {
   };
 
   openDevice = async (device, timeout = 20000) => {
-    assert(!this.selected, "Other device already in use.");
-    assert(this.devices.has(device), "Could not find device.");
+    this.selected = parse(device);
+    console.log("openDevice:", parse(device));
+    console.log("openDevice selected:", this.selected);
+    // assert(!this.selected, "Other device already in use.");
+    // assert(this.devices.has(device), "Could not find device.");
 
-    this.selected = device;
+    // this.selected = device;
 
-    device.set({timeout});
+    // device.set({timeout});
 
-    try {
-      await this.selected.open();
-      this.emit("device open", this.selected);
-    } catch (e) {
-      console.error(e);
-      this.selected = null;
-    }
+    // try {
+    //   await this.selected.open();
+    //   this.emit("device open", this.selected);
+    // } catch (e) {
+    //   console.error(e);
+    //   this.selected = null;
+    // }
 
-    return this.selected;
+    // return this.selected;
   };
 
   closeDevice = async (device: any) => {
@@ -167,10 +183,36 @@ export default class LedgerService extends GenericService {
     assert(this.devices.has(device), "Could not find device.");
     assert(this.selected === device, "Can not close closed device.");
 
-    if (this.selected.opened) await this.selected.close();
+    if (this.selected?.opened) await this.selected.close();
 
     this.selected = null;
   };
+
+  // connectDevice = async (device = this.selected, timeout = 20000) => {
+  //   assert(!this.selected, "Other device already in use.");
+  //   assert(this.devices.has(device), "Could not find device.");
+
+  //   this.selected = device;
+
+  //   device.set({timeout});
+
+  //   try {
+  //     await this.selected.open();
+  //     this.emit("device open", this.selected);
+  //     console.log("device opened");
+  //   } catch (e) {
+  //     console.error(e);
+  //     // this.selected = null;
+  //   } finally {
+  //     console.log("finally");
+  //     // const ledger = new LedgerHSD(this.selected);
+
+  //     // const accountKey = await ledger.getAccountXPUB(0, {confirm: true});
+  //     // console.log("accountKey:", accountKey);
+  //   }
+
+  //   // return this.selected
+  // };
 
   async start() {
     this.store = bdb.create("/ledger-store");
@@ -178,4 +220,17 @@ export default class LedgerService extends GenericService {
   }
 
   async stop() {}
+}
+
+export default LedgerService;
+
+function replacer(key, value) {
+  if (value instanceof USBDevice) {
+    return {
+      dataType: "USBDevice",
+      value: {...value},
+    };
+  } else {
+    return value;
+  }
 }

@@ -1,7 +1,6 @@
-import {browser, WebRequest} from "webextension-polyfill-ts";
+import {WebRequest} from "webextension-polyfill-ts";
 import normalTLDs from "../static/normal-tld.json";
 import OnBeforeRequestDetailsType = WebRequest.OnBeforeRequestDetailsType;
-import {AppService} from "@src/util/svc";
 
 function sleep(milliseconds: number, resolved: string) {
   // synchronous XMLHttpRequests from Chrome extensions are not blocking event handlers. That's why we use this
@@ -14,19 +13,6 @@ function sleep(milliseconds: number, resolved: string) {
     ) {
       break;
     }
-  }
-}
-
-function setResolver(isResolver: boolean) {
-  if (isResolver) {
-    browser.webRequest.onBeforeRequest.addListener(
-      // @ts-ignore
-      resolve,
-      {urls: ["<all_urls>"]},
-      ["blocking"]
-    );
-  } else {
-    browser.webRequest.onBeforeRequest.removeListener(resolve);
   }
 }
 

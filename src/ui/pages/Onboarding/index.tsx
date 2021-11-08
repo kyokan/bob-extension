@@ -22,6 +22,7 @@ import {
 import "./onboarding.scss";
 import BobIcon from "@src/static/icons/bob-black.png";
 import {LEDGER_MINIMUM_VERSION} from "../../../util/constants";
+import DeviceTest from "@src/ui/components/Device";
 
 export default function Onboarding(): ReactElement {
   const [onboardingType, setOnboardingType] = useState<
@@ -30,6 +31,8 @@ export default function Onboarding(): ReactElement {
   const [walletName, setWalletName] = useState("");
   const [seedphrase, setSeedphrase] = useState("");
   const [password, setPassword] = useState("");
+  const [xpub, setXpub] = useState("");
+  const [isLedger, setIsLedger] = useState(false);
   const [optIn, setOptIn] = useState(false);
   const history = useHistory();
   const dispatch = useDispatch();
@@ -46,16 +49,18 @@ export default function Onboarding(): ReactElement {
             : "connect ledger",
       },
     });
-    await dispatch(
+    dispatch(
       createWallet({
         walletName,
         seedphrase,
         password,
         optIn,
+        isLedger,
+        xpub,
       })
     );
     history.push("/");
-  }, [walletName, seedphrase, password, optIn, onboardingType]);
+  }, [walletName, seedphrase, password, optIn, onboardingType, isLedger, xpub]);
 
   return (
     <div className="onboarding">
@@ -110,7 +115,12 @@ export default function Onboarding(): ReactElement {
           />
         </Route>
         <Route path="/onboarding/connect-ledger">
-          <ConnectLedger onCreateWallet={onCreateWallet} />
+          <ConnectLedger
+            setIsLedger={setIsLedger}
+            xpub={xpub}
+            setXpub={setXpub}
+            onCreateWallet={onCreateWallet}
+          />
         </Route>
         <Route>
           <Redirect to="/onboarding/welcome" />
@@ -260,6 +270,7 @@ function Terms(props: {
           Next
         </Button>
       </OnboardingModalFooter>
+      <DeviceTest />
     </OnboardingModal>
   );
 }
@@ -796,8 +807,12 @@ function OptInAnalytics(props: {
 }
 
 function ConnectLedger(props: {
+  setIsLedger: (isLedger: boolean) => void;
+  xpub: string;
+  setXpub: (xpub: string) => void;
   onCreateWallet: () => Promise<void>;
 }): ReactElement {
+  const {setIsLedger} = props;
   const history = useHistory();
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -808,6 +823,10 @@ function ConnectLedger(props: {
   // Is this right?
   const networkType = process.env.NETWORK_TYPE || "main";
   const network = Network.get(networkType);
+
+  useEffect(() => {
+    setIsLedger(true);
+  }, []);
 
   useEffect(() => {
     postMessage({
@@ -836,7 +855,6 @@ function ConnectLedger(props: {
     setErrorMessage("");
 
     try {
-      
     } catch (e) {
       console.error(e);
       setLoading(false);
@@ -850,13 +868,9 @@ function ConnectLedger(props: {
 
   const testGetDevices = async () => {
     try {
-      const devices = await postMessage({
-        type: MessageTypes.GET_DEVICES
-      });
-      console.log('devices:', devices)
+      navigator.usb.requestDevice({filters: [{vendorId: 0x2c97}]});
     } catch (e: any) {
       console.log(e);
-      setErrorMessage(e.message);
     }
   };
 

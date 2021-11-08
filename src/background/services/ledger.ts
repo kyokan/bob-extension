@@ -8,8 +8,8 @@ const DB = require("bdb/lib/DB");
 const {Device} = USB;
 const ONE_MINUTE = 60000;
 
-console.log('USB:', USB)
-console.log('LedgerHSD:', LedgerHSD)
+console.log("USB:", USB);
+console.log("LedgerHSD:", LedgerHSD);
 
 const LEDGER_APP_VERSION = "ledger_app_version";
 const LEDGER_XPUB = "ledger_xpub";
