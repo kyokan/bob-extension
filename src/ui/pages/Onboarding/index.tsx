@@ -2,7 +2,6 @@ import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {Redirect, Route, Switch, useHistory, useLocation} from "react-router";
 import {useDispatch} from "react-redux";
 import semver from "semver";
-const Network = require("hsd/lib/protocol/network");
 import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
@@ -19,10 +18,19 @@ import {
   OnboardingModalFooter,
   OnboardingModalHeader,
 } from "@src/ui/components/OnboardingModal";
+import ConnectLedgerSteps from "@src/ui/components/ConnectLedgerSteps";
 import "./onboarding.scss";
 import BobIcon from "@src/static/icons/bob-black.png";
-import {LEDGER_MINIMUM_VERSION} from "../../../util/constants";
-import DeviceTest from "@src/ui/components/Device";
+import {LedgerHSD, USB} from "hsd-ledger/lib/hsd-ledger-browser";
+import {
+  LEDGER_MINIMUM_VERSION,
+  LEDGER_USB_VENDOR_ID,
+} from "../../../util/constants";
+
+const {Device} = USB;
+const usb = navigator.usb;
+const ONE_MINUTE = 60000;
+const network = process.env.NETWORK_TYPE || "main";
 
 export default function Onboarding(): ReactElement {
   const [onboardingType, setOnboardingType] = useState<
@@ -250,12 +258,14 @@ function Terms(props: {
         maxStep={props.isConnecting ? 5 : 6}
       />
       <OnboardingModalContent>
-        <b>Terms of use</b>
-        <p>
-          <small>
-            Please review and agree to the Bob Wallet’s terms of use.
-          </small>
-        </p>
+        <div className="title">
+          <strong>Terms of use</strong>
+          <div className="title__detail">
+            <small>
+              Please review and agree to the Bob Wallet’s terms of use.
+            </small>
+          </div>
+        </div>
         <TermsOfUse />
       </OnboardingModalContent>
       <OnboardingModalFooter>
@@ -270,7 +280,6 @@ function Terms(props: {
           Next
         </Button>
       </OnboardingModalFooter>
-      <DeviceTest />
     </OnboardingModal>
   );
 }
@@ -332,12 +341,15 @@ function NameYourWallet(props: {
         maxStep={props.isConnecting ? 5 : 6}
       />
       <OnboardingModalContent>
-        <b>Name your wallet</b>
-        <p>
-          <small>
-            The name can only contain alphanumeric lowercase characters.
-          </small>
-        </p>
+        <div className="title">
+          <strong>Name your wallet</strong>
+          <div className="title__detail">
+            <small>
+              The name can only contain alphanumeric lowercase characters.
+            </small>
+          </div>
+        </div>
+
         <Input
           label="Wallet name"
           errorMessage={errorMessage}
@@ -414,10 +426,12 @@ function CreatePassword(props: {
         maxStep={props.isConnecting ? 5 : 6}
       />
       <OnboardingModalContent>
-        <b>Set up a password</b>
-        <p>
-          <small>Your password must be at least 8 characters long.</small>
-        </p>
+        <div className="title">
+          <strong>Set up a password</strong>
+          <div className="title__detail">
+            <small>Your password must be at least 8 characters long.</small>
+          </div>
+        </div>
         <Input
           label="Set password"
           onChange={onChangePassword}
@@ -553,19 +567,22 @@ function RevealSeedphrase(props: {
         maxStep={6}
       />
       <OnboardingModalContent>
-        <b>Your Recovery Seed Phrase</b>
-        <p>
-          <small>
-            Write down these 24 words on paper and keep it safe and secure. Do
-            not email or screenshot your seed.{" "}
-            <a
-              href="https://en.bitcoinwiki.org/wiki/Mnemonic_phrase"
-              target="_blank"
-            >
-              Learn more
-            </a>
-          </small>
-        </p>
+        <div className="title">
+          <strong>Your Recovery Seed Phrase</strong>
+          <div className="title__detail">
+            <small>
+              Write down these 24 words on paper and keep it safe and secure. Do
+              not email or screenshot your seed.{" "}
+              <a
+                href="https://en.bitcoinwiki.org/wiki/Mnemonic_phrase"
+                target="_blank"
+              >
+                Learn more
+              </a>
+            </small>
+          </div>
+        </div>
+
         <div className="reveal-seed">
           {props.seedphrase.split(" ").map((seed, i) => {
             if (!seed) return null;
@@ -657,18 +674,21 @@ function ConfirmSeedphrase(props: {
         maxStep={6}
       />
       <OnboardingModalContent>
-        <b>
-          {props.isImporting
-            ? "Import your recovery phrase"
-            : "Confirm your recovery phrase"}
-        </b>
-        <p>
-          <small>
+        <div className="title">
+          <strong>
             {props.isImporting
-              ? "Enter your 12- or 24-word seed phrase to restore your wallet."
-              : "Enter your 24-word seed phrase from the previous screen."}
-          </small>
-        </p>
+              ? "Import your recovery phrase"
+              : "Confirm your recovery phrase"}
+          </strong>
+          <div className="title__detail">
+            <small>
+              {props.isImporting
+                ? "Enter your 12- or 24-word seed phrase to restore your wallet."
+                : "Enter your 24-word seed phrase from the previous screen."}
+            </small>
+          </div>
+        </div>
+
         <div className="reveal-seed">
           {Array(24)
             .fill("")
@@ -787,10 +807,12 @@ function OptInAnalytics(props: {
         maxStep={props.isConnecting ? 5 : 6}
       />
       <OnboardingModalContent>
-        <b>Opt in to analytics</b>
-        <p>
-          <small>Do you want to send anonymous usage data to Kyokan?</small>
-        </p>
+        <div className="title">
+          <strong>Opt in to analytics</strong>
+          <div className="title__detail">
+            <small>Do you want to send anonymous usage data to Kyokan?</small>
+          </div>
+        </div>
       </OnboardingModalContent>
       <OnboardingModalFooter>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
@@ -808,21 +830,20 @@ function OptInAnalytics(props: {
 
 function ConnectLedger(props: {
   setIsLedger: (isLedger: boolean) => void;
-  xpub: string;
   setXpub: (xpub: string) => void;
+  xpub: string;
   onCreateWallet: () => Promise<void>;
 }): ReactElement {
-  const {setIsLedger} = props;
+  const {setIsLedger, setXpub} = props;
   const history = useHistory();
-  const [loading, setLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [xpub, setXpub] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isHandshakeApp, setIsHandshakeApp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [device, setDevice] = useState<USBDevice | undefined>();
   const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
-
-  // Is this right?
-  const networkType = process.env.NETWORK_TYPE || "main";
-  const network = Network.get(networkType);
 
   useEffect(() => {
     setIsLedger(true);
@@ -840,39 +861,119 @@ function ConnectLedger(props: {
     });
   }, []);
 
+  const onConnect = async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    if (!isSupported) {
+      alert("Could not find WebUSB.");
+      throw new Error("Could not find WebUSB.");
+    }
+
+    try {
+      const device = await Device.requestDevice();
+      await device.set({
+        timeout: ONE_MINUTE,
+      });
+      const openedDevice = await device.open();
+      console.log(openedDevice);
+      const appVersion = await getAppVersion(openedDevice);
+      console.log(
+        `HNS Ledger app verison is ${appVersion}, minimum is ${LEDGER_MINIMUM_VERSION}`
+      );
+      if (!semver.gte(appVersion, LEDGER_MINIMUM_VERSION)) {
+        setIsLoading(false);
+        setIsCreating(false);
+        setErrorMessage(
+          `Ledger app version ${LEDGER_MINIMUM_VERSION} is required. (${appVersion} installed)`
+        );
+        return;
+      }
+      setDevice(openedDevice);
+      getAccountXpub(openedDevice);
+    } catch (e) {
+      console.error("cant open", e);
+      setDevice(undefined);
+      setIsLoading(false);
+    } finally {
+      try {
+        await device?.close();
+        console.log("deviced closed");
+        setIsLoading(false);
+      } catch (e) {
+        console.error("failed to close ledger", e);
+      }
+    }
+
+    // set a small timeout to clearly show that this is
+    // a two-phase process.
+    // setTimeout(async () => {
+    //   onCreateWallet()
+    // }, 2000);
+  };
+
+  const isSupported = (): Promise<boolean> =>
+    Promise.resolve(
+      !!navigator &&
+        !!navigator.usb &&
+        typeof navigator.usb.getDevices === "function"
+    );
+
+  async function getAppVersion(device: USBDevice) {
+    const ledger = new LedgerHSD({device});
+    return await ledger.getAppVersion();
+  }
+
+  async function getAccountXpub(device: USBDevice) {
+    try {
+      const ledger = new LedgerHSD({device});
+      const accountKey = await ledger.getAccountXPUB(0);
+      setXpub(accountKey.xpubkey(network));
+      console.log(accountKey.xpubkey(network));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function checkForLedgerDevices() {
+    const devices = await Device.getDevices();
+    const filtered = devices.filter(
+      (d: USBDevice) => d.vendorId === LEDGER_USB_VENDOR_ID
+    );
+    if (filtered[0]) {
+      setIsConnected(true);
+      setIsUnlocked(true);
+      setIsHandshakeApp(true);
+      console.log("Ledger connected");
+    } else {
+      setIsConnected(false);
+      setIsUnlocked(false);
+      setIsHandshakeApp(false);
+      console.log("Ledger disconnected");
+    }
+  }
+
+  useEffect(() => {
+    checkForLedgerDevices();
+
+    usb.addEventListener("connect", checkForLedgerDevices);
+    usb.addEventListener("disconnect", checkForLedgerDevices);
+
+    return () => {
+      usb.removeEventListener("connect", checkForLedgerDevices);
+      usb.removeEventListener("disconnect", checkForLedgerDevices);
+    };
+  }, []);
+
   const onCreateWallet = useCallback(async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       await props.onCreateWallet();
     } catch (e: any) {
       setErrorMessage(e.message);
     }
-    setLoading(false);
+    setIsLoading(false);
   }, [props.onCreateWallet]);
-
-  const onConnect = async () => {
-    setLoading(true);
-    setErrorMessage("");
-
-    try {
-    } catch (e) {
-      console.error(e);
-      setLoading(false);
-      setCreating(false);
-      setErrorMessage("Error connecting to device.");
-      return;
-    }
-
-    setCreating(true);
-  };
-
-  const testGetDevices = async () => {
-    try {
-      navigator.usb.requestDevice({filters: [{vendorId: 0x2c97}]});
-    } catch (e: any) {
-      console.log(e);
-    }
-  };
 
   return (
     <OnboardingModal>
@@ -884,14 +985,19 @@ function ConnectLedger(props: {
         maxStep={5}
       />
       <OnboardingModalContent>
-        <b>Connect Ledger</b>
-        <p>
-          <small>Connect your hardware wallet.</small>
-        </p>
+        <div className="title">
+          <strong>Connect Ledger</strong>
+          <div className="title__detail">
+            <small>Connect your hardware wallet.</small>
+          </div>
+        </div>
+        <ConnectLedgerSteps
+          completedSteps={[isConnected, isUnlocked, isHandshakeApp]}
+        />
       </OnboardingModalContent>
       <OnboardingModalFooter>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-        <Button onClick={testGetDevices} disabled={loading} loading={loading}>
+        <Button onClick={onConnect} disabled={isLoading} loading={isLoading}>
           Connect Ledger
         </Button>
       </OnboardingModalFooter>

@@ -10,8 +10,6 @@ import ErrorMessage from "@src/ui/components/ErrorMessage";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 
-import DeviceTest from '@src/ui/components/Device'
-
 type Props = {};
 
 export default function Login(props: Props): ReactElement {
@@ -74,7 +72,6 @@ export default function Login(props: Props): ReactElement {
           Unlock Wallet
         </Button>
       </div>
-      <DeviceTest />
     </div>
   );
 }

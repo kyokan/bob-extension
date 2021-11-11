@@ -1,15 +1,22 @@
 import {GenericService} from "@src/util/svc";
-import {LedgerHSD, USB} from "hsd-ledger/lib/hsd-ledger-browser";
 import {get, put} from "@src/util/db";
+
+import {HID, LedgerHSD} from 'hsd-ledger/lib/hsd-ledger-browser';
 
 const bdb = require("bdb");
 const DB = require("bdb/lib/DB");
 
-const {Device} = USB;
+const {Device} = HID;
 const ONE_MINUTE = 60000;
 
-console.log("USB:", USB);
+console.log("Device:", Device);
 console.log("LedgerHSD:", LedgerHSD);
+
+// const vendorId = 0x2c97;
+// const productId = 4117;
+// const devices = async () => window.navigator.hid.getDevices();
+// let device = devices.find(d => d.vendorId === vendorId && d.productId === productId);
+// console.log("devices:", devices());
 
 const LEDGER_APP_VERSION = "ledger_app_version";
 const LEDGER_XPUB = "ledger_xpub";

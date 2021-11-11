@@ -103,7 +103,7 @@
         "flatted": "^3.2.2",
         "hs-client": "0.0.9",
         "hsd": "https://github.com/handshake-org/hsd/tarball/9f0361f",
-        "hsd-ledger": "git+https://github.com/handshake-org/hsd-ledger.git#s-x-compat",
+        "hsd-ledger": "git+https://github.com/handshake-org/hsd-ledger.git",
         "jdenticon": "^3.1.0",
         "lodash.debounce": "^4.0.8",
         "mixpanel-browser": "^2.41.0",
