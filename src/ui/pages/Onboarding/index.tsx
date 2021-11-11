@@ -21,7 +21,9 @@ import {
 import ConnectLedgerSteps from "@src/ui/components/ConnectLedgerSteps";
 import "./onboarding.scss";
 import BobIcon from "@src/static/icons/bob-black.png";
-import {LedgerHSD, USB} from "hsd-ledger/lib/hsd-ledger-browser";
+import {USB} from "hsd-ledger/lib/hsd-ledger-browser";
+import withLedger from "@src/util/withLedger";
+import {isSupported} from "@src/util/webUSB";
 import {
   LEDGER_MINIMUM_VERSION,
   LEDGER_USB_VENDOR_ID,
@@ -841,7 +843,6 @@ function ConnectLedger(props: {
   const [isHandshakeApp, setIsHandshakeApp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [device, setDevice] = useState<USBDevice | undefined>();
   const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
 
@@ -861,85 +862,9 @@ function ConnectLedger(props: {
     });
   }, []);
 
-  const onConnect = async () => {
-    setIsLoading(true);
-    setErrorMessage("");
-
-    if (!isSupported) {
-      alert("Could not find WebUSB.");
-      throw new Error("Could not find WebUSB.");
-    }
-
-    try {
-      const device = await Device.requestDevice();
-      await device.set({
-        timeout: ONE_MINUTE,
-      });
-      const openedDevice = await device.open();
-      console.log(openedDevice);
-      const appVersion = await getAppVersion(openedDevice);
-      console.log(
-        `HNS Ledger app verison is ${appVersion}, minimum is ${LEDGER_MINIMUM_VERSION}`
-      );
-      if (!semver.gte(appVersion, LEDGER_MINIMUM_VERSION)) {
-        setIsLoading(false);
-        setIsCreating(false);
-        setErrorMessage(
-          `Ledger app version ${LEDGER_MINIMUM_VERSION} is required. (${appVersion} installed)`
-        );
-        return;
-      }
-      setDevice(openedDevice);
-      getAccountXpub(openedDevice);
-    } catch (e) {
-      console.error("cant open", e);
-      setDevice(undefined);
-      setIsLoading(false);
-    } finally {
-      try {
-        await device?.close();
-        console.log("deviced closed");
-        setIsLoading(false);
-      } catch (e) {
-        console.error("failed to close ledger", e);
-      }
-    }
-
-    // set a small timeout to clearly show that this is
-    // a two-phase process.
-    // setTimeout(async () => {
-    //   onCreateWallet()
-    // }, 2000);
-  };
-
-  const isSupported = (): Promise<boolean> =>
-    Promise.resolve(
-      !!navigator &&
-        !!navigator.usb &&
-        typeof navigator.usb.getDevices === "function"
-    );
-
-  async function getAppVersion(device: USBDevice) {
-    const ledger = new LedgerHSD({device});
-    return await ledger.getAppVersion();
-  }
-
-  async function getAccountXpub(device: USBDevice) {
-    try {
-      const ledger = new LedgerHSD({device});
-      const accountKey = await ledger.getAccountXPUB(0);
-      setXpub(accountKey.xpubkey(network));
-      console.log(accountKey.xpubkey(network));
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
   async function checkForLedgerDevices() {
-    const devices = await Device.getDevices();
-    const filtered = devices.filter(
-      (d: USBDevice) => d.vendorId === LEDGER_USB_VENDOR_ID
-    );
+    const devices: USBDevice[] = await Device.getDevices();
+    const filtered = devices.filter((d) => d.vendorId === LEDGER_USB_VENDOR_ID);
     if (filtered[0]) {
       setIsConnected(true);
       setIsUnlocked(true);
@@ -964,6 +889,67 @@ function ConnectLedger(props: {
       usb.removeEventListener("disconnect", checkForLedgerDevices);
     };
   }, []);
+
+  const onConnectLedger = async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    if (!isSupported) {
+      alert("Could not find WebUSB.");
+      throw new Error("Could not find WebUSB.");
+    }
+
+    const device = await Device.requestDevice();
+    device.set({
+      timeout: ONE_MINUTE,
+    });
+
+    try {
+      const appVersion = await getAppVersion(device, network);
+      console.log(
+        `HNS Ledger app verison is ${appVersion}, minimum is ${LEDGER_MINIMUM_VERSION}`
+      );
+
+      if (!semver.gte(appVersion, LEDGER_MINIMUM_VERSION)) {
+        setIsLoading(false);
+        setIsCreating(false);
+        setErrorMessage(
+          `Ledger app version ${LEDGER_MINIMUM_VERSION} is required. (${appVersion} installed)`
+        );
+        return;
+      }
+
+      const xpub = await getAccountXpub(device, network);
+      setXpub(xpub);
+      console.log(xpub);
+    } catch (e: any) {
+      console.error(e);
+      setIsLoading(false);
+      setIsCreating(false);
+      setErrorMessage(`Error connecting to device. ${e.message}`);
+    }
+
+    setIsLoading(false);
+    setIsCreating(true);
+
+    // set a small timeout to clearly show that this is
+    // a two-phase process.
+    // setTimeout(async () => {
+    //   onCreateWallet()
+    // }, 2000);
+  };
+
+  async function getAppVersion(device: USBDevice, network: string) {
+    return withLedger(device, network, async (ledger) => {
+      return ledger.getAppVersion();
+    });
+  }
+
+  async function getAccountXpub(device: USBDevice, network: string) {
+    return withLedger(device, network, async (ledger) => {
+      return (await ledger.getAccountXPUB(0)).xpubkey(network);
+    });
+  }
 
   const onCreateWallet = useCallback(async () => {
     setIsLoading(true);
@@ -997,7 +983,11 @@ function ConnectLedger(props: {
       </OnboardingModalContent>
       <OnboardingModalFooter>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-        <Button onClick={onConnect} disabled={isLoading} loading={isLoading}>
+        <Button
+          onClick={onConnectLedger}
+          disabled={isLoading}
+          loading={isLoading}
+        >
           Connect Ledger
         </Button>
       </OnboardingModalFooter>
