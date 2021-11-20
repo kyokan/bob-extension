@@ -1,85 +1,216 @@
 import {GenericService} from "@src/util/svc";
+import {LedgerHSD, USB} from "hsd-ledger/lib/hsd-ledger-browser";
 import {get, put} from "@src/util/db";
-
-import {HID, LedgerHSD} from 'hsd-ledger/lib/hsd-ledger-browser';
+import {parse, stringify, toJSON} from "flatted";
 
 const bdb = require("bdb");
 const DB = require("bdb/lib/DB");
+const KeyRing = require("hsd/lib/primitives/keyring");
+const assert = require("bsert");
 
-const {Device} = HID;
-const ONE_MINUTE = 60000;
+const {Device} = USB;
+const usb = navigator.usb;
 
-console.log("Device:", Device);
-console.log("LedgerHSD:", LedgerHSD);
+if (!usb) {
+  alert("Could not find WebUSB.");
+  throw new Error("Could not find WebUSB.");
+}
 
-// const vendorId = 0x2c97;
-// const productId = 4117;
-// const devices = async () => window.navigator.hid.getDevices();
-// let device = devices.find(d => d.vendorId === vendorId && d.productId === productId);
-// console.log("devices:", devices());
+/**
+ * @param {Device[]} devices
+ * @param {Device?} selected
+ * @param {Device?} device
+ */
 
-const LEDGER_APP_VERSION = "ledger_app_version";
-const LEDGER_XPUB = "ledger_xpub";
+declare interface LedgerService {
+  devices: Set<any>;
+  wusbToDevice: Map<string, any>;
+  selected: USBDevice | null;
 
-export default class LedgerService extends GenericService {
+  _addDevice: any;
+  _removeDevice: any;
+
+  on(event: "connect", listener: (device: any) => void): this;
+  on(event: "disconnect", listener: (device: any) => void): this;
+}
+
+class LedgerService extends GenericService {
   store: typeof DB;
 
   constructor() {
     super();
+    this.devices = new Set();
+    this.wusbToDevice = new Map();
+    this.selected = null;
+
+    // Callbacks for event listener to clean up later.
+    this._addDevice = null;
+    this._removeDevice = null;
   }
 
-  // Fix these prop types ***************
-  async withLedger(network: string, action: (ledger: any) => Promise<any>) {
-    let device;
-    let ledger;
+  bind = () => {
+    this._addDevice = async (event: USBConnectionEvent) => {
+      const device = Device.fromDevice(event.device);
+      await this.addDevice(device);
+      this.emit("connect", device);
+      console.log("emit connect");
+    };
 
-    try {
-      device = await Device.requestDevice();
-      device.set({
-        timeout: ONE_MINUTE,
-      });
+    this._removeDevice = async (event: USBConnectionEvent) => {
+      const device = Device.fromDevice(event.device);
+      await this.removeDevice(device);
+      this.emit("disconnect", device);
+      console.log("emit disconnect");
+    };
 
-      await device.open();
-      // TODO: this network parameter should be passed dynamically.
-      ledger = new LedgerHSD({device, network});
-    } catch (e) {
-      console.error("failed to open ledger", e);
-      throw e;
-    }
+    usb.addEventListener("connect", this._addDevice);
+    usb.addEventListener("disconnect", this._removeDevice);
+  };
 
-    try {
-      return await action(ledger);
-    } finally {
-      try {
-        await device.close();
-      } catch (e) {
-        console.error("failed to close ledger", e);
-      }
-    }
+  unbind() {
+    assert(this._addDevice);
+    assert(this._removeDevice);
+
+    usb.removeEventListener("connect", this._addDevice);
+    usb.removeEventListener("disconnect", this._removeDevice);
+
+    this._addDevice = null;
+    this._removeDevice = null;
   }
 
-  async getXPub(network: string) {
-    // const xPub = await get(this.store, LEDGER_XPUB);
+  open = async () => {
+    const devices = await Device.getDevices();
 
-    // if (!xPub) {
-    //   const newXPub = this.withLedger(network, async (ledger) => {
-    //     return (await ledger.getAccountXPUB(0)).xpubkey(network);
-    //   });
-    //   await put(this.store, LEDGER_XPUB, newXPub);
+    for (const device of devices) {
+      await this.addDevice(device);
+      console.log("open USB:", device);
+    }
+
+    this.bind();
+  };
+
+  async close() {
+    this.unbind();
+    this.reset();
+  }
+
+  reset() {
+    this.devices = new Set();
+    this.wusbToDevice = new Map();
+    this.selected = null;
+  }
+
+  addDevice = async (device) => {
+    assert(device instanceof Device, "Could not add device.");
+
+    if (this.wusbToDevice.has(device.device))
+      return this.wusbToDevice.get(device.device);
+
+    this.wusbToDevice.set(device.device, device);
+    this.devices.add(device);
+
+    console.log("addDevice:", device);
+
+    return device;
+  };
+
+  removeDevice = async (device) => {
+    assert(device.device, "Could not remove device.");
+
+    if (!Device.isLedgerDevice(device.device)) return;
+
+    const mappedDevice = this.wusbToDevice.get(device.device);
+
+    if (!mappedDevice) return;
+
+    if (this.selected && this.selected.device === mappedDevice.device)
+      await this.closeDevice(this.selected);
+
+    this.devices.delete(mappedDevice);
+    this.wusbToDevice.delete(mappedDevice.device);
+
+    return;
+  };
+
+  async getDevices() {
+    const devicesArray = usb.getDevices();
+    console.log("getDevices:", devicesArray);
+    return devicesArray;
+  }
+
+  async getSelected() {
+    console.log("getSelected:", this.selected);
+    return stringify(this.selected);
+  }
+
+  /**
+   * Only User Action can have an access to this.
+   * Otherwise this will fail.
+   */
+
+  requestDevice = async () => {
+    const device = await Device.requestDevice();
+
+    return this.addDevice(device);
+  };
+
+  openDevice = async (device, timeout = 20000) => {
+    this.selected = parse(device);
+    console.log("openDevice:", parse(device));
+    console.log("openDevice selected:", this.selected);
+    // assert(!this.selected, "Other device already in use.");
+    // assert(this.devices.has(device), "Could not find device.");
+
+    // this.selected = device;
+
+    // device.set({timeout});
+
+    // try {
+    //   await this.selected.open();
+    //   this.emit("device open", this.selected);
+    // } catch (e) {
+    //   console.error(e);
+    //   this.selected = null;
     // }
 
-    // return xPub;
+    // return this.selected;
+  };
 
-    return this.withLedger(network, async (ledger) => {
-      return (await ledger.getAccountXPUB(0)).xpubkey(network);
-    });
-  }
+  closeDevice = async (device: any) => {
+    assert(this.selected, "No device in use.");
+    assert(this.devices.has(device), "Could not find device.");
+    assert(this.selected === device, "Can not close closed device.");
 
-  async getAppVersion(network: string) {
-    return this.withLedger(network, async (ledger) => {
-      return ledger.getAppVersion();
-    });
-  }
+    if (this.selected?.opened) await this.selected.close();
+
+    this.selected = null;
+  };
+
+  // connectDevice = async (device = this.selected, timeout = 20000) => {
+  //   assert(!this.selected, "Other device already in use.");
+  //   assert(this.devices.has(device), "Could not find device.");
+
+  //   this.selected = device;
+
+  //   device.set({timeout});
+
+  //   try {
+  //     await this.selected.open();
+  //     this.emit("device open", this.selected);
+  //     console.log("device opened");
+  //   } catch (e) {
+  //     console.error(e);
+  //     // this.selected = null;
+  //   } finally {
+  //     console.log("finally");
+  //     // const ledger = new LedgerHSD(this.selected);
+
+  //     // const accountKey = await ledger.getAccountXPUB(0, {confirm: true});
+  //     // console.log("accountKey:", accountKey);
+  //   }
+
+  //   // return this.selected
+  // };
 
   async start() {
     this.store = bdb.create("/ledger-store");
@@ -87,4 +218,17 @@ export default class LedgerService extends GenericService {
   }
 
   async stop() {}
+}
+
+export default LedgerService;
+
+function replacer(key, value) {
+  if (value instanceof USBDevice) {
+    return {
+      dataType: "USBDevice",
+      value: {...value},
+    };
+  } else {
+    return value;
+  }
 }

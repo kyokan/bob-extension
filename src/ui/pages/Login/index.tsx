@@ -1,11 +1,11 @@
-import React, { ReactElement, useCallback, useEffect, useState } from "react";
+import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import BobIcon from "../../../static/icons/bob-black-large.png";
 import "./login.scss";
 import Icon from "@src/ui/components/Icon";
 import Button from "@src/ui/components/Button";
 import Input from "@src/ui/components/Input";
-import { useDispatch } from "react-redux";
-import { unlockWallet } from "@src/ui/ducks/wallet";
+import {useDispatch} from "react-redux";
+import {unlockWallet} from "@src/ui/ducks/wallet";
 import ErrorMessage from "@src/ui/components/ErrorMessage";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";

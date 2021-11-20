@@ -26,6 +26,8 @@ import {fetchTXQueue} from "@src/ui/ducks/queue";
 import {useLocation} from "react-router";
 import queryString from 'querystring';
 
+import Button from "@src/ui/components/Button";
+
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
   const txOffset = useTXOffset();
@@ -101,6 +103,11 @@ export default function Home(): ReactElement {
     domainOffset,
   ]);
 
+  const testMessage = async () => {
+    const res = await postMessage({type: MessageTypes.LEDGER_PROXY});
+    console.log(res)
+  }
+
   return (
     <div
       className={classNames('home', {
@@ -128,6 +135,7 @@ export default function Home(): ReactElement {
         <ReceiveButton />
         <RevealButton />
       </div>
+      <Button onClick={testMessage}>ledger proxy</Button>
       <div
         className="home__list"
         ref={listElement}

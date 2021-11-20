@@ -1,9 +1,23 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
-import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} from "@src/ui/components/RegularView";
+import {
+  RegularView,
+  RegularViewContent,
+  RegularViewFooter,
+  RegularViewHeader,
+} from "@src/ui/components/RegularView";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
 import Button, {ButtonType} from "@src/ui/components/Button";
-import {getTXAction, getTXNameHash, getTXRecipient, getTXRecords, getTXValue} from "@src/util/transaction";
-import {fetchPendingTransactions, Transaction} from "@src/ui/ducks/transactions";
+import {
+  getTXAction,
+  getTXNameHash,
+  getTXRecipient,
+  getTXRecords,
+  getTXValue,
+} from "@src/util/transaction";
+import {
+  fetchPendingTransactions,
+  Transaction,
+} from "@src/ui/ducks/transactions";
 import Input from "@src/ui/components/Input";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import postMessage from "@src/util/postMessage";
@@ -15,18 +29,18 @@ import {ellipsify} from "@src/util/address";
 import {toUnicode} from "@src/util/name";
 import Textarea from "@src/ui/components/Textarea";
 import {toBIND} from "@src/util/records";
-const {Resource} = require('hsd/lib/dns/resource');
+const {Resource} = require("hsd/lib/dns/resource");
 
 const actionToTitle: {
   [k: string]: string;
 } = {
-  SEND: 'Confirm Send',
-  OPEN: 'Confirm Open',
-  BID: 'Confirm Bid',
-  REVEAL: 'Confirm Reveal',
-  REDEEM: 'Confirm Redeem',
-  REGISTER: 'Confirm Register',
-  UPDATE: 'Confirm Update',
+  SEND: "Confirm Send",
+  OPEN: "Confirm Open",
+  BID: "Confirm Bid",
+  REVEAL: "Confirm Reveal",
+  REDEEM: "Confirm Redeem",
+  REGISTER: "Confirm Register",
+  UPDATE: "Confirm Update",
 };
 
 export default function ConfirmTx(): ReactElement {
@@ -36,16 +50,16 @@ export default function ConfirmTx(): ReactElement {
   const action = getTXAction(pendingTx);
   const [isUpdating, setUpdating] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const dispatch = useDispatch();
 
   useEffect(() => {
     postMessage({
       type: MessageTypes.MP_TRACK,
       payload: {
-        name: 'Screen View',
+        name: "Screen View",
         data: {
-          view: 'Confirm Transaction',
+          view: "Confirm Transaction",
         },
       },
     });
@@ -53,6 +67,7 @@ export default function ConfirmTx(): ReactElement {
 
   const submitTx = useCallback(async (txJSON: Transaction) => {
     setConfirming(true);
+
     try {
       await postMessage({
         type: MessageTypes.SUBMIT_TX,
@@ -64,39 +79,32 @@ export default function ConfirmTx(): ReactElement {
     }
 
     setConfirming(false);
-
   }, []);
 
   const removeTx = useCallback((txJSON: Transaction) => {
     return postMessage({
       type: MessageTypes.REJECT_TX,
       payload: txJSON,
-    })
+    });
   }, []);
 
   if (isUpdating) {
     return (
-      <UpdateTx
-        hash={pendingTx.hash}
-        onCancel={() => setUpdating(false)}
-      />
+      <UpdateTx hash={pendingTx.hash} onCancel={() => setUpdating(false)} />
     );
   }
 
   return (
     <RegularView className="confirm-tx">
-      <RegularViewHeader
-        onClose={() => setUpdating(true)}
-        actionText="Edit"
-      >
-        {actionToTitle[action] || 'Send Raw Transaction'}
+      <RegularViewHeader onClose={() => setUpdating(true)} actionText="Edit">
+        {actionToTitle[action] || "Send Raw Transaction"}
       </RegularViewHeader>
       <RegularViewContent>
         <ConfirmContent hash={pendingTXHashes[currentIndex]} />
         <TxDetail hash={pendingTXHashes[currentIndex]} />
         <NetTotal hash={pendingTXHashes[currentIndex]} />
       </RegularViewContent>
-      { errorMessage && <small className="error-message">{errorMessage}</small> }
+      {errorMessage && <small className="error-message">{errorMessage}</small>}
       <RegularViewFooter>
         <Button
           btnType={ButtonType.secondary}
@@ -113,7 +121,7 @@ export default function ConfirmTx(): ReactElement {
         </Button>
       </RegularViewFooter>
     </RegularView>
-  )
+  );
 }
 
 function NetTotal(props: {hash: string}): ReactElement {
@@ -122,128 +130,124 @@ function NetTotal(props: {hash: string}): ReactElement {
   const action = getTXAction(pendingTx);
 
   switch (action) {
-    case 'REVEAL':
-    case 'REDEEM':
-    case 'REGISTER':
+    case "REVEAL":
+    case "REDEEM":
+    case "REGISTER":
       return (
-      <div className="confirm-tx__total-group">
-        <div className="confirm-tx__total-group__label">
-          Net Total:
+        <div className="confirm-tx__total-group">
+          <div className="confirm-tx__total-group__label">Net Total:</div>
+          <div className="confirm-tx__total-group__amount">
+            {formatNumber(fromDollaryDoos(Math.abs(value) - pendingTx.fee, 6))}{" "}
+            HNS
+          </div>
         </div>
-        <div className="confirm-tx__total-group__amount">
-          {formatNumber(fromDollaryDoos(Math.abs(value) - pendingTx.fee, 6))} HNS
-        </div>
-      </div>
-    );
-    case 'BID':
-    case 'OPEN':
-    case 'UPDATE':
-    case 'SEND':
+      );
+    case "BID":
+    case "OPEN":
+    case "UPDATE":
+    case "SEND":
     default:
       return (
         <div className="confirm-tx__total-group">
-          <div className="confirm-tx__total-group__label">
-            Net Total:
-          </div>
+          <div className="confirm-tx__total-group__label">Net Total:</div>
           <div className="confirm-tx__total-group__amount">
-            {formatNumber(fromDollaryDoos(-Math.abs(value) - pendingTx.fee, 6))} HNS
+            {formatNumber(fromDollaryDoos(-Math.abs(value) - pendingTx.fee, 6))}{" "}
+            HNS
           </div>
         </div>
       );
   }
 }
 
-function TxDetail(props: { hash: string }): ReactElement {
+function TxDetail(props: {hash: string}): ReactElement {
   const pendingTx = useQueuedTXByHash(props.hash);
   const action = getTXAction(pendingTx);
   const [isViewingDetail, setViewDetail] = useState(false);
 
-  return !actionToTitle[action] || isViewingDetail
-    ? (
-      <>
-        <div className="confirm-tx__detail-group">
-          <div className="confirm-tx__inputs-group">
-            <div className="confirm-tx__inputs-group__title">Inputs</div>
-            {pendingTx.inputs.map(input => {
-              if (!input.coin) return null;
-              return (
-                <div className="confirm-tx__input-group">
-                  <div className="confirm-tx__input-group__top">
-                    {
-                      input.coin.covenant.action !== "NONE" && (
-                        <div className="confirm-tx__input-group__action">
-                          {input.coin.covenant.action}
-                        </div>
-                      )
-                    }
-                    <a
-                      className="confirm-tx__input-group__address"
-                      href={`https://blockexplorer.com/address/${input.coin.address}`}
-                      target="_blank"
-                    >
-                      {ellipsify(input.coin.address)}
-                    </a>
-                  </div>
-                  <div className="confirm-tx__input-group__value">
-                    {fromDollaryDoos(input.coin.value, 6)} HNS
-                  </div>
+  return !actionToTitle[action] || isViewingDetail ? (
+    <>
+      <div className="confirm-tx__detail-group">
+        <div className="confirm-tx__inputs-group">
+          <div className="confirm-tx__inputs-group__title">Inputs</div>
+          {pendingTx.inputs.map((input) => {
+            if (!input.coin) return null;
+            return (
+              <div className="confirm-tx__input-group">
+                <div className="confirm-tx__input-group__top">
+                  {input.coin.covenant.action !== "NONE" && (
+                    <div className="confirm-tx__input-group__action">
+                      {input.coin.covenant.action}
+                    </div>
+                  )}
+                  <a
+                    className="confirm-tx__input-group__address"
+                    href={`https://blockexplorer.com/address/${input.coin.address}`}
+                    target="_blank"
+                  >
+                    {ellipsify(input.coin.address)}
+                  </a>
                 </div>
-              );
-            })}
-          </div>
-          <div className="confirm-tx__outputs-group">
-            <div className="confirm-tx__outputs-group__title">Outputs</div>
-            {pendingTx.outputs.map(output => {
-              return (
-                <div className="confirm-tx__output-group">
-                  <div className="confirm-tx__output-group__top">
-                    {
-                      output.covenant.action !== 'NONE' && (
-                        <div className="confirm-tx__output-group__action">
-                          {output.covenant.action}
-                        </div>
-                      )
-                    }
-                    <a
-                      className="confirm-tx__output-group__address"
-                      href={`https://blockexplorer.com/address/${output.address}`}
-                      target="_blank"
-                    >
-                      {ellipsify(output.address)}
-                    </a>
-                  </div>
-                  <div className="confirm-tx__output-group__value">
-                    {fromDollaryDoos(output.value, 6)} HNS
-                  </div>
+                <div className="confirm-tx__input-group__value">
+                  {fromDollaryDoos(input.coin.value, 6)} HNS
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
-        {
-          actionToTitle[action] && (
-            <div className="confirm-tx__expand-toggle" onClick={() => setViewDetail(false)}>
-              Collapse Detail
-            </div>
-          )
-        }
-      </>
-    )
-    : (
-      <div className="confirm-tx__expand-toggle" onClick={() => setViewDetail(true)}>
-        Expand Detail
+        <div className="confirm-tx__outputs-group">
+          <div className="confirm-tx__outputs-group__title">Outputs</div>
+          {pendingTx.outputs.map((output) => {
+            return (
+              <div className="confirm-tx__output-group">
+                <div className="confirm-tx__output-group__top">
+                  {output.covenant.action !== "NONE" && (
+                    <div className="confirm-tx__output-group__action">
+                      {output.covenant.action}
+                    </div>
+                  )}
+                  <a
+                    className="confirm-tx__output-group__address"
+                    href={`https://blockexplorer.com/address/${output.address}`}
+                    target="_blank"
+                  >
+                    {ellipsify(output.address)}
+                  </a>
+                </div>
+                <div className="confirm-tx__output-group__value">
+                  {fromDollaryDoos(output.value, 6)} HNS
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    );
+      {actionToTitle[action] && (
+        <div
+          className="confirm-tx__expand-toggle"
+          onClick={() => setViewDetail(false)}
+        >
+          Collapse Detail
+        </div>
+      )}
+    </>
+  ) : (
+    <div
+      className="confirm-tx__expand-toggle"
+      onClick={() => setViewDetail(true)}
+    >
+      Expand Detail
+    </div>
+  );
 }
 
-function ConfirmContent(props: { hash: string }): ReactElement {
+function ConfirmContent(props: {hash: string}): ReactElement {
   const pendingTx = useQueuedTXByHash(props.hash);
   const value = getTXValue(pendingTx);
   const action = getTXAction(pendingTx);
   const nameHash = getTXNameHash(pendingTx);
   const recipientAddress = getTXRecipient(pendingTx);
   const raw = getTXRecords(pendingTx);
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -253,12 +257,11 @@ function ConfirmContent(props: { hash: string }): ReactElement {
       });
 
       setName(toUnicode(result));
-    })()
-
+    })();
   }, [nameHash]);
 
   switch (action) {
-    case 'SEND':
+    case "SEND":
       return (
         <>
           <Input
@@ -279,15 +282,10 @@ function ConfirmContent(props: { hash: string }): ReactElement {
           />
         </>
       );
-    case 'BID':
+    case "BID":
       return (
         <>
-          <Input
-            label="TLD"
-            value={name}
-            spellCheck={false}
-            disabled
-          />
+          <Input label="TLD" value={name} spellCheck={false} disabled />
           <Input
             label="Bid Amount"
             value={pendingTx.bid || fromDollaryDoos(Math.abs(value), 6)}
@@ -295,9 +293,10 @@ function ConfirmContent(props: { hash: string }): ReactElement {
           />
           <Input
             label="Blind Amount"
-            value={pendingTx.bid
-              ? +fromDollaryDoos(Math.abs(value), 6) - pendingTx.bid
-              : 0
+            value={
+              pendingTx.bid
+                ? +fromDollaryDoos(Math.abs(value), 6) - pendingTx.bid
+                : 0
             }
             disabled
           />
@@ -308,17 +307,12 @@ function ConfirmContent(props: { hash: string }): ReactElement {
           />
         </>
       );
-    case 'REVEAL':
-    case 'REDEEM':
-    case 'OPEN':
+    case "REVEAL":
+    case "REDEEM":
+    case "OPEN":
       return (
         <>
-          <Input
-            label="TLD"
-            value={name}
-            spellCheck={false}
-            disabled
-          />
+          <Input label="TLD" value={name} spellCheck={false} disabled />
           <Input
             label="Estimated Fee"
             value={fromDollaryDoos(pendingTx.fee, 6)}
@@ -326,33 +320,26 @@ function ConfirmContent(props: { hash: string }): ReactElement {
           />
         </>
       );
-    case 'REGISTER':
-    case 'UPDATE':
-      const {records} = Resource.fromRaw(Buffer.from(raw, 'hex')).toJSON();
+    case "REGISTER":
+    case "UPDATE":
+      const {records} = Resource.fromRaw(Buffer.from(raw, "hex")).toJSON();
       const bindFormattedRecords = toBIND(records);
       return (
         <>
-          <Input
-            label="TLD"
-            value={name}
-            spellCheck={false}
-            disabled
-          />
+          <Input label="TLD" value={name} spellCheck={false} disabled />
           <Input
             label="Estimated Fee"
             value={fromDollaryDoos(pendingTx.fee, 6)}
             disabled
           />
-          {
-            !!bindFormattedRecords.length && (
-              <Textarea
-                label="Records"
-                value={bindFormattedRecords.join('\n')}
-                rows={bindFormattedRecords.length}
-                disabled
-              />
-            )
-          }
+          {!!bindFormattedRecords.length && (
+            <Textarea
+              label="Records"
+              value={bindFormattedRecords.join("\n")}
+              rows={bindFormattedRecords.length}
+              disabled
+            />
+          )}
         </>
       );
     default:

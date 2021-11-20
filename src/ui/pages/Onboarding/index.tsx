@@ -18,16 +18,16 @@ import {
   OnboardingModalFooter,
   OnboardingModalHeader,
 } from "@src/ui/components/OnboardingModal";
-import ConnectLedgerSteps from "@src/ui/components/ConnectLedgerSteps";
+import {DefaultConnectLedgerSteps} from "@src/ui/components/ConnectLedgerSteps";
 import "./onboarding.scss";
 import BobIcon from "@src/static/icons/bob-black.png";
 import {USB} from "hsd-ledger/lib/hsd-ledger-browser";
 import withLedger from "@src/util/withLedger";
-import {isSupported} from "@src/util/webUSB";
+import {isSupported} from "@src/util/webusb";
 import {
   LEDGER_MINIMUM_VERSION,
   LEDGER_USB_VENDOR_ID,
-} from "../../../util/constants";
+} from "@src/util/constants";
 
 const {Device} = USB;
 const usb = navigator.usb;
@@ -126,6 +126,7 @@ export default function Onboarding(): ReactElement {
         </Route>
         <Route path="/onboarding/connect-ledger">
           <ConnectLedger
+            walletName={walletName}
             setIsLedger={setIsLedger}
             xpub={xpub}
             setXpub={setXpub}
@@ -831,12 +832,13 @@ function OptInAnalytics(props: {
 }
 
 function ConnectLedger(props: {
+  walletName: string;
   setIsLedger: (isLedger: boolean) => void;
   setXpub: (xpub: string) => void;
   xpub: string;
   onCreateWallet: () => Promise<void>;
 }): ReactElement {
-  const {setIsLedger, setXpub} = props;
+  const {setIsLedger, setXpub, walletName} = props;
   const history = useHistory();
   const [isConnected, setIsConnected] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -848,6 +850,7 @@ function ConnectLedger(props: {
 
   useEffect(() => {
     setIsLedger(true);
+    console.log("walletName:", walletName);
   }, []);
 
   useEffect(() => {
@@ -890,6 +893,28 @@ function ConnectLedger(props: {
     };
   }, []);
 
+  const getAppVersion = (device: USBDevice, network: string) => {
+    return withLedger(device, network, async (ledger) => {
+      return ledger.getAppVersion();
+    });
+  };
+
+  const getAccountXpub = (device: USBDevice, network: string) => {
+    return withLedger(device, network, async (ledger) => {
+      return (await ledger.getAccountXPUB(0)).xpubkey(network);
+    });
+  };
+
+  const onCreateWallet = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await props.onCreateWallet();
+    } catch (e: any) {
+      setErrorMessage(e.message);
+    }
+    setIsLoading(false);
+  }, [props.onCreateWallet]);
+
   const onConnectLedger = async () => {
     setIsLoading(true);
     setErrorMessage("");
@@ -899,12 +924,11 @@ function ConnectLedger(props: {
       throw new Error("Could not find WebUSB.");
     }
 
-    const device = await Device.requestDevice();
-    device.set({
-      timeout: ONE_MINUTE,
-    });
-
     try {
+      const device = await Device.requestDevice();
+      device.set({
+        timeout: ONE_MINUTE,
+      });
       const appVersion = await getAppVersion(device, network);
       console.log(
         `HNS Ledger app verison is ${appVersion}, minimum is ${LEDGER_MINIMUM_VERSION}`
@@ -927,6 +951,7 @@ function ConnectLedger(props: {
       setIsLoading(false);
       setIsCreating(false);
       setErrorMessage(`Error connecting to device. ${e.message}`);
+      return;
     }
 
     setIsLoading(false);
@@ -934,32 +959,10 @@ function ConnectLedger(props: {
 
     // set a small timeout to clearly show that this is
     // a two-phase process.
-    // setTimeout(async () => {
-    //   onCreateWallet()
-    // }, 2000);
+    setTimeout(async () => {
+      onCreateWallet();
+    }, 2000);
   };
-
-  async function getAppVersion(device: USBDevice, network: string) {
-    return withLedger(device, network, async (ledger) => {
-      return ledger.getAppVersion();
-    });
-  }
-
-  async function getAccountXpub(device: USBDevice, network: string) {
-    return withLedger(device, network, async (ledger) => {
-      return (await ledger.getAccountXPUB(0)).xpubkey(network);
-    });
-  }
-
-  const onCreateWallet = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      await props.onCreateWallet();
-    } catch (e: any) {
-      setErrorMessage(e.message);
-    }
-    setIsLoading(false);
-  }, [props.onCreateWallet]);
 
   return (
     <OnboardingModal>
@@ -977,7 +980,7 @@ function ConnectLedger(props: {
             <small>Connect your hardware wallet.</small>
           </div>
         </div>
-        <ConnectLedgerSteps
+        <DefaultConnectLedgerSteps
           completedSteps={[isConnected, isUnlocked, isHandshakeApp]}
         />
       </OnboardingModalContent>

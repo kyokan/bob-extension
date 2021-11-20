@@ -39,6 +39,8 @@ enum MessageTypes {
   UPDATE_TX_FROM_QUEUE = "updateTxFromQueue",
   REMOVE_TX_FROM_QUEUE = "removeTxFromQueue",
   REVEAL_SEED = "reveal_seed",
+  LEDGER_PROXY = "_ledgerProxy",
+  USE_LEDGER_PROXY = "use_ledger_proxy",
 
   // node
   GET_LATEST_BLOCK = "get_latest_block",
@@ -60,18 +62,8 @@ enum MessageTypes {
   MP_TRACK = "mp_track",
 
   // ledger
-  GET_XPUB = "getXPub",
-  GET_APP_VERSION = "getAppVersion",
-  OPEN_DEVICES = "open",
-  UNLOAD_DEVICES = "close",
-  ADD_DEVICE = "addDevice",
-  REMOVE_DEVICE = "removeDevice",
-  GET_DEVICES = "getDevices",
-  REQUEST_DEVICE = "requestDevice",
-  OPEN_DEVICE = "openDevice",
-  CLOSE_DEVICE = "closeDevice",
-  GET_SELECTED = "getSelected",
-  CONNECT_DEVICE = "connectDevice",
+  LEDGER_CONNECT_RES = "ledger_connect_res",
+  LEDGER_CONNECT_CANCEL = "ledger_connect_cancel",
 
   // SQL
   READ_DB_AS_BUFFER = "read_db_as_buffer",

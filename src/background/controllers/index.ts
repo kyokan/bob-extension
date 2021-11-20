@@ -447,52 +447,20 @@ const controllers: {
     );
   },
 
-  [MessageTypes.GET_XPUB]: async (app, message) => {
-    return app.exec("ledger", "getXPub", message.payload.network);
+  [MessageTypes.LEDGER_CONNECT_RES]: async (app, message) => {
+    return app.emit(MessageTypes.LEDGER_CONNECT_RES);
   },
 
-  [MessageTypes.GET_APP_VERSION]: async (app, message) => {
-    return app.exec("ledger", "getAppVersion", message.payload.network);
+  [MessageTypes.LEDGER_CONNECT_CANCEL]: async (app, message) => {
+    return app.emit(MessageTypes.LEDGER_CONNECT_CANCEL);
   },
 
-  [MessageTypes.OPEN_DEVICES]: async (app, message) => {
-    return app.exec("ledger", "open");
+  [MessageTypes.LEDGER_PROXY]: async (app, message) => {
+    return app.exec("wallet", "_ledgerProxy");
   },
 
-  [MessageTypes.GET_SELECTED]: async (app, message) => {
-    return app.exec("ledger", "getSelected");
-  },
-
-  [MessageTypes.UNLOAD_DEVICES]: async (app, message) => {
-    return app.exec("ledger", "close");
-  },
-
-  [MessageTypes.ADD_DEVICE]: async (app, message) => {
-    return app.exec("ledger", "addDevice", message.payload.data);
-  },
-
-  [MessageTypes.REMOVE_DEVICE]: async (app, message) => {
-    return app.exec("ledger", "removeDevice", message.payload.data);
-  },
-
-  [MessageTypes.GET_DEVICES]: async (app, message) => {
-    return app.exec("ledger", "getDevices");
-  },
-
-  [MessageTypes.REQUEST_DEVICE]: async (app, message) => {
-    return app.exec("ledger", "requestDevice");
-  },
-
-  [MessageTypes.OPEN_DEVICE]: async (app, message) => {
-    return app.exec("ledger", "openDevice", message.payload.device);
-  },
-
-  [MessageTypes.CLOSE_DEVICE]: async (app, message) => {
-    return app.exec("ledger", "closeDevice", message.payload.device);
-  },
-
-  [MessageTypes.CONNECT_DEVICE]: async (app, message) => {
-    return app.exec("ledger", "connectDevice");
+  [MessageTypes.USE_LEDGER_PROXY]: async (app, message) => {
+    return app.exec("wallet", "useLedgerProxy", message.payload);
   },
 };
 

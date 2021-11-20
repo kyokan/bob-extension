@@ -2,31 +2,9 @@ import * as React from "react";
 import classNames from "classnames";
 import "./connect-ledger-steps.scss";
 
-const LedgerStep = (props: {
-  stepNumber: number;
-  stepDescription: string;
-  stepCompleted: boolean;
+export const DefaultConnectLedgerSteps = (props: {
+  completedSteps: boolean[];
 }) => {
-  return (
-    <div className="connect__status-pill">
-      <div>
-        <small className="connect__status-number">{props.stepNumber}</small>
-        <span>
-          <small>{props.stepDescription}</small>
-        </span>
-      </div>
-      <div className="connect__status-symbol">
-        <span
-          className={classNames("ledger-circle-check-container", {
-            "ledger-circle-check-container__active": props.stepCompleted,
-          })}
-        />
-      </div>
-    </div>
-  );
-};
-
-export default function ConnectLedgerSteps(props: {completedSteps: boolean[]}) {
   return (
     <>
       <LedgerStep
@@ -45,5 +23,29 @@ export default function ConnectLedgerSteps(props: {completedSteps: boolean[]}) {
         stepCompleted={props.completedSteps[2]}
       />
     </>
+  );
+};
+
+export default function LedgerStep(props: {
+  stepNumber: number;
+  stepDescription: string;
+  stepCompleted: boolean;
+}) {
+  return (
+    <div className="connect__status-pill">
+      <div>
+        <small className="connect__status-number">{props.stepNumber}</small>
+        <span>
+          <small>{props.stepDescription}</small>
+        </span>
+      </div>
+      <div className="connect__status-symbol">
+        <span
+          className={classNames("ledger-circle-check-container", {
+            "ledger-circle-check-container__active": props.stepCompleted,
+          })}
+        />
+      </div>
+    </div>
   );
 }

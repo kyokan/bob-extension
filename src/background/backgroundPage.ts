@@ -1,6 +1,6 @@
 import {browser} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
-import LedgerService from "@src/background/services/ledgerWeb";
+import LedgerService from "@src/background/services/ledger";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
 import SettingService from "@src/background/services/setting";
@@ -12,6 +12,17 @@ import resolve from "@src/background/resolve";
 
 (async function () {
   let app: AppService;
+
+  browser.runtime.onMessage.addListener((action) => {
+    switch (action.type) {
+      case MessageTypes.LEDGER_CONNECT_RES:
+        console.log("LEDGER_CONNECT_RES");
+        return;
+      case MessageTypes.LEDGER_CONNECT_CANCEL:
+        console.log("LEDGER_CONNECT_CANCEL");
+        return;
+    }
+  });
 
   browser.runtime.onMessage.addListener(async (request: any, sender: any) => {
     await waitForStartApp();
@@ -29,14 +40,14 @@ import resolve from "@src/background/resolve";
   startedApp.add("analytics", new AnalyticsService());
   startedApp.add("node", new NodeService());
   startedApp.add("wallet", new WalletService());
-  startedApp.add("ledger", new LedgerService());
+  // startedApp.add("ledger", new LedgerService());
   await startedApp.start();
   app = startedApp;
 
   app.on("setting.setResolver", async () => {
     const isResolving = await app.exec("setting", "getResolver");
     console.log("resolving:", isResolving);
-    
+
     if (isResolving) {
       browser.webRequest.onBeforeRequest.addListener(
         // @ts-ignore

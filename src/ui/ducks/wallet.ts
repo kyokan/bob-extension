@@ -65,7 +65,7 @@ export const createWallet =
   async (dispatch: ThunkDispatch<AppRootState, any, Action>) => {
     const {walletName, seedphrase, password, optIn, isLedger, xpub} = opt;
     if (!walletName) throw new Error("Wallet name cannot be empty.");
-    if (!seedphrase) throw new Error("Invalid seedphrase.");
+    if (!seedphrase && !isLedger) throw new Error("Invalid seedphrase.");
     if (!password) throw new Error("Password cannot be empty.");
 
     if (isLedger) {

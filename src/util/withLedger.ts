@@ -1,6 +1,6 @@
 import {LedgerHSD} from "hsd-ledger/lib/hsd-ledger-browser";
 
-async function withLedger(
+export default async function withLedger(
   device: USBDevice,
   network: string,
   action: (ledger: any) => Promise<any>
@@ -26,5 +26,3 @@ async function withLedger(
     }
   }
 }
-
-export default withLedger;

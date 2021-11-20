@@ -7,7 +7,7 @@ import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
 
 export enum ActionType {
-  SET_TX_QUEUE = 'queue/setTXQueue',
+  SET_TX_QUEUE = "queue/setTXQueue",
 }
 
 type Action = {
@@ -35,7 +35,7 @@ export const setTXQueue = (transactions: Transaction[]) => ({
 });
 
 export const fetchTXQueue = () => async (dispatch: Dispatch) => {
-  const txQueue = await postMessage({ type: MessageTypes.GET_TX_QUEUE });
+  const txQueue = await postMessage({type: MessageTypes.GET_TX_QUEUE});
   dispatch(setTXQueue(txQueue));
 };
 
@@ -45,10 +45,13 @@ export default function queue(state = initialState, action: Action): State {
       return {
         ...state,
         order: action.payload.map((tx: Transaction) => tx.hash),
-        map: action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-          map[tx.hash] = tx;
-          return map;
-        }, {}),
+        map: action.payload.reduce(
+          (map: {[h: string]: Transaction}, tx: Transaction) => {
+            map[tx.hash] = tx;
+            return map;
+          },
+          {}
+        ),
       };
     default:
       return state;
