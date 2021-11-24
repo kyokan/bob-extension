@@ -85,11 +85,12 @@ export default function SendTx(): ReactElement {
           ],
         },
       });
+
       await postMessage({
         type: MessageTypes.ADD_TX_QUEUE,
         payload: tx,
       });
-      dispatch(ledgerConnectShow())
+      
       history.push("/");
     } catch (e) {
       console.error(e);

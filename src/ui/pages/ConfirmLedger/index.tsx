@@ -1,9 +1,9 @@
-import React, {ReactElement, useEffect, useState} from "react";
+import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {useDispatch} from "react-redux";
 import {useHistory} from "react-router";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
-import {useLedgerErr, useTxid} from "@src/ui/ducks/ledger";
+import {useLedgerErr, useTxid, ledgerConnectHide} from "@src/ui/ducks/ledger";
 import {
   RegularView,
   RegularViewContent,
@@ -17,6 +17,12 @@ import ConnectLedgerStep, {
 import ErrorMessage from "@src/ui/components/ErrorMessage";
 import "./confirm-ledger.scss";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
+import {
+  fetchPendingTransactions,
+  Transaction,
+} from "@src/ui/ducks/transactions";
+
+import {getFirstLedgerDevice} from "@src/util/webusb";
 
 export default function ConfirmLedger(): ReactElement {
   const ledgerTxid = useTxid();
@@ -26,6 +32,8 @@ export default function ConfirmLedger(): ReactElement {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
+
+  console.log("pendingTx", pendingTx);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -41,21 +49,34 @@ export default function ConfirmLedger(): ReactElement {
 
   const onClickConnect = async () => {
     // await postMessage({type: MessageTypes.LEDGER_CONNECT_RES});
-    await postMessage({
+    const ledgerProxy = await postMessage({
       type: MessageTypes.USE_LEDGER_PROXY,
       payload: pendingTx,
     });
+    console.log(ledgerProxy);
+    // console.log(getFirstLedgerDevice())
     setIsLoading(true);
     setErrorMessage("");
   };
 
-  const cancelLedger = async () => {
-    await postMessage({type: MessageTypes.LEDGER_CONNECT_CANCEL});
+  const cancelLedger = useCallback(async (txJSON: Transaction) => {
+    await postMessage({
+      type: MessageTypes.REJECT_TX,
+      payload: txJSON,
+    });
     setIsVisible(false);
     setTxid(null);
     setErrorMessage("");
-    history.push("/");
-  };
+    dispatch(ledgerConnectHide());
+  }, []);
+
+  // const cancelLedger = async () => {
+  //   await postMessage({type: MessageTypes.LEDGER_CONNECT_CANCEL});
+  //   setIsVisible(false);
+  //   setTxid(null);
+  //   setErrorMessage("");
+  //   history.push("/");
+  // };
 
   useEffect(() => {
     if (ledgerErr !== "") {

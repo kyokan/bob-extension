@@ -7,12 +7,12 @@ import deepEqual from "fast-deep-equal";
 import {Dispatch} from "redux";
 
 export enum ActionType {
-  SET_PENDING_TRANSACTIONS = 'transaction/setPendingTransactions',
-  SET_TRANSACTIONS = 'transaction/setTransactions',
-  APPEND_TRANSACTIONS = 'transaction/appendTransactions',
-  SET_FETCHING = 'transaction/setFetching',
-  SET_OFFSET = 'transaction/setOffset',
-  SET_BLIND_BY_HASH = 'transaction/setBlindByHash',
+  SET_PENDING_TRANSACTIONS = "transaction/setPendingTransactions",
+  SET_TRANSACTIONS = "transaction/setTransactions",
+  APPEND_TRANSACTIONS = "transaction/appendTransactions",
+  SET_FETCHING = "transaction/setFetching",
+  SET_OFFSET = "transaction/setOffset",
+  SET_BLIND_BY_HASH = "transaction/setBlindByHash",
 }
 
 type Action = {
@@ -54,7 +54,7 @@ export type Transaction = {
   tx: string;
   bid?: number;
   blind?: number;
-}
+};
 
 export type TxInput = {
   address: string;
@@ -63,7 +63,7 @@ export type TxInput = {
     change: boolean;
   };
   coin?: TxOutput;
-}
+};
 
 export type TxOutput = {
   address: string;
@@ -73,30 +73,33 @@ export type TxOutput = {
   path: {
     change: boolean;
   };
-}
-
-export const fetchTransactions = () => async (dispatch: Dispatch, getState: () => AppRootState) => {
-  const state = getState();
-  const {fetching} = state.transactions;
-
-  if (fetching) return;
-
-  dispatch(setFetching(true));
-
-  const resp = await postMessage({
-    type: MessageTypes.GET_TRANSACTIONS,
-  });
-
-  dispatch({
-    type: ActionType.SET_TRANSACTIONS,
-    payload: resp,
-  });
-
-  dispatch(setFetching(false));
 };
 
+export const fetchTransactions =
+  () => async (dispatch: Dispatch, getState: () => AppRootState) => {
+    const state = getState();
+    const {fetching} = state.transactions;
+
+    if (fetching) return;
+
+    dispatch(setFetching(true));
+
+    const resp = await postMessage({
+      type: MessageTypes.GET_TRANSACTIONS,
+    });
+
+    dispatch({
+      type: ActionType.SET_TRANSACTIONS,
+      payload: resp,
+    });
+
+    dispatch(setFetching(false));
+  };
+
 export const fetchPendingTransactions = () => async (dispatch: Dispatch) => {
-  const pendingTXs = await postMessage({ type: MessageTypes.GET_PENDING_TRANSACTIONS });
+  const pendingTXs = await postMessage({
+    type: MessageTypes.GET_PENDING_TRANSACTIONS,
+  });
   dispatch({
     type: ActionType.SET_PENDING_TRANSACTIONS,
     payload: pendingTXs,
@@ -107,24 +110,27 @@ export const setFetching = (fetching: boolean) => {
   return {
     type: ActionType.SET_FETCHING,
     payload: fetching,
-  }
+  };
 };
 
 export const setOffset = (offset: number) => {
   return {
     type: ActionType.SET_OFFSET,
     payload: offset,
-  }
+  };
 };
 
-export const setBlindByHash = (blind: {nonce: string; value: number}, hash: string) => {
+export const setBlindByHash = (
+  blind: {nonce: string; value: number},
+  hash: string
+) => {
   return {
     type: ActionType.SET_BLIND_BY_HASH,
     payload: {
       blind,
       hash,
-    }
-  }
+    },
+  };
 };
 
 export const resetTransactions = () => async (dispatch: Dispatch) => {
@@ -136,10 +142,13 @@ export const setTransactions = (transactions: any[]) => {
   return {
     type: ActionType.SET_TRANSACTIONS,
     payload: transactions,
-  }
+  };
 };
 
-export default function transactions(state = initialState, action: Action): State {
+export default function transactions(
+  state = initialState,
+  action: Action
+): State {
   switch (action.type) {
     case ActionType.SET_FETCHING:
       return {
@@ -149,9 +158,10 @@ export default function transactions(state = initialState, action: Action): Stat
     case ActionType.SET_OFFSET:
       return {
         ...state,
-        offset: action.payload > state.order.length
-          ? Math.max(20, state.order.length)
-          : action.payload,
+        offset:
+          action.payload > state.order.length
+            ? Math.max(20, state.order.length)
+            : action.payload,
       };
     case ActionType.SET_BLIND_BY_HASH:
       return {
@@ -159,7 +169,7 @@ export default function transactions(state = initialState, action: Action): Stat
         map: {
           ...state.map,
           [action.payload.hash]: {
-            ...state.map[action.payload.hash] || {},
+            ...(state.map[action.payload.hash] || {}),
             blind: action.payload,
           },
         },
@@ -170,10 +180,13 @@ export default function transactions(state = initialState, action: Action): Stat
       return {
         ...state,
         order: action.payload.map((tx: Transaction) => tx.hash),
-        map: action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-          map[tx.hash] = tx;
-          return map;
-        }, {}),
+        map: action.payload.reduce(
+          (map: {[h: string]: Transaction}, tx: Transaction) => {
+            map[tx.hash] = tx;
+            return map;
+          },
+          {}
+        ),
       };
     case ActionType.APPEND_TRANSACTIONS:
       return handleAppendTransactions(state, action);
@@ -182,53 +195,62 @@ export default function transactions(state = initialState, action: Action): Stat
   }
 }
 
-function handleTransactions(state: State, action: Action, pending = false): State {
+function handleTransactions(
+  state: State,
+  action: Action,
+  pending = false
+): State {
   const newOrder: string[] = state.order.slice();
   const firstTx = state.map[newOrder[0]];
 
-  action.payload
-    .forEach((tx: Transaction) => {
-      const existing = state.map[tx.hash];
+  action.payload.forEach((tx: Transaction) => {
+    const existing = state.map[tx.hash];
 
-      if (!existing && tx.height > 0) {
-        if (firstTx?.height < tx.height) {
-          newOrder.unshift(tx.hash);
-        } else {
-          newOrder.push(tx.hash);
-        }
-      } else if (!existing && (!tx.height || tx.height < 0)) {
+    if (!existing && tx.height > 0) {
+      if (firstTx?.height < tx.height) {
         newOrder.unshift(tx.hash);
+      } else {
+        newOrder.push(tx.hash);
       }
-    });
+    } else if (!existing && (!tx.height || tx.height < 0)) {
+      newOrder.unshift(tx.hash);
+    }
+  });
 
   return {
     ...state,
     order: newOrder,
     map: pending
-      ?  {
-        ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-          const existing = state.map[tx.hash];
+      ? {
+          ...action.payload.reduce(
+            (map: {[h: string]: Transaction}, tx: Transaction) => {
+              const existing = state.map[tx.hash];
 
-          if (!existing || !existing.height || existing.height < 0) {
-            map[tx.hash] = tx;
-          }
+              if (!existing || !existing.height || existing.height < 0) {
+                map[tx.hash] = tx;
+              }
 
-          return map;
-        }, {}),
-        ...state.map,
-      }
+              return map;
+            },
+            {}
+          ),
+          ...state.map,
+        }
       : {
-        ...state.map,
-        ...action.payload.reduce((map: {[h: string]: Transaction}, tx: Transaction) => {
-          const existing = state.map[tx.hash];
+          ...state.map,
+          ...action.payload.reduce(
+            (map: {[h: string]: Transaction}, tx: Transaction) => {
+              const existing = state.map[tx.hash];
 
-          if (!existing || !existing.height || existing.height < 0) {
-            map[tx.hash] = tx;
-          }
+              if (!existing || !existing.height || existing.height < 0) {
+                map[tx.hash] = tx;
+              }
 
-          return map;
-        }, {}),
-      },
+              return map;
+            },
+            {}
+          ),
+        },
   };
 }
 
@@ -239,29 +261,29 @@ function handleAppendTransactions(state: State, action: Action): State {
 export const usePendingTXs = (): string[] => {
   return useSelector((state: AppRootState) => {
     return state.transactions.pending;
-  }, deepEqual)
+  }, deepEqual);
 };
 
 export const useTXOrder = (): string[] => {
   return useSelector((state: AppRootState) => {
     return state.transactions.order;
-  }, deepEqual)
+  }, deepEqual);
 };
 
 export const useTXOffset = (): number => {
   return useSelector((state: AppRootState) => {
     return state.transactions.offset;
-  }, deepEqual)
+  }, deepEqual);
 };
 
 export const useTXFetching = (): boolean => {
   return useSelector((state: AppRootState) => {
     return state.transactions.fetching;
-  }, deepEqual)
+  }, deepEqual);
 };
 
 export const useTXByHash = (hash: string): Transaction | undefined => {
   return useSelector((state: AppRootState) => {
     return state.transactions.map[hash];
-  }, deepEqual)
+  }, deepEqual);
 };
