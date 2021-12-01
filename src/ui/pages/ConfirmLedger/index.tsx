@@ -1,6 +1,7 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {useDispatch} from "react-redux";
 import {useHistory} from "react-router";
+import {USB} from "hsd-ledger/lib/hsd-ledger-browser";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import {useLedgerErr, ledgerConnectHide} from "@src/ui/ducks/ledger";
@@ -17,27 +18,26 @@ import ConnectLedgerStep, {
 import ErrorMessage from "@src/ui/components/ErrorMessage";
 import "./confirm-ledger.scss";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
-import {
-  fetchPendingTransactions,
-  Transaction,
-} from "@src/ui/ducks/transactions";
+import {Transaction} from "@src/ui/ducks/transactions";
+import {LEDGER_USB_VENDOR_ID} from "@src/util/constants";
 
+const {Device} = USB;
+const usb = navigator.usb;
 
 export default function ConfirmLedger(): ReactElement {
   const ledgerErr = useLedgerErr();
   const dispatch = useDispatch();
   const pendingTXHashes = useTXQueue();
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
-
-  console.log("pendingTx", pendingTx);
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [isDone, setIsDone] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(ledgerErr);
   const history = useHistory();
+
+  const [isConnected, setIsConnected] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isHandshakeApp, setIsHandshakeApp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(ledgerErr);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
 
   const confirmTx = useCallback(async (txJSON: Transaction) => {
     setIsLoading(false);
@@ -54,6 +54,8 @@ export default function ConfirmLedger(): ReactElement {
       setIsLoading(false);
       setErrorMessage(e.message);
     }
+
+    setIsLoading(false);
   }, []);
 
   const removeTx = useCallback(async (txJSON: Transaction) => {
@@ -61,18 +63,10 @@ export default function ConfirmLedger(): ReactElement {
       type: MessageTypes.REJECT_TX,
       payload: txJSON,
     });
-    setIsVisible(false);
     setErrorMessage("");
     dispatch(ledgerConnectHide());
+    history.push("/");
   }, []);
-
-  // const cancelLedger = async () => {
-  //   await postMessage({type: MessageTypes.LEDGER_CONNECT_CANCEL});
-  //   setIsVisible(false);
-  //   setTxid(null);
-  //   setErrorMessage("");
-  //   history.push("/");
-  // };
 
   useEffect(() => {
     if (ledgerErr !== "") {
@@ -87,13 +81,43 @@ export default function ConfirmLedger(): ReactElement {
     }
   }, [ledgerErr]);
 
+  async function checkForLedgerDevices() {
+    const devices: USBDevice[] = await Device.getDevices();
+    const filtered = devices.filter((d) => d.vendorId === LEDGER_USB_VENDOR_ID);
+    if (filtered[0]) {
+      setIsConnected(true);
+      setIsUnlocked(true);
+      setIsHandshakeApp(true);
+      console.log("Ledger connected");
+    } else {
+      setIsConnected(false);
+      setIsUnlocked(false);
+      setIsHandshakeApp(false);
+      console.log("Ledger disconnected");
+    }
+  }
+
+  useEffect(() => {
+    checkForLedgerDevices();
+
+    usb.addEventListener("connect", checkForLedgerDevices);
+    usb.addEventListener("disconnect", checkForLedgerDevices);
+
+    return () => {
+      usb.removeEventListener("connect", checkForLedgerDevices);
+      usb.removeEventListener("disconnect", checkForLedgerDevices);
+    };
+  }, []);
+
   return (
     <RegularView>
       <RegularViewHeader onClose={() => history.push("/")}>
         Confirm On Ledger
       </RegularViewHeader>
       <RegularViewContent>
-        <DefaultConnectLedgerSteps completedSteps={[false, false, false]} />
+        <DefaultConnectLedgerSteps
+          completedSteps={[isConnected, isUnlocked, isHandshakeApp]}
+        />
         <ConnectLedgerStep
           stepNumber={4}
           stepDescription="Confirm the transaction info on your ledger device."
@@ -114,7 +138,7 @@ export default function ConfirmLedger(): ReactElement {
           onClick={() => confirmTx(pendingTx)}
           loading={isLoading}
         >
-          {isLoading ? "Connecting..." : "Connect"}
+          {isLoading ? "Confirming..." : "Confirm"}
         </Button>
       </RegularViewFooter>
     </RegularView>

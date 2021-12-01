@@ -1,15 +1,22 @@
 import {GenericService} from "@src/util/svc";
-import MessageTypes from "@src/util/messageTypes";
 import {get, put} from "@src/util/db";
 import pushMessage from "@src/util/pushMessage";
+import {getFirstLedgerDevice} from "@src/util/webusb";
+import {
+  LedgerHSD,
+  LedgerChange,
+  LedgerCovenant,
+  LedgerInput,
+  USB,
+} from "hsd-ledger/lib/hsd-ledger-browser";
 import {
   ActionType as WalletActionType,
   setWalletBalance,
 } from "@src/ui/ducks/wallet";
 import {ActionType as AppActionType} from "@src/ui/ducks/app";
 import {
-  ActionType as LedgerActionType,
   ledgerConnectShow,
+  ledgerConnectHide,
   ledgerConnectErr,
 } from "@src/ui/ducks/ledger";
 import {
@@ -47,18 +54,7 @@ const DB = require("bdb/lib/DB");
 const layout = require("hsd/lib/wallet/layout").txdb;
 const {Resource} = require("hsd/lib/dns/resource");
 
-// Ledger stuff
-import {getFirstLedgerDevice} from "@src/util/webusb";
-import {
-  LedgerHSD,
-  LedgerChange,
-  LedgerCovenant,
-  LedgerInput,
-  USB,
-} from "hsd-ledger/lib/hsd-ledger-browser";
-import {browser} from "webextension-polyfill-ts";
 const {Device} = USB;
-
 const {types, typesByVal} = rules;
 const networkType = process.env.NETWORK_TYPE || "main";
 
@@ -327,7 +323,6 @@ class WalletService extends GenericService {
     return this.transactions;
   };
 
-  // Ledger stuff
   getPublicKey = async (address: string) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
@@ -1628,13 +1623,12 @@ class WalletService extends GenericService {
     }
 
     try {
-      const getDevice = await Device.getDevices();
-      const device = getDevice[0];
-      device.set({
+      const getDevices = await Device.getDevices();
+      const device = getDevices[0];
+      await device.set({
         timeout: ONE_MINUTE,
       });
-
-      await device.close();
+      await device.close(); // Is this still needed?
       await device.open();
 
       const ledger = new LedgerHSD({device, network: this.network});
@@ -1651,18 +1645,19 @@ class WalletService extends GenericService {
       const retMtx = await ledger.signTransaction(mtx, options);
       retMtx.check();
 
+      // Is this still needed?
       // const tx = await wallet.sendMTX(retMtx, this.passphrase);
+
       await this.exec("node", "sendRawTransaction", retMtx.toHex());
       await this.removeTxFromQueue(txJSON);
+      await pushMessage(ledgerConnectHide());
+
       const json = retMtx.getJSON(this.network);
       this.emit("txAccepted", json);
     } catch (e: any) {
-      console.log("e:", e);
+      console.error("error:", e);
       await pushMessage(ledgerConnectErr(e.message));
     } finally {
-      await pushMessage({
-        type: LedgerActionType.LEDGER_CONNECT_HIDE,
-      });
       if (device) {
         try {
           await device.close();
@@ -1672,425 +1667,6 @@ class WalletService extends GenericService {
       }
     }
   };
-
-  useLedgerProxyOLD = async (txJSON: Transaction) => {
-    const info = await this.getWalletInfo();
-    console.log("onLedger:", info);
-    // const walletId = this.selectedID;
-    // const wallet = await this.wdb.get(walletId);
-    // const latestBlockNow = await this.exec("node", "getLatestBlock");
-    // this.wdb.height = latestBlockNow.height;
-
-    const mtx = MTX.fromJSON(txJSON);
-    console.log(mtx);
-
-    let res, extra;
-
-    if (!Array.isArray(txJSON)) {
-      res = txJSON;
-      console.log("res:", res);
-    } else {
-      [res, extra] = txJSON;
-      console.log("res extra:", [res, extra]);
-    }
-
-    // // Prepare extra TX data for Ledger.
-    // // Unfortunately the MTX returned from the wallet.create____()
-    // // functions does not include what we need, so we have to compute it.
-    const options: any = {};
-    if (extra) Object.assign(options, extra);
-    for (let index = 0; index < res.outputs.length; index++) {
-      const output = res.outputs[index];
-      console.log("output:", output);
-
-      // The user does not have to verify change outputs on the device.
-      // What we do is pass metadata about the change output to Ledger,
-      // and the app will verify the change address belongs to the wallet.
-      const address = Address.fromString(output.address, this.network);
-      const key = await this.getPublicKey(address);
-
-      console.log("key:", key);
-
-      if (!key) continue;
-
-      if (key.branch === 1) {
-        console.log("options:", options);
-        if (options.change)
-          throw new Error("Transaction should only have one change output.");
-
-        const path =
-          "m/" + // master
-          "44'/" + // purpose
-          `${this.network.keyPrefix.coinType}'/` + // coin type
-          `${key.account}'/` + // should be 0 ("default")
-          `${key.branch}/` + // should be 1 (change)
-          `${key.index}`;
-
-        console.log("path:", path);
-
-        options.change = new LedgerChange({
-          index,
-          version: address.version,
-          path,
-        });
-      }
-
-      console.log("cov type", output.covenant.type);
-
-      // The user needs to verify the raw ASCII name for every covenant.
-      // Because some covenants contain a name's hash but not the preimage,
-      // we must pass the device the name as an extra virtual covenant item.
-      // The device will confirm the nameHash before asking the user to verify.
-      switch (output.covenant.type) {
-        case types.NONE:
-        case types.OPEN:
-        case types.BID:
-        case types.FINALIZE:
-          break;
-
-        case types.REVEAL:
-        case types.REDEEM:
-        case types.REGISTER:
-        case types.UPDATE:
-        case types.RENEW:
-        case types.TRANSFER:
-        case types.REVOKE: {
-          if (options.covenants == null) options.covenants = [];
-
-          // We could try to just pass the name in from the functions that
-          // call _ledgerProxy(), but that wouldn't work for send____All()
-          const hash = output.covenant.items[0];
-          const name = await this.nodeService.getNameByHash(hash);
-
-          options.covenants.push(new LedgerCovenant({index, name}));
-          break;
-        }
-        default:
-          throw new Error("Unrecognized covenant type.");
-      }
-    }
-
-    let device;
-
-    try {
-      device = await Device.requestDevice();
-      // device = await getFirstLedgerDevice();
-      console.log("device", device);
-      device.set({
-        timeout: ONE_MINUTE,
-      });
-      await device.open();
-      const ledger = new LedgerHSD({device, network: this.network});
-
-      // Ensure the correct device is connected.
-      // This assumes everything in our world is "default" account (0).
-      const {accountKey} = await this.getAccountInfo();
-      const deviceKey = await ledger.getAccountXPUB(0);
-      if (accountKey !== deviceKey.xpubkey(this.network))
-        throw new Error(
-          "Ledger public key does not match wallet. (Wrong device?)"
-        );
-
-      const retMtx = await ledger.signTransaction(mtx, options);
-      retMtx.check();
-
-      // if (broadcast)
-      //   await this.nodeService.broadcastRawTx(retMtx.toHex());
-
-      // This push message talks to ledger ducks
-      // mainWindow.send("LEDGER/CONNECT_OK");
-      await pushMessage({
-        type: LedgerActionType.LEDGER_CONNECT_SUCCESS,
-      });
-      // ipc.removeListener("LEDGER/CONNECT_RES", resHandler);
-      // ipc.removeListener("LEDGER/CONNECT_CANCEL", cancelHandler);
-
-      console.log("retMtx", retMtx);
-    } catch (e: any) {
-      // Send an error message to ledger connect
-      await pushMessage(ledgerConnectErr(e.message));
-
-      // If we reject from this Promise, it will go to whatever
-      // function is trying to send a transaction. We don't need
-      // errors in two places and it messes up the UI. The Ledger modal
-      // is in charge now and all the errors should be displayed there.
-      // If the user gives up they click CANCEL on the Ledger modal,
-      // which is when the "Cancelled." error (below) is sent to the
-      // calling function.
-      // SO, leave this next line commented out but keep for reference:
-      // reject(e);
-    } finally {
-      if (device) {
-        try {
-          await device.close();
-        } catch (e) {
-          console.error("failed to close ledger", e);
-        }
-      }
-    }
-
-    // Send a message to open up ledger connect
-    // await pushMessage(ledgerConnectShow(mtx.txId()));
-
-    // let device;
-    // try {
-    //   device = await Device.requestDevice();
-    //   device.set({
-    //     timeout: ONE_MINUTE,
-    //   });
-    //   await device.open();
-    //   const ledger = new LedgerHSD({device, network: this.network});
-
-    //   // Ensure the correct device is connected.
-    //   // This assumes everything in our world is "default" account (0).
-    //   const {accountKey} = await this.getAccountInfo();
-    //   const deviceKey = await ledger.getAccountXPUB(0);
-    //   if (accountKey !== deviceKey.xpubkey(this.network))
-    //     throw new Error(
-    //       "Ledger public key does not match wallet. (Wrong device?)"
-    //     );
-
-    //   const retMtx = await ledger.signTransaction(mtx, options);
-    //   retMtx.check();
-
-    //   // if (broadcast) await this.nodeService.broadcastRawTx(retMtx.toHex());
-
-    //   // await pushMessage({
-    //   //   type: LedgerActionType.LEDGER_CONNECT_SUCCESS,
-    //   // });
-
-    //   console.log("resHandler:", retMtx);
-
-    //   // resolve(retMtx);
-    // } catch (e: any) {
-    //   console.error(e.message);
-    //   await pushMessage(ledgerConnectErr(e.message));
-
-    //   // If we reject from this Promise, it will go to whatever
-    //   // function is trying to send a transaction. We don't need
-    //   // errors in two places and it messes up the UI. The Ledger modal
-    //   // is in charge now and all the errors should be displayed there.
-    //   // If the user gives up they click CANCEL on the Ledger modal,
-    //   // which is when the "Cancelled." error (below) is sent to the
-    //   // calling function.
-    //   // SO, leave this next line commented out but keep for reference:
-    //   // reject(e);
-    // } finally {
-    //   if (device) {
-    //     try {
-    //       await device.close();
-    //     } catch (e) {
-    //       console.error("failed to close ledger", e);
-    //     }
-    //   }
-    // }
-  };
-
-  // Ledger stuff
-  _ledgerProxy = async (
-    onLedger: () => void,
-    onNonLedger: () => void,
-    shouldConfirmLedger = true,
-    broadcast = true
-  ) => {
-    const info = await this.getWalletInfo();
-    console.log("onLedger:", info);
-    if (info.watchOnly) {
-      console.log("watch only");
-
-      // I feel terrible about this, but...
-      let res, extra;
-      const oneOrMoreReturnValues = await onLedger();
-
-      if (!Array.isArray(oneOrMoreReturnValues)) {
-        res = oneOrMoreReturnValues;
-      } else {
-        [res, extra] = oneOrMoreReturnValues;
-      }
-
-      console.log("res:", res);
-
-      if (shouldConfirmLedger) {
-        // const mtx = MTX.fromJSON(res);
-        // Prepare extra TX data for Ledger.
-        // Unfortunately the MTX returned from the wallet.create____()
-        // functions does not include what we need, so we have to compute it.
-        const options: any = {};
-        if (extra) Object.assign(options, extra);
-        for (let index = 0; index < res.outputs.length; index++) {
-          const output = res.outputs[index];
-
-          // The user does not have to verify change outputs on the device.
-          // What we do is pass metadata about the change output to Ledger,
-          // and the app will verify the change address belongs to the wallet.
-          const address = Address.fromString(output.address, this.network);
-          const key = await this.getPublicKey(address);
-
-          if (!key) continue;
-
-          if (key.branch === 1) {
-            if (options.change)
-              throw new Error(
-                "Transaction should only have one change output."
-              );
-
-            const path =
-              "m/" + // master
-              "44'/" + // purpose
-              `${this.network.keyPrefix.coinType}'/` + // coin type
-              `${key.account}'/` + // should be 0 ("default")
-              `${key.branch}/` + // should be 1 (change)
-              `${key.index}`;
-
-            options.change = new LedgerChange({
-              index,
-              version: address.version,
-              path,
-            });
-          }
-
-          // The user needs to verify the raw ASCII name for every covenant.
-          // Because some covenants contain a name's hash but not the preimage,
-          // we must pass the device the name as an extra virtual covenant item.
-          // The device will confirm the nameHash before asking the user to verify.
-          switch (output.covenant.type) {
-            case types.NONE:
-            case types.OPEN:
-            case types.BID:
-            case types.FINALIZE:
-              break;
-
-            case types.REVEAL:
-            case types.REDEEM:
-            case types.REGISTER:
-            case types.UPDATE:
-            case types.RENEW:
-            case types.TRANSFER:
-            case types.REVOKE: {
-              if (options.covenants == null) options.covenants = [];
-
-              // We could try to just pass the name in from the functions that
-              // call _ledgerProxy(), but that wouldn't work for send____All()
-              const hash = output.covenant.items[0];
-              const name = await this.nodeService.getNameByHash(hash);
-
-              options.covenants.push(new LedgerCovenant({index, name}));
-              break;
-            }
-            default:
-              throw new Error("Unrecognized covenant type.");
-          }
-        }
-
-        return new Promise(async (resolve, reject) => {
-          const resHandler = async () => {
-            let device;
-            try {
-              device = await Device.requestDevice();
-              device.set({
-                timeout: ONE_MINUTE,
-              });
-              await device.open();
-              const ledger = new LedgerHSD({device, network: this.network});
-
-              // Ensure the correct device is connected.
-              // This assumes everything in our world is "default" account (0).
-              const {accountKey} = await this.getAccountInfo();
-              const deviceKey = await ledger.getAccountXPUB(0);
-              if (accountKey !== deviceKey.xpubkey(this.network))
-                throw new Error(
-                  "Ledger public key does not match wallet. (Wrong device?)"
-                );
-
-              const retMtx = await ledger.signTransaction(mtx, options);
-              retMtx.check();
-
-              if (broadcast)
-                await this.nodeService.broadcastRawTx(retMtx.toHex());
-
-              // This push message talks to ledger ducks
-              // mainWindow.send("LEDGER/CONNECT_OK");
-              await pushMessage({
-                type: LedgerActionType.LEDGER_CONNECT_SUCCESS,
-              });
-              // ipc.removeListener("LEDGER/CONNECT_RES", resHandler);
-              // ipc.removeListener("LEDGER/CONNECT_CANCEL", cancelHandler);
-              resolve(retMtx);
-            } catch (e: any) {
-              // Send an error message to ledger connect
-              await pushMessage(ledgerConnectErr(e.message));
-
-              // If we reject from this Promise, it will go to whatever
-              // function is trying to send a transaction. We don't need
-              // errors in two places and it messes up the UI. The Ledger modal
-              // is in charge now and all the errors should be displayed there.
-              // If the user gives up they click CANCEL on the Ledger modal,
-              // which is when the "Cancelled." error (below) is sent to the
-              // calling function.
-              // SO, leave this next line commented out but keep for reference:
-              // reject(e);
-            } finally {
-              if (device) {
-                try {
-                  await device.close();
-                } catch (e) {
-                  console.error("failed to close ledger", e);
-                }
-              }
-            }
-          };
-          const cancelHandler = () => {
-            // User has given up on Ledger, inform the calling function.
-            reject(new Error("Cancelled."));
-          };
-          // ipc.on("LEDGER/CONNECT_RES", resHandler);
-          // ipc.on("LEDGER/CONNECT_CANCEL", cancelHandler);
-
-          browser.runtime.onMessage.addListener((action) => {
-            switch (action.type) {
-              case MessageTypes.LEDGER_CONNECT_RES:
-                console.log("LEDGER_CONNECT_RES");
-                resHandler;
-                return;
-              case MessageTypes.LEDGER_CONNECT_CANCEL:
-                console.log("LEDGER_CONNECT_CANCEL");
-                cancelHandler;
-                return;
-            }
-          });
-
-          // Send a message to open up ledger connect
-          // await pushMessage(ledgerConnectShow(mtx.txId()));
-          await pushMessage(ledgerConnectShow("asdf"));
-        });
-      }
-
-      // return res;
-    }
-
-    return onNonLedger();
-  };
-
-  _ledgerDisabled = (message: string, onNonLedger: () => void) => {
-    return this._ledgerProxy(
-      () => {
-        throw new Error(message);
-      },
-      onNonLedger,
-      false
-    );
-  };
-
-  async _ledgerSendCustomTx(mtx: any) {
-    const walletId = this.selectedID;
-    const wallet = await this.wdb.get(walletId);
-    const options = {
-      inputs: await this._ledgerInputs(wallet, mtx),
-    };
-
-    console.log("txJSON:", [mtx.getJSON(this.network), options]);
-    return this.useLedgerProxy([mtx.getJSON(this.network), options]);
-  }
 
   async _ledgerInputs(wallet: any, tx: any) {
     // For mtx created in Bob (instead of hsd), the inputs don't include

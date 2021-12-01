@@ -903,7 +903,7 @@ function ConnectLedger(props: {
     setIsLoading(false);
   }, [props.onCreateWallet]);
 
-  const onConnectLedger = async () => {
+  const onConnectLedger = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -914,7 +914,7 @@ function ConnectLedger(props: {
 
     try {
       const device = await Device.requestDevice();
-      device.set({
+      await device.set({
         timeout: ONE_MINUTE,
       });
       const appVersion = await getAppVersion(device, network);
@@ -933,7 +933,6 @@ function ConnectLedger(props: {
 
       const xpub = await getAccountXpub(device, network);
       setXpub(xpub);
-      console.log(xpub);
     } catch (e: any) {
       console.error(e);
       setIsLoading(false);
@@ -950,7 +949,7 @@ function ConnectLedger(props: {
     setTimeout(async () => {
       onCreateWallet();
     }, 2000);
-  };
+  }, []);
 
   return (
     <OnboardingModal>
