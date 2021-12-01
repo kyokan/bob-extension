@@ -6,7 +6,6 @@ export enum ActionType {
   LEDGER_CONNECT_SHOW = "ledger/ledgerConnectShow",
   LEDGER_CONNECT_HIDE = "ledger/ledgerConnectHide",
   LEDGER_CONNECT_ERR = "ledger/ledgerConnectErr",
-  LEDGER_CONNECT_SUCCESS = "ledger/ledgerConnectSuccess",
 }
 
 type Action = {
@@ -55,14 +54,6 @@ export function ledgerConnectErr(errMessage: string) {
     payload: errMessage,
   };
 }
-
-// export function ledgerConnectSuccess(errMessage: string) {
-//   console.log("error");
-//   return {
-//     type: ActionType.LEDGER_CONNECT_SUCCESS,
-//     payload: errMessage,
-//   };
-// }
 
 export default function ledger(state = initialState, action: Action): State {
   const {type, payload} = action;

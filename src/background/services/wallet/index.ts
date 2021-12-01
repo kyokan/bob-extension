@@ -1544,15 +1544,6 @@ class WalletService extends GenericService {
     const wallet = await this.wdb.get(walletId);
     const mtx = MTX.fromJSON(txJSON);
 
-    // if (!Array.isArray(txJSON)) {
-    //   res = txJSON;
-    // } else {
-    //   [res, extra] = txJSON;
-    // }
-
-    const device = await getFirstLedgerDevice();
-    await device.open();
-
     // // Prepare extra TX data for Ledger.
     // // Unfortunately the MTX returned from the wallet.create____()
     // // functions does not include what we need, so we have to compute it.
@@ -1622,13 +1613,13 @@ class WalletService extends GenericService {
       }
     }
 
+    const getDevices = await Device.getDevices();
+    const device = getDevices[0];
+    await device.set({
+      timeout: ONE_MINUTE,
+    });
+
     try {
-      const getDevices = await Device.getDevices();
-      const device = getDevices[0];
-      await device.set({
-        timeout: ONE_MINUTE,
-      });
-      await device.close(); // Is this still needed?
       await device.open();
 
       const ledger = new LedgerHSD({device, network: this.network});
