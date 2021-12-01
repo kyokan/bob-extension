@@ -1,24 +1,4 @@
 import {GenericService} from "@src/util/svc";
-const Mnemonic = require("hsd/lib/hd/mnemonic");
-const WalletDB = require("hsd/lib/wallet/walletdb");
-const Network = require("hsd/lib/protocol/network");
-const Covenant = require("hsd/lib/primitives/covenant");
-const rules = require("hsd/lib/covenants/rules");
-const {states} = require("hsd/lib/covenants/namestate");
-const Address = require("hsd/lib/primitives/address");
-const TX = require("hsd/lib/primitives/tx");
-const NameState = require("hsd/lib/covenants/namestate");
-const common = require("hsd/lib/wallet/common");
-const ChainEntry = require("hsd/lib/blockchain/chainentry");
-const MTX = require("hsd/lib/primitives/mtx");
-const Output = require("hsd/lib/primitives/output");
-const Outpoint = require("hsd/lib/primitives/outpoint");
-const MasterKey = require("hsd/lib/wallet/masterkey");
-const BN = require("bcrypto/lib/bn.js");
-const bdb = require("bdb");
-const DB = require("bdb/lib/DB");
-const layout = require("hsd/lib/wallet/layout").txdb;
-const {Resource} = require("hsd/lib/dns/resource");
 import MessageTypes from "@src/util/messageTypes";
 import {get, put} from "@src/util/db";
 import pushMessage from "@src/util/pushMessage";
@@ -46,11 +26,29 @@ import {UpdateRecordType} from "@src/contentscripts/bob3";
 import {getBidBlind, getTXAction} from "@src/util/transaction";
 import {setInfo} from "@src/ui/ducks/node";
 import nodeService from "../node";
+const Mnemonic = require("hsd/lib/hd/mnemonic");
+const WalletDB = require("hsd/lib/wallet/walletdb");
+const Network = require("hsd/lib/protocol/network");
+const Covenant = require("hsd/lib/primitives/covenant");
+const rules = require("hsd/lib/covenants/rules");
+const {states} = require("hsd/lib/covenants/namestate");
+const Address = require("hsd/lib/primitives/address");
+const TX = require("hsd/lib/primitives/tx");
+const NameState = require("hsd/lib/covenants/namestate");
+const common = require("hsd/lib/wallet/common");
+const ChainEntry = require("hsd/lib/blockchain/chainentry");
+const MTX = require("hsd/lib/primitives/mtx");
+const Output = require("hsd/lib/primitives/output");
+const Outpoint = require("hsd/lib/primitives/outpoint");
+const MasterKey = require("hsd/lib/wallet/masterkey");
+const BN = require("bcrypto/lib/bn.js");
+const bdb = require("bdb");
+const DB = require("bdb/lib/DB");
+const layout = require("hsd/lib/wallet/layout").txdb;
+const {Resource} = require("hsd/lib/dns/resource");
 
 // Ledger stuff
-
 import {getFirstLedgerDevice} from "@src/util/webusb";
-
 import {
   LedgerHSD,
   LedgerChange,
@@ -61,17 +59,13 @@ import {
 import {browser} from "webextension-polyfill-ts";
 const {Device} = USB;
 
-const ONE_MINUTE = 60000;
-
 const {types, typesByVal} = rules;
 const networkType = process.env.NETWORK_TYPE || "main";
+
 const LOOKAHEAD = 100;
+const ONE_MINUTE = 60000;
 
-export default class WalletService extends GenericService {
-  network: typeof Network;
-  wdb: typeof WalletDB;
-  store: typeof DB;
-
+declare interface WalletService {
   transactions?: any[] | null;
   domains?: any[] | null;
   selectedID: string;
@@ -82,6 +76,12 @@ export default class WalletService extends GenericService {
   _getNameNonce: number;
   forceStopRescan: boolean;
   nodeService: any;
+}
+
+class WalletService extends GenericService {
+  network: typeof Network;
+  wdb: typeof WalletDB;
+  store: typeof DB;
 
   private passphrase: string | undefined;
 
@@ -134,7 +134,6 @@ export default class WalletService extends GenericService {
     return wallet.getJSON(false, balance);
   };
 
-  // Ledger stuff
   getAccountInfo = async (id?: string) => {
     const walletId = id || this.selectedID;
     const wallet = await this.wdb.get(walletId);
@@ -1089,7 +1088,9 @@ export default class WalletService extends GenericService {
   submitTx = async (opts: {txJSON: Transaction; password: string}) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
+    const mtx = MTX.fromJSON(opts.txJSON);
     const action = getTXAction(opts.txJSON);
+    const latestBlockNow = await this.exec("node", "getLatestBlock");
 
     this.exec("analytics", "track", {
       name: "Submit",
@@ -1098,23 +1099,17 @@ export default class WalletService extends GenericService {
       },
     });
 
-    const latestBlockNow = await this.exec("node", "getLatestBlock");
     this.wdb.height = latestBlockNow.height;
-    const mtx = MTX.fromJSON(opts.txJSON);
 
     if (wallet.watchOnly) {
-      try {
-        return this._ledgerSendCustomTx(wallet, mtx);
-      } catch (e) {
-        console.log(e);
-      } finally {
-      }
+      await pushMessage(ledgerConnectShow());
     } else {
       const tx = await wallet.sendMTX(mtx, this.passphrase);
       await this.removeTxFromQueue(opts.txJSON);
       await this.exec("node", "sendRawTransaction", tx.toHex());
       const json = tx.getJSON(this.network);
       this.emit("txAccepted", json);
+
       return json;
     }
   };
@@ -1549,7 +1544,136 @@ export default class WalletService extends GenericService {
     );
   }
 
-  useLedgerProxy = async (txJSON: Transaction) => {
+  useLedgerProxy = async (txJSON: any) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const mtx = MTX.fromJSON(txJSON);
+
+    // if (!Array.isArray(txJSON)) {
+    //   res = txJSON;
+    // } else {
+    //   [res, extra] = txJSON;
+    // }
+
+    const device = await getFirstLedgerDevice();
+    await device.open();
+
+    // // Prepare extra TX data for Ledger.
+    // // Unfortunately the MTX returned from the wallet.create____()
+    // // functions does not include what we need, so we have to compute it.
+    const options: any = {
+      inputs: await this._ledgerInputs(wallet, mtx),
+    };
+    for (let index = 0; index < txJSON.outputs.length; index++) {
+      const output = txJSON.outputs[index];
+
+      // The user does not have to verify change outputs on the device.
+      // What we do is pass metadata about the change output to Ledger,
+      // and the app will verify the change address belongs to the wallet.
+      const address = Address.fromString(output.address, this.network);
+      const key = await this.getPublicKey(address);
+
+      if (!key) continue;
+      if (key.branch === 1) {
+        console.log("options b:", options);
+        // if (options.change)
+        // throw new Error("Transaction should only have one change output.");
+
+        const path =
+          "m/" + // master
+          "44'/" + // purpose
+          `${this.network.keyPrefix.coinType}'/` + // coin type
+          `${key.account}'/` + // should be 0 ("default")
+          `${key.branch}/` + // should be 1 (change)
+          `${key.index}`;
+
+        options.change = new LedgerChange({
+          index,
+          version: address.version,
+          path,
+        });
+      }
+
+      // The user needs to verify the raw ASCII name for every covenant.
+      // Because some covenants contain a name's hash but not the preimage,
+      // we must pass the device the name as an extra virtual covenant item.
+      // The device will confirm the nameHash before asking the user to verify.
+      switch (output.covenant.type) {
+        case types.NONE:
+        case types.OPEN:
+        case types.BID:
+        case types.FINALIZE:
+          break;
+
+        case types.REVEAL:
+        case types.REDEEM:
+        case types.REGISTER:
+        case types.UPDATE:
+        case types.RENEW:
+        case types.TRANSFER:
+        case types.REVOKE: {
+          if (options.covenants == null) options.covenants = [];
+
+          // We could try to just pass the name in from the functions that
+          // call _ledgerProxy(), but that wouldn't work for send____All()
+          const hash = output.covenant.items[0];
+          const name = await this.nodeService.getNameByHash(hash);
+
+          options.covenants.push(new LedgerCovenant({index, name}));
+          break;
+        }
+        default:
+          throw new Error("Unrecognized covenant type.");
+      }
+    }
+
+    try {
+      const getDevice = await Device.getDevices();
+      const device = getDevice[0];
+      device.set({
+        timeout: ONE_MINUTE,
+      });
+
+      await device.close();
+      await device.open();
+
+      const ledger = new LedgerHSD({device, network: this.network});
+
+      // Ensure the correct device is connected.
+      // This assumes everything in our world is "default" account (0).
+      const {accountKey} = await this.getAccountInfo();
+      const deviceKey = await ledger.getAccountXPUB(0);
+      if (accountKey !== deviceKey.xpubkey(this.network))
+        throw new Error(
+          "Ledger public key does not match wallet. (Wrong device?)"
+        );
+
+      const retMtx = await ledger.signTransaction(mtx, options);
+      retMtx.check();
+
+      // const tx = await wallet.sendMTX(retMtx, this.passphrase);
+      await this.exec("node", "sendRawTransaction", retMtx.toHex());
+      await this.removeTxFromQueue(txJSON);
+      const json = retMtx.getJSON(this.network);
+      this.emit("txAccepted", json);
+    } catch (e: any) {
+      console.log("e:", e);
+      await pushMessage(ledgerConnectErr(e.message));
+    } finally {
+      await pushMessage({
+        type: LedgerActionType.LEDGER_CONNECT_HIDE,
+      });
+      if (device) {
+        try {
+          await device.close();
+        } catch (e) {
+          console.error("failed to close ledger", e);
+        }
+      }
+    }
+  };
+
+  useLedgerProxyOLD = async (txJSON: Transaction) => {
     const info = await this.getWalletInfo();
     console.log("onLedger:", info);
     // const walletId = this.selectedID;
@@ -1585,10 +1709,12 @@ export default class WalletService extends GenericService {
       const address = Address.fromString(output.address, this.network);
       const key = await this.getPublicKey(address);
 
+      console.log("key:", key);
+
       if (!key) continue;
 
       if (key.branch === 1) {
-        console.log("options.change:", options.change);
+        console.log("options:", options);
         if (options.change)
           throw new Error("Transaction should only have one change output.");
 
@@ -1945,7 +2071,7 @@ export default class WalletService extends GenericService {
     return onNonLedger();
   };
 
-  _ledgerDisabled = (message, onNonLedger) => {
+  _ledgerDisabled = (message: string, onNonLedger: () => void) => {
     return this._ledgerProxy(
       () => {
         throw new Error(message);
@@ -1955,28 +2081,15 @@ export default class WalletService extends GenericService {
     );
   };
 
-  async _ledgerSendCustomTx(wallet, mtx) {
-    // const walletId = this.selectedID;
-    // const wallet = await this.wdb.get(walletId);
+  async _ledgerSendCustomTx(mtx: any) {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const options = {
+      inputs: await this._ledgerInputs(wallet, mtx),
+    };
 
-    await wallet.fill(mtx);
-    const finalizedTX = await wallet.finalize(mtx);
-
-    return await this._ledgerProxy(
-      // With ledger: create ledger inputs that include path
-      async () => {
-        const options = {
-          inputs: await this._ledgerInputs(wallet, finalizedTX),
-        };
-        return [finalizedTX.getJSON(this.network), options];
-      },
-      // No ledger: unused
-      async () => {
-        return finalizedTX;
-      },
-      true, // shouldConfirmLedger (ledger only)
-      true // broadcast (ledger only)
-    );
+    console.log("txJSON:", [mtx.getJSON(this.network), options]);
+    return this.useLedgerProxy([mtx.getJSON(this.network), options]);
   }
 
   async _ledgerInputs(wallet: any, tx: any) {
@@ -2007,15 +2120,8 @@ export default class WalletService extends GenericService {
       });
       ledgerInputs.push(ledgerInput);
     }
-    return ledgerInputs;
-  }
 
-  async _executeRPC(method: string, args: any[], cb?: (arg1: string) => any) {
-    const walletId = this.selectedID;
-    const wallet = await this.wdb.get(walletId);
-    const res = await wallet.execute(method, args);
-    if (cb) cb(res);
-    return res;
+    return ledgerInputs;
   }
 
   async start() {
@@ -2030,11 +2136,9 @@ export default class WalletService extends GenericService {
       cacheSize: 512 << 20,
       maxFileSize: 256 << 20,
     });
-
     this.store = bdb.create("/wallet-store");
 
     this.wdb.on("error", (err: Error) => console.error("wdb error", err));
-
     await this.wdb.open();
     await this.store.open();
 
@@ -2053,6 +2157,8 @@ export default class WalletService extends GenericService {
     }
   }
 }
+
+export default WalletService;
 
 function mapOneTx(txOptions: any) {
   if (txOptions.witnessHash) {

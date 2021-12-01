@@ -3,7 +3,7 @@ import {useDispatch} from "react-redux";
 import {useHistory} from "react-router";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
-import {useLedgerErr, useTxid, ledgerConnectHide} from "@src/ui/ducks/ledger";
+import {useLedgerErr, ledgerConnectHide} from "@src/ui/ducks/ledger";
 import {
   RegularView,
   RegularViewContent,
@@ -22,10 +22,8 @@ import {
   Transaction,
 } from "@src/ui/ducks/transactions";
 
-import {getFirstLedgerDevice} from "@src/util/webusb";
 
 export default function ConfirmLedger(): ReactElement {
-  const ledgerTxid = useTxid();
   const ledgerErr = useLedgerErr();
   const dispatch = useDispatch();
   const pendingTXHashes = useTXQueue();
@@ -38,34 +36,32 @@ export default function ConfirmLedger(): ReactElement {
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [isDone, setIsDone] = useState(false);
-  const [txid, setTxid] = useState<string | null>(ledgerTxid);
   const [errorMessage, setErrorMessage] = useState(ledgerErr);
   const history = useHistory();
 
-  const onLedgerConnectReq = (evt: any, txId: string) => {
-    setIsVisible(true);
-    setTxid(txId);
-  };
-
-  const onClickConnect = async () => {
-    // await postMessage({type: MessageTypes.LEDGER_CONNECT_RES});
-    const ledgerProxy = await postMessage({
-      type: MessageTypes.USE_LEDGER_PROXY,
-      payload: pendingTx,
-    });
-    console.log(ledgerProxy);
-    // console.log(getFirstLedgerDevice())
-    setIsLoading(true);
+  const confirmTx = useCallback(async (txJSON: Transaction) => {
+    setIsLoading(false);
     setErrorMessage("");
-  };
 
-  const cancelLedger = useCallback(async (txJSON: Transaction) => {
+    try {
+      setIsLoading(true);
+      setErrorMessage("");
+      await postMessage({
+        type: MessageTypes.USE_LEDGER_PROXY,
+        payload: txJSON,
+      });
+    } catch (e: any) {
+      setIsLoading(false);
+      setErrorMessage(e.message);
+    }
+  }, []);
+
+  const removeTx = useCallback(async (txJSON: Transaction) => {
     await postMessage({
       type: MessageTypes.REJECT_TX,
       payload: txJSON,
     });
     setIsVisible(false);
-    setTxid(null);
     setErrorMessage("");
     dispatch(ledgerConnectHide());
   }, []);
@@ -108,14 +104,14 @@ export default function ConfirmLedger(): ReactElement {
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         <Button
           btnType={ButtonType.secondary}
-          onClick={cancelLedger}
+          onClick={() => removeTx(pendingTx)}
           disabled={isLoading}
         >
           Cancel
         </Button>
         <Button
           disabled={isLoading}
-          onClick={onClickConnect}
+          onClick={() => confirmTx(pendingTx)}
           loading={isLoading}
         >
           {isLoading ? "Connecting..." : "Connect"}

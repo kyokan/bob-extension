@@ -56,6 +56,14 @@ export function ledgerConnectErr(errMessage: string) {
   };
 }
 
+// export function ledgerConnectSuccess(errMessage: string) {
+//   console.log("error");
+//   return {
+//     type: ActionType.LEDGER_CONNECT_SUCCESS,
+//     payload: errMessage,
+//   };
+// }
+
 export default function ledger(state = initialState, action: Action): State {
   const {type, payload} = action;
 
@@ -90,11 +98,5 @@ export const useLedgerConnect = () => {
 export const useLedgerErr = () => {
   return useSelector((state: AppRootState) => {
     return state.ledger.errMessage;
-  }, deepEqual);
-};
-
-export const useTxid = () => {
-  return useSelector((state: AppRootState) => {
-    return state.ledger.txId;
   }, deepEqual);
 };

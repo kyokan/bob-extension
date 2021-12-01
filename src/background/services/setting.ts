@@ -6,17 +6,19 @@ import {get, put} from "@src/util/db";
 const RPC_HOST_DB_KEY = "rpc_host";
 const RPC_API_KEY_DB_KEY = "rpc_api_key";
 const ANALYTICS_OPT_IN_KEY = "analytics_opt_in_key";
-const RESOLVE_DNS = "resolve_dns";
+const RESOLVE_HNS = "resolve_hns";
 
 const DEFAULT_HOST =
   process.env.DEFAULT_HOST || "https://api.handshakeapi.com/hsd";
 const DEFAULT_API_KEY = process.env.DEFAULT_API_KEY || "";
 
-export default class SettingService extends GenericService {
-  store: typeof DB;
-
+declare interface SettingService {
   apiHost: string;
   apiKey: string;
+}
+
+class SettingService extends GenericService {
+  store: typeof DB;
 
   constructor() {
     super();
@@ -56,15 +58,15 @@ export default class SettingService extends GenericService {
     return !!optIn;
   };
 
-  setResolver = async (resolveDns = false) => {
-    await put(this.store, RESOLVE_DNS, resolveDns);
-    this.emit("setResolver");
+  setResolveHns = async (resolveHns = false) => {
+    await put(this.store, RESOLVE_HNS, resolveHns);
+    this.emit("setResolveHns");
     return true;
   };
 
-  getResolver = async () => {
-    const resolveDns = await get(this.store, RESOLVE_DNS);
-    return !!resolveDns;
+  getResolveHns = async () => {
+    const resolveHns = await get(this.store, RESOLVE_HNS);
+    return !!resolveHns;
   };
 
   async start() {
@@ -78,3 +80,5 @@ export default class SettingService extends GenericService {
   
   async stop() {}
 }
+
+export default SettingService

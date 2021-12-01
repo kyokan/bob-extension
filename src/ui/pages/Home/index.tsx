@@ -1,18 +1,33 @@
-import React, {ReactElement, useCallback, useEffect, useRef, useState} from "react";
-import {fetchWalletBalance, useCurrentWallet, useWalletBalance} from "@src/ui/ducks/wallet";
+import React, {
+  ReactElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  fetchWalletBalance,
+  useCurrentWallet,
+  useWalletBalance,
+} from "@src/ui/ducks/wallet";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import Identicon from "@src/ui/components/Identicon";
 import {useDispatch} from "react-redux";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import "./home.scss";
-import {ReceiveButton, RedeemButton, RevealButton, SendButton} from "@src/ui/components/HomeActionButton";
+import {
+  ReceiveButton,
+  RedeemButton,
+  RevealButton,
+  SendButton,
+} from "@src/ui/components/HomeActionButton";
 import classNames from "classnames";
 import {
   fetchTransactions,
   resetTransactions,
   setOffset as setTXOffset,
-  useTXOffset
+  useTXOffset,
 } from "@src/ui/ducks/transactions";
 import Transactions from "@src/ui/components/Transactions";
 import {
@@ -24,9 +39,7 @@ import {
 import Domains from "@src/ui/components/Domains";
 import {fetchTXQueue} from "@src/ui/ducks/queue";
 import {useLocation} from "react-router";
-import queryString from 'querystring';
-
-import Button from "@src/ui/components/Button";
+import queryString from "querystring";
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
@@ -35,9 +48,11 @@ export default function Home(): ReactElement {
   const currentWallet = useCurrentWallet();
   const loc = useLocation();
   const parsed = queryString.parse(loc.search.slice(1));
-  const [tab, setTab] = useState<'domains'|'activity'>(parsed.defaultTab as any || 'activity');
-  const { spendable, lockedUnconfirmed } = useWalletBalance();
-  const [currentAddress, setCurrentAddress] = useState('');
+  const [tab, setTab] = useState<"domains" | "activity">(
+    (parsed.defaultTab as any) || "activity"
+  );
+  const {spendable, lockedUnconfirmed} = useWalletBalance();
+  const [currentAddress, setCurrentAddress] = useState("");
   const listElement = useRef<HTMLDivElement>(null);
   const pageElement = useRef<HTMLDivElement>(null);
   const [fixHeader, setFixHeader] = useState(false);
@@ -48,7 +63,7 @@ export default function Home(): ReactElement {
         dispatch(resetTransactions());
         dispatch(resetDomains());
       })();
-    }
+    };
   }, []);
 
   useEffect(() => {
@@ -73,45 +88,33 @@ export default function Home(): ReactElement {
     })();
   }, [currentWallet]);
 
-  const _onScroll = useCallback(async e => {
-    if (!listElement.current || !pageElement.current) return;
+  const _onScroll = useCallback(
+    async (e) => {
+      if (!listElement.current || !pageElement.current) return;
 
-    const {y} = listElement.current.getBoundingClientRect();
-    if (y <= 60) {
-      setFixHeader(true);
-    } else {
-      setFixHeader(false);
-    }
-
-    const {
-      scrollTop,
-      scrollHeight,
-      offsetHeight,
-    } = pageElement.current;
-    if (((scrollTop + offsetHeight) / scrollHeight) > .8) {
-      if (tab === 'activity') {
-        dispatch(setTXOffset(txOffset + 20));
+      const {y} = listElement.current.getBoundingClientRect();
+      if (y <= 60) {
+        setFixHeader(true);
       } else {
-        dispatch(setDomainOffset(domainOffset + 20));
+        setFixHeader(false);
       }
-    }
-  }, [
-    listElement,
-    pageElement,
-    tab,
-    txOffset,
-    domainOffset,
-  ]);
 
-  const testMessage = async () => {
-    const res = await postMessage({type: MessageTypes.LEDGER_PROXY});
-    console.log(res)
-  }
+      const {scrollTop, scrollHeight, offsetHeight} = pageElement.current;
+      if ((scrollTop + offsetHeight) / scrollHeight > 0.8) {
+        if (tab === "activity") {
+          dispatch(setTXOffset(txOffset + 20));
+        } else {
+          dispatch(setDomainOffset(domainOffset + 20));
+        }
+      }
+    },
+    [listElement, pageElement, tab, txOffset, domainOffset]
+  );
 
   return (
     <div
-      className={classNames('home', {
-        'home--fixed-header': fixHeader,
+      className={classNames("home", {
+        "home--fixed-header": fixHeader,
       })}
       ref={pageElement}
       onScroll={_onScroll}
@@ -119,9 +122,7 @@ export default function Home(): ReactElement {
       <div className="home__top">
         <Identicon value={currentAddress} />
         <div className="home__account-info">
-          <small className="home__account-info__label">
-            {currentWallet}
-          </small>
+          <small className="home__account-info__label">{currentWallet}</small>
           <div className="home__account-info__spendable">
             {`${formatNumber(fromDollaryDoos(spendable))} HNS`}
           </div>
@@ -135,31 +136,27 @@ export default function Home(): ReactElement {
         <ReceiveButton />
         <RevealButton />
       </div>
-      <Button onClick={testMessage}>ledger proxy</Button>
-      <div
-        className="home__list"
-        ref={listElement}
-      >
+      <div className="home__list" ref={listElement}>
         <div className="home__list__header">
           <div
             className={classNames("home__list__header__tab", {
-              'home__list__header__tab--selected': tab === 'domains',
+              "home__list__header__tab--selected": tab === "domains",
             })}
-            onClick={() => setTab('domains')}
+            onClick={() => setTab("domains")}
           >
             Domains
           </div>
           <div
             className={classNames("home__list__header__tab", {
-              'home__list__header__tab--selected': tab === 'activity',
+              "home__list__header__tab--selected": tab === "activity",
             })}
-            onClick={() => setTab('activity')}
+            onClick={() => setTab("activity")}
           >
             Activity
           </div>
         </div>
         <div className="home__list__content">
-          {tab === 'activity' ? <Transactions /> : <Domains />}
+          {tab === "activity" ? <Transactions /> : <Domains />}
         </div>
       </div>
     </div>

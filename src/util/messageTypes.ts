@@ -41,6 +41,7 @@ enum MessageTypes {
   REVEAL_SEED = "reveal_seed",
   LEDGER_PROXY = "_ledgerProxy",
   USE_LEDGER_PROXY = "use_ledger_proxy",
+  GET_ACCOUNT_INFO = "get_account_info",
 
   // node
   GET_LATEST_BLOCK = "get_latest_block",
@@ -55,15 +56,11 @@ enum MessageTypes {
   SET_RPC_KEY = "set_rpc_key",
   GET_ANALYTICS = "getAnalytics",
   SET_ANALYTICS = "setAnalytics",
-  SET_RESOLVER = "setResolver",
-  GET_RESOLVER = "getResolver",
+  SET_RESOLVE_HNS = "setResolveHns",
+  GET_RESOLVE_HNS = "getResolveHns",
 
   // analytics
   MP_TRACK = "mp_track",
-
-  // ledger
-  LEDGER_CONNECT_RES = "ledger_connect_res",
-  LEDGER_CONNECT_CANCEL = "ledger_connect_cancel",
 
   // SQL
   READ_DB_AS_BUFFER = "read_db_as_buffer",

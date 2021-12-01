@@ -22,7 +22,7 @@ import {DefaultConnectLedgerSteps} from "@src/ui/components/ConnectLedgerSteps";
 import "./onboarding.scss";
 import BobIcon from "@src/static/icons/bob-black.png";
 import {USB} from "hsd-ledger/lib/hsd-ledger-browser";
-import withLedger from "@src/util/withLedger";
+import {getAppVersion, getAccountXpub} from "@src/util/withLedger";
 import {isSupported} from "@src/util/webusb";
 import {
   LEDGER_MINIMUM_VERSION,
@@ -892,18 +892,6 @@ function ConnectLedger(props: {
       usb.removeEventListener("disconnect", checkForLedgerDevices);
     };
   }, []);
-
-  const getAppVersion = (device: USBDevice, network: string) => {
-    return withLedger(device, network, async (ledger) => {
-      return ledger.getAppVersion();
-    });
-  };
-
-  const getAccountXpub = (device: USBDevice, network: string) => {
-    return withLedger(device, network, async (ledger) => {
-      return (await ledger.getAccountXPUB(0)).xpubkey(network);
-    });
-  };
 
   const onCreateWallet = useCallback(async () => {
     setIsLoading(true);

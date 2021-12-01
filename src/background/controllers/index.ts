@@ -382,6 +382,10 @@ const controllers: {
     return app.exec("wallet", "createSend", message.payload);
   },
 
+  [MessageTypes.USE_LEDGER_PROXY]: async (app, message) => {
+    return app.exec("wallet", "useLedgerProxy", message.payload);
+  },
+
   [MessageTypes.HASH_NAME]: async (app, message) => {
     return app.exec("node", "hashName", message.payload);
   },
@@ -422,12 +426,12 @@ const controllers: {
     return app.exec("setting", "setAnalytics", message.payload);
   },
 
-  [MessageTypes.GET_RESOLVER]: async (app, message) => {
-    return app.exec("setting", "getResolver");
+  [MessageTypes.GET_RESOLVE_HNS]: async (app, message) => {
+    return app.exec("setting", "getResolveHns");
   },
 
-  [MessageTypes.SET_RESOLVER]: async (app, message) => {
-    return app.exec("setting", "setResolver", message.payload);
+  [MessageTypes.SET_RESOLVE_HNS]: async (app, message) => {
+    return app.exec("setting", "setResolveHns", message.payload);
   },
 
   [MessageTypes.RESET_DB]: async (app, message) => {
@@ -445,22 +449,6 @@ const controllers: {
       message.payload.name,
       message.payload.data
     );
-  },
-
-  [MessageTypes.LEDGER_CONNECT_RES]: async (app, message) => {
-    return app.emit(MessageTypes.LEDGER_CONNECT_RES);
-  },
-
-  [MessageTypes.LEDGER_CONNECT_CANCEL]: async (app, message) => {
-    return app.emit(MessageTypes.LEDGER_CONNECT_CANCEL);
-  },
-
-  [MessageTypes.LEDGER_PROXY]: async (app, message) => {
-    return app.exec("wallet", "_ledgerProxy");
-  },
-
-  [MessageTypes.USE_LEDGER_PROXY]: async (app, message) => {
-    return app.exec("wallet", "useLedgerProxy", message.payload);
   },
 };
 

@@ -26,3 +26,26 @@ export default async function withLedger(
     }
   }
 }
+
+export const getAppVersion = (device: USBDevice, network: string) => {
+  return withLedger(device, network, async (ledger) => {
+    return ledger.getAppVersion();
+  });
+};
+
+export const getAccountXpub = (device: USBDevice, network: string) => {
+  return withLedger(device, network, async (ledger) => {
+    return (await ledger.getAccountXPUB(0)).xpubkey(network);
+  });
+};
+
+// export const signTransaction = (
+//   device: USBDevice,
+//   network: string,
+//   mtx: any,
+//   options: any
+// ) => {
+//   return withLedger(device, network, async (ledger) => {
+//     return (await ledger.signTransaction(mtx, options));
+//   });
+// };

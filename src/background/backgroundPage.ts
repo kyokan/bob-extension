@@ -44,11 +44,11 @@ import resolve from "@src/background/resolve";
   await startedApp.start();
   app = startedApp;
 
-  app.on("setting.setResolver", async () => {
-    const isResolving = await app.exec("setting", "getResolver");
-    console.log("resolving:", isResolving);
+  app.on("setting.setResolveHns", async () => {
+    const resolveHns = await app.exec("setting", "getResolveHns");
+    console.log("resolving:", resolveHns);
 
-    if (isResolving) {
+    if (resolveHns) {
       browser.webRequest.onBeforeRequest.addListener(
         // @ts-ignore
         resolve,
