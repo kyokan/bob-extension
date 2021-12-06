@@ -1,6 +1,6 @@
 import React, {ReactElement, useEffect, useState} from "react";
 import "./popup.scss";
-import Onboarding from "@src/ui/pages/Onboarding";
+import Onboarding from "@src/ui/pages/Onboarding/Onboarding";
 import {useDispatch} from "react-redux";
 import {
   fetchWallets,
@@ -32,7 +32,7 @@ export default function Popup(): ReactElement {
   const {locked, currentWallet} = useWalletState();
   const [loading, setLoading] = useState(true);
   const queuedTXHashes = useTXQueue();
-  const ledgerConnect = useLedgerConnect()
+  const ledgerConnect = useLedgerConnect();
 
   useEffect(() => {
     (async () => {

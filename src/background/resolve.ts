@@ -17,9 +17,7 @@ function sleep(milliseconds: number, resolved: string) {
 }
 
 // run script when a request is about to occur
-export default async function resolve(
-  details: OnBeforeRequestDetailsType
-) {
+export default async function resolve(details: OnBeforeRequestDetailsType) {
   const originalUrl = new URL(details.url);
   const hostname = originalUrl.hostname;
   const protocol = originalUrl.protocol;

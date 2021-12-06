@@ -1,7 +1,6 @@
 import {GenericService} from "@src/util/svc";
 import {get, put} from "@src/util/db";
 import pushMessage from "@src/util/pushMessage";
-import {getFirstLedgerDevice} from "@src/util/webusb";
 import {
   LedgerHSD,
   LedgerChange,
@@ -1086,16 +1085,13 @@ class WalletService extends GenericService {
     const mtx = MTX.fromJSON(opts.txJSON);
     const action = getTXAction(opts.txJSON);
     const latestBlockNow = await this.exec("node", "getLatestBlock");
-
+    this.wdb.height = latestBlockNow.height;
     this.exec("analytics", "track", {
       name: "Submit",
       data: {
         action,
       },
     });
-
-    this.wdb.height = latestBlockNow.height;
-
     if (wallet.watchOnly) {
       await pushMessage(ledgerConnectShow());
     } else {
@@ -1561,7 +1557,7 @@ class WalletService extends GenericService {
 
       if (!key) continue;
       if (key.branch === 1) {
-        console.log("options b:", options);
+        // Need to fix this error.............................................
         // if (options.change)
         // throw new Error("Transaction should only have one change output.");
 
@@ -1613,17 +1609,15 @@ class WalletService extends GenericService {
       }
     }
 
-    const getDevices = await Device.getDevices();
-    const device = getDevices[0];
+    const syncedDevices = await Device.getDevices();
+    const device = syncedDevices[0];
     await device.set({
       timeout: ONE_MINUTE,
     });
 
     try {
       await device.open();
-
       const ledger = new LedgerHSD({device, network: this.network});
-
       // Ensure the correct device is connected.
       // This assumes everything in our world is "default" account (0).
       const {accountKey} = await this.getAccountInfo();
@@ -1639,10 +1633,9 @@ class WalletService extends GenericService {
       // Is this still needed?
       // const tx = await wallet.sendMTX(retMtx, this.passphrase);
 
-      await this.exec("node", "sendRawTransaction", retMtx.toHex());
       await this.removeTxFromQueue(txJSON);
+      await this.exec("node", "sendRawTransaction", retMtx.toHex());
       await pushMessage(ledgerConnectHide());
-
       const json = retMtx.getJSON(this.network);
       this.emit("txAccepted", json);
     } catch (e: any) {

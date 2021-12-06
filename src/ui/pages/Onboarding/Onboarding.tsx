@@ -6,7 +6,7 @@ import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
 import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
-import TermsOfUse from "@src/ui/pages/Onboarding/terms";
+import TermsOfUse from "@src/ui/pages/Onboarding/Terms";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import Checkbox from "@src/ui/components/Checkbox";
 import Icon from "@src/ui/components/Icon";
@@ -83,21 +83,21 @@ export default function Onboarding(): ReactElement {
             onCreateNewWallet={() => setOnboardingType("create")}
             onImportWallet={() => setOnboardingType("import")}
             onConnectWallet={() => setOnboardingType("connect")}
-            isConnecting={onboardingType === "connect"}
+            isConnectLedger={onboardingType === "connect"}
           />
         </Route>
         <Route path="/onboarding/name-your-wallet">
           <NameYourWallet
             walletName={walletName}
             setWalletName={setWalletName}
-            isConnecting={onboardingType === "connect"}
+            isConnectLedger={onboardingType === "connect"}
           />
         </Route>
         <Route path="/onboarding/create-password">
           <CreatePassword
             password={password}
             setPassword={setPassword}
-            isConnecting={onboardingType === "connect"}
+            isConnectLedger={onboardingType === "connect"}
           />
         </Route>
         <Route path="/onboarding/seedphrase-warning">
@@ -121,7 +121,7 @@ export default function Onboarding(): ReactElement {
             optIn={optIn}
             setOptIn={setOptIn}
             onCreateWallet={onCreateWallet}
-            isConnecting={onboardingType === "connect"}
+            isConnectLedger={onboardingType === "connect"}
           />
         </Route>
         <Route path="/onboarding/connect-ledger">
@@ -222,7 +222,7 @@ function Terms(props: {
   onCreateNewWallet: () => void;
   onImportWallet: () => void;
   onConnectWallet: () => void;
-  isConnecting: boolean;
+  isConnectLedger: boolean;
 }): ReactElement {
   const history = useHistory();
   const [accepted, setAccept] = useState(false);
@@ -258,7 +258,7 @@ function Terms(props: {
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25} />}
         onClose={initialized ? () => window.close() : undefined}
         currentStep={1}
-        maxStep={props.isConnecting ? 5 : 6}
+        maxStep={props.isConnectLedger ? 5 : 6}
       />
       <OnboardingModalContent>
         <div className="title">
@@ -288,7 +288,7 @@ function Terms(props: {
 }
 
 function NameYourWallet(props: {
-  isConnecting: boolean;
+  isConnectLedger: boolean;
   walletName: string;
   setWalletName: (walletName: string) => void;
 }): ReactElement {
@@ -327,12 +327,12 @@ function NameYourWallet(props: {
   );
 
   const onBack = useCallback(() => {
-    if (props.isConnecting) {
+    if (props.isConnectLedger) {
       history.push("/onboarding/terms?type=connect");
     } else {
       history.push("/onboarding/terms");
     }
-  }, [props.isConnecting]);
+  }, [props.isConnectLedger]);
 
   return (
     <OnboardingModal>
@@ -341,7 +341,7 @@ function NameYourWallet(props: {
         onBack={onBack}
         onClose={initialized ? () => window.close() : undefined}
         currentStep={2}
-        maxStep={props.isConnecting ? 5 : 6}
+        maxStep={props.isConnectLedger ? 5 : 6}
       />
       <OnboardingModalContent>
         <div className="title">
@@ -376,7 +376,7 @@ function NameYourWallet(props: {
 }
 
 function CreatePassword(props: {
-  isConnecting: boolean;
+  isConnectLedger: boolean;
   password: string;
   setPassword: (password: string) => void;
 }): ReactElement {
@@ -412,12 +412,12 @@ function CreatePassword(props: {
   }, []);
 
   const onNext = useCallback(() => {
-    if (props.isConnecting) {
+    if (props.isConnectLedger) {
       history.push("/onboarding/opt-in-analytics");
     } else {
       history.push("/onboarding/seedphrase-warning");
     }
-  }, [props.isConnecting]);
+  }, [props.isConnectLedger]);
 
   return (
     <OnboardingModal>
@@ -426,7 +426,7 @@ function CreatePassword(props: {
         onBack={() => history.push("/onboarding/name-your-wallet")}
         onClose={initialized ? () => window.close() : undefined}
         currentStep={3}
-        maxStep={props.isConnecting ? 5 : 6}
+        maxStep={props.isConnectLedger ? 5 : 6}
       />
       <OnboardingModalContent>
         <div className="title">
@@ -742,7 +742,7 @@ function ConfirmSeedphrase(props: {
 }
 
 function OptInAnalytics(props: {
-  isConnecting: boolean;
+  isConnectLedger: boolean;
   onCreateWallet: () => Promise<void>;
   optIn: boolean;
   setOptIn: (optIn: boolean) => void;
@@ -785,20 +785,20 @@ function OptInAnalytics(props: {
   }, [props.onCreateWallet]);
 
   const onBack = useCallback(() => {
-    if (props.isConnecting) {
+    if (props.isConnectLedger) {
       history.push("/onboarding/create-password");
     } else {
       history.push("/onboarding/confirm-seedphrase");
     }
-  }, [props.isConnecting]);
+  }, [props.isConnectLedger]);
 
   const onNext = useCallback(() => {
-    if (props.isConnecting) {
+    if (props.isConnectLedger) {
       history.push("/onboarding/connect-ledger");
     } else {
       onCreateWallet();
     }
-  }, [props.isConnecting]);
+  }, [props.isConnectLedger]);
 
   return (
     <OnboardingModal>
@@ -806,8 +806,8 @@ function OptInAnalytics(props: {
         backBtn={<Icon fontAwesome="fa-arrow-left" size={1.25} />}
         onBack={onBack}
         onClose={initialized ? () => window.close() : undefined}
-        currentStep={props.isConnecting ? 4 : 6}
-        maxStep={props.isConnecting ? 5 : 6}
+        currentStep={props.isConnectLedger ? 4 : 6}
+        maxStep={props.isConnectLedger ? 5 : 6}
       />
       <OnboardingModalContent>
         <div className="title">

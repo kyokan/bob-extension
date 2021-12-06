@@ -68,6 +68,7 @@ export default function ConfirmLedger(): ReactElement {
     history.push("/");
   }, []);
 
+  // Does this even work?
   useEffect(() => {
     if (ledgerErr !== "") {
       console.error("failed to connect to ledger", {ledgerErr});
@@ -120,7 +121,7 @@ export default function ConfirmLedger(): ReactElement {
         />
         <ConnectLedgerStep
           stepNumber={4}
-          stepDescription="Confirm the transaction info on your ledger device."
+          stepDescription="Confirm the transaction on your ledger."
           stepCompleted={false}
         />
       </RegularViewContent>
