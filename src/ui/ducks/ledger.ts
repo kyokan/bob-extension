@@ -4,6 +4,7 @@ import {AppRootState} from "@src/ui/store/configureAppStore";
 
 export enum ActionType {
   LEDGER_CONNECT_SHOW = "ledger/ledgerConnectShow",
+  LEDGER_CONFIRMED = "ledger/ledgerConfirmed",
   LEDGER_CONNECT_HIDE = "ledger/ledgerConnectHide",
   LEDGER_CONNECT_ERR = "ledger/ledgerConnectErr",
 }
@@ -17,13 +18,13 @@ type Action = {
 
 type State = {
   isShowingLedgerModal: boolean;
-  txId: string;
+  hasConfirmed: boolean;
   errMessage: string;
 };
 
 const initialState: State = {
   isShowingLedgerModal: false,
-  txId: "",
+  hasConfirmed: false,
   errMessage: "",
 };
 
@@ -47,6 +48,14 @@ export function ledgerConnectHide() {
   };
 }
 
+export function ledgerConfirmed(hasConfirmed: boolean) {
+  console.log("confirmed");
+  return {
+    type: ActionType.LEDGER_CONFIRMED,
+    payload: hasConfirmed,
+  };
+}
+
 export function ledgerConnectErr(errMessage: string) {
   console.log("error");
   return {
@@ -63,7 +72,11 @@ export default function ledger(state = initialState, action: Action): State {
       return {
         ...state,
         isShowingLedgerModal: payload.isShowingLedgerModal,
-        txId: payload.txId,
+      };
+    case ActionType.LEDGER_CONFIRMED:
+      return {
+        ...state,
+        hasConfirmed: payload.hasConfirmed,
       };
     case ActionType.LEDGER_CONNECT_HIDE:
       return {
@@ -83,6 +96,12 @@ export default function ledger(state = initialState, action: Action): State {
 export const useLedgerConnect = () => {
   return useSelector((state: AppRootState) => {
     return state.ledger.isShowingLedgerModal;
+  }, deepEqual);
+};
+
+export const useLedgerConfirm = () => {
+  return useSelector((state: AppRootState) => {
+    return state.ledger.hasConfirmed;
   }, deepEqual);
 };
 

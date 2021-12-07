@@ -16,6 +16,7 @@ import {ActionType as AppActionType} from "@src/ui/ducks/app";
 import {
   ledgerConnectShow,
   ledgerConnectHide,
+  ledgerConfirmed,
   ledgerConnectErr,
 } from "@src/ui/ducks/ledger";
 import {
@@ -1085,6 +1086,7 @@ class WalletService extends GenericService {
     const mtx = MTX.fromJSON(opts.txJSON);
     const action = getTXAction(opts.txJSON);
     const latestBlockNow = await this.exec("node", "getLatestBlock");
+
     this.wdb.height = latestBlockNow.height;
     this.exec("analytics", "track", {
       name: "Submit",
@@ -1092,6 +1094,7 @@ class WalletService extends GenericService {
         action,
       },
     });
+    
     if (wallet.watchOnly) {
       await pushMessage(ledgerConnectShow());
     } else {
@@ -1540,14 +1543,22 @@ class WalletService extends GenericService {
     const wallet = await this.wdb.get(walletId);
     const mtx = MTX.fromJSON(txJSON);
 
+    let res, extra;
+    if (!Array.isArray(txJSON)) {
+      res = txJSON;
+    } else {
+      [res, extra] = txJSON;
+    }
+
     // // Prepare extra TX data for Ledger.
     // // Unfortunately the MTX returned from the wallet.create____()
     // // functions does not include what we need, so we have to compute it.
     const options: any = {
       inputs: await this._ledgerInputs(wallet, mtx),
     };
-    for (let index = 0; index < txJSON.outputs.length; index++) {
-      const output = txJSON.outputs[index];
+    if (extra) Object.assign(options, extra);
+    for (let index = 0; index < res.outputs.length; index++) {
+      const output = res.outputs[index];
 
       // The user does not have to verify change outputs on the device.
       // What we do is pass metadata about the change output to Ledger,
@@ -1558,8 +1569,8 @@ class WalletService extends GenericService {
       if (!key) continue;
       if (key.branch === 1) {
         // Need to fix this error.............................................
-        // if (options.change)
-        // throw new Error("Transaction should only have one change output.");
+        if (options.change)
+          throw new Error("Transaction should only have one change output.");
 
         const path =
           "m/" + // master
@@ -1611,9 +1622,15 @@ class WalletService extends GenericService {
 
     const syncedDevices = await Device.getDevices();
     const device = syncedDevices[0];
-    await device.set({
-      timeout: ONE_MINUTE,
-    });
+
+    try {
+      await device.set({
+        timeout: ONE_MINUTE,
+      });
+    } catch (e) {
+      await pushMessage(ledgerConnectErr("Device not connected."));
+      throw new Error("Device not connected.");
+    }
 
     try {
       await device.open();
@@ -1630,16 +1647,16 @@ class WalletService extends GenericService {
       const retMtx = await ledger.signTransaction(mtx, options);
       retMtx.check();
 
-      // Is this still needed?
-      // const tx = await wallet.sendMTX(retMtx, this.passphrase);
-
+      await pushMessage(ledgerConfirmed(true));
       await this.removeTxFromQueue(txJSON);
       await this.exec("node", "sendRawTransaction", retMtx.toHex());
       await pushMessage(ledgerConnectHide());
       const json = retMtx.getJSON(this.network);
       this.emit("txAccepted", json);
+      
+      return json;
     } catch (e: any) {
-      console.error("error:", e);
+      console.error("error:", e.message);
       await pushMessage(ledgerConnectErr(e.message));
     } finally {
       if (device) {
@@ -1718,8 +1735,6 @@ class WalletService extends GenericService {
   }
 }
 
-export default WalletService;
-
 function mapOneTx(txOptions: any) {
   if (txOptions.witnessHash) {
     txOptions.witnessHash = Buffer.from(txOptions.witnessHash, "hex");
@@ -1756,3 +1771,5 @@ function mapOneTx(txOptions: any) {
   const tx = new TX(txOptions);
   return tx;
 }
+
+export default WalletService;

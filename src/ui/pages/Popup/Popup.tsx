@@ -1,6 +1,6 @@
 import React, {ReactElement, useEffect, useState} from "react";
 import "./popup.scss";
-import Onboarding from "@src/ui/pages/Onboarding/Onboarding";
+import Onboarding from "@src/ui/pages/Onboarding";
 import {useDispatch} from "react-redux";
 import {
   fetchWallets,

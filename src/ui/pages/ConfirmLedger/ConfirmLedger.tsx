@@ -18,7 +18,10 @@ import ConnectLedgerStep, {
 import ErrorMessage from "@src/ui/components/ErrorMessage";
 import "./confirm-ledger.scss";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
-import {Transaction} from "@src/ui/ducks/transactions";
+import {
+  Transaction,
+  fetchPendingTransactions,
+} from "@src/ui/ducks/transactions";
 import {LEDGER_USB_VENDOR_ID} from "@src/util/constants";
 
 const {Device} = USB;
@@ -34,14 +37,13 @@ export default function ConfirmLedger(): ReactElement {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isHandshakeApp, setIsHandshakeApp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(ledgerErr);
+  const [errorMessage, setErrorMessage] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
 
   const confirmTx = useCallback(async (txJSON: Transaction) => {
     setIsLoading(false);
-    setErrorMessage("");
 
     try {
       setIsLoading(true);
@@ -50,8 +52,10 @@ export default function ConfirmLedger(): ReactElement {
         type: MessageTypes.USE_LEDGER_PROXY,
         payload: txJSON,
       });
+      await dispatch(fetchPendingTransactions());
     } catch (e: any) {
       setIsLoading(false);
+      console.log("catch error:", e);
       setErrorMessage(e.message);
     }
 
@@ -68,17 +72,12 @@ export default function ConfirmLedger(): ReactElement {
     history.push("/");
   }, []);
 
-  // Does this even work?
   useEffect(() => {
     if (ledgerErr !== "") {
       console.error("failed to connect to ledger", {ledgerErr});
-
-      // Totally confusing
       if (ledgerErr === "Device was not selected.")
         setErrorMessage("Could not connect to device.");
-
       setErrorMessage(`Error confirming on Ledger: ${ledgerErr}`);
-      setIsLoading(false);
     }
   }, [ledgerErr]);
 
@@ -125,8 +124,10 @@ export default function ConfirmLedger(): ReactElement {
           stepCompleted={false}
         />
       </RegularViewContent>
+
+      {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+
       <RegularViewFooter>
-        {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         <Button
           btnType={ButtonType.secondary}
           onClick={() => removeTx(pendingTx)}
@@ -135,7 +136,7 @@ export default function ConfirmLedger(): ReactElement {
           Cancel
         </Button>
         <Button
-          disabled={isLoading}
+          disabled={!isHandshakeApp || isLoading}
           onClick={() => confirmTx(pendingTx)}
           loading={isLoading}
         >

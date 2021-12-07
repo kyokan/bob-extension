@@ -1,12 +1,6 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
-import {
-  RegularView,
-  RegularViewContent,
-  RegularViewFooter,
-  RegularViewHeader,
-} from "@src/ui/components/RegularView";
+import {useDispatch} from "react-redux";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
-import Button, {ButtonType} from "@src/ui/components/Button";
 import {
   getTXAction,
   getTXNameHash,
@@ -22,13 +16,21 @@ import Input from "@src/ui/components/Input";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
-import "./confirm-tx.scss";
-import UpdateTx from "@src/ui/pages/UpdateTx";
-import {useDispatch} from "react-redux";
 import {ellipsify} from "@src/util/address";
 import {toUnicode} from "@src/util/name";
 import Textarea from "@src/ui/components/Textarea";
 import {toBIND} from "@src/util/records";
+import ErrorMessage from "@src/ui/components/ErrorMessage";
+import Button, {ButtonType} from "@src/ui/components/Button";
+import {
+  RegularView,
+  RegularViewContent,
+  RegularViewFooter,
+  RegularViewHeader,
+} from "@src/ui/components/RegularView";
+import UpdateTx from "@src/ui/pages/UpdateTx";
+import "./confirm-tx.scss";
+
 const {Resource} = require("hsd/lib/dns/resource");
 
 const actionToTitle: {
@@ -104,7 +106,9 @@ export default function ConfirmTx(): ReactElement {
         <TxDetail hash={pendingTXHashes[currentIndex]} />
         <NetTotal hash={pendingTXHashes[currentIndex]} />
       </RegularViewContent>
-      {errorMessage && <small className="error-message">{errorMessage}</small>}
+
+      {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+
       <RegularViewFooter>
         <Button
           btnType={ButtonType.secondary}

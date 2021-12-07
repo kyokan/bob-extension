@@ -1,5 +1,5 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
-import {Redirect, Route, Switch, useHistory, useLocation} from "react-router";
+import {Redirect, Route, Switch, useHistory} from "react-router";
 import {useDispatch} from "react-redux";
 import semver from "semver";
 import {browser} from "webextension-polyfill-ts";
