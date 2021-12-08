@@ -917,11 +917,11 @@ function ConnectLedger(props: {
       await device.set({
         timeout: ONE_MINUTE,
       });
+
       const appVersion = await getAppVersion(device, network);
       console.log(
         `HNS Ledger app verison is ${appVersion}, minimum is ${LEDGER_MINIMUM_VERSION}`
       );
-
       if (!semver.gte(appVersion, LEDGER_MINIMUM_VERSION)) {
         setIsLoading(false);
         setIsCreating(false);

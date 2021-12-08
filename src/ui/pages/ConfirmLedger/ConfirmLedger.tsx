@@ -75,8 +75,10 @@ export default function ConfirmLedger(): ReactElement {
   useEffect(() => {
     if (ledgerErr !== "") {
       console.error("failed to connect to ledger", {ledgerErr});
+
       if (ledgerErr === "Device was not selected.")
         setErrorMessage("Could not connect to device.");
+
       setErrorMessage(`Error confirming on Ledger: ${ledgerErr}`);
     }
   }, [ledgerErr]);
@@ -84,6 +86,7 @@ export default function ConfirmLedger(): ReactElement {
   async function checkForLedgerDevices() {
     const devices: USBDevice[] = await Device.getDevices();
     const filtered = devices.filter((d) => d.vendorId === LEDGER_USB_VENDOR_ID);
+    
     if (filtered[0]) {
       setIsConnected(true);
       setIsUnlocked(true);
@@ -114,6 +117,7 @@ export default function ConfirmLedger(): ReactElement {
       <RegularViewHeader onClose={() => history.push("/")}>
         Confirm On Ledger
       </RegularViewHeader>
+
       <RegularViewContent>
         <DefaultConnectLedgerSteps
           completedSteps={[isConnected, isUnlocked, isHandshakeApp]}

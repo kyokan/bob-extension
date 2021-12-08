@@ -244,25 +244,29 @@ class WalletService extends GenericService {
     const wallet = await this.wdb.get(walletId);
     const data = await wallet.master.getJSON(this.network, true);
 
-    // should always be encrypted - seed cannot be revealed via the UI until
-    // the user has finished onboarding. checking here for completeness' sake
-    if (!data.encrypted) {
-      return data.key.mnemonic.phrase;
+    if (wallet.watchOnly) {
+      throw new Error("Cannot reveal seed phrase for watch-only wallet.");
+    } else {
+      // should always be encrypted - seed cannot be revealed via the UI until
+      // the user has finished onboarding. checking here for completeness' sake
+      if (!data.encrypted) {
+        return data.key.mnemonic.phrase;
+      }
+
+      const parsedData = {
+        encrypted: data.encrypted,
+        alg: data.algorithm,
+        iv: Buffer.from(data.iv, "hex"),
+        ciphertext: Buffer.from(data.ciphertext, "hex"),
+        n: data.n,
+        r: data.r,
+        p: data.p,
+      };
+
+      const mk = new MasterKey(parsedData);
+      await mk.unlock(passphrase, 100);
+      return mk.mnemonic.getPhrase();
     }
-
-    const parsedData = {
-      encrypted: data.encrypted,
-      alg: data.algorithm,
-      iv: Buffer.from(data.iv, "hex"),
-      ciphertext: Buffer.from(data.ciphertext, "hex"),
-      n: data.n,
-      r: data.r,
-      p: data.p,
-    };
-
-    const mk = new MasterKey(parsedData);
-    await mk.unlock(passphrase, 100);
-    return mk.mnemonic.getPhrase();
   };
 
   resetNames = async () => {
@@ -1094,7 +1098,7 @@ class WalletService extends GenericService {
         action,
       },
     });
-    
+
     if (wallet.watchOnly) {
       await pushMessage(ledgerConnectShow());
     } else {
@@ -1568,7 +1572,6 @@ class WalletService extends GenericService {
 
       if (!key) continue;
       if (key.branch === 1) {
-        // Need to fix this error.............................................
         if (options.change)
           throw new Error("Transaction should only have one change output.");
 
@@ -1628,7 +1631,7 @@ class WalletService extends GenericService {
         timeout: ONE_MINUTE,
       });
     } catch (e) {
-      await pushMessage(ledgerConnectErr("Device not connected."));
+      // await pushMessage(ledgerConnectErr("Device not connected."));
       throw new Error("Device not connected.");
     }
 
@@ -1653,7 +1656,7 @@ class WalletService extends GenericService {
       await pushMessage(ledgerConnectHide());
       const json = retMtx.getJSON(this.network);
       this.emit("txAccepted", json);
-      
+
       return json;
     } catch (e: any) {
       console.error("error:", e.message);
