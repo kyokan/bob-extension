@@ -42,12 +42,12 @@ export default function Onboarding(): ReactElement {
   const [seedphrase, setSeedphrase] = useState("");
   const [password, setPassword] = useState("");
   const [xpub, setXpub] = useState("");
-  const [isLedger, setIsLedger] = useState(false);
   const [optIn, setOptIn] = useState(false);
   const history = useHistory();
   const dispatch = useDispatch();
 
   const onCreateWallet = useCallback(async () => {
+    const isLedger = onboardingType === "connect"
     postMessage({
       type: MessageTypes.MP_TRACK,
       payload: {
@@ -70,7 +70,7 @@ export default function Onboarding(): ReactElement {
       })
     );
     history.push("/");
-  }, [walletName, seedphrase, password, optIn, onboardingType, isLedger, xpub]);
+  }, [walletName, seedphrase, password, optIn, onboardingType, xpub]);
 
   return (
     <div className="onboarding">
@@ -126,8 +126,6 @@ export default function Onboarding(): ReactElement {
         </Route>
         <Route path="/onboarding/connect-ledger">
           <ConnectLedger
-            walletName={walletName}
-            setIsLedger={setIsLedger}
             xpub={xpub}
             setXpub={setXpub}
             onCreateWallet={onCreateWallet}
@@ -832,13 +830,10 @@ function OptInAnalytics(props: {
 }
 
 function ConnectLedger(props: {
-  walletName: string;
-  setIsLedger: (isLedger: boolean) => void;
   setXpub: (xpub: string) => void;
   xpub: string;
   onCreateWallet: () => Promise<void>;
 }): ReactElement {
-  const {setIsLedger, setXpub, walletName} = props;
   const history = useHistory();
   const [isConnected, setIsConnected] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -847,11 +842,6 @@ function ConnectLedger(props: {
   const [isCreating, setIsCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
-
-  useEffect(() => {
-    setIsLedger(true);
-    console.log("walletName:", walletName);
-  }, []);
 
   useEffect(() => {
     postMessage({
@@ -865,23 +855,24 @@ function ConnectLedger(props: {
     });
   }, []);
 
-  async function checkForLedgerDevices() {
-    const devices: USBDevice[] = await Device.getDevices();
-    const filtered = devices.filter((d) => d.vendorId === LEDGER_USB_VENDOR_ID);
-    if (filtered[0]) {
-      setIsConnected(true);
-      setIsUnlocked(true);
-      setIsHandshakeApp(true);
-      console.log("Ledger connected");
-    } else {
-      setIsConnected(false);
-      setIsUnlocked(false);
-      setIsHandshakeApp(false);
-      console.log("Ledger disconnected");
-    }
-  }
-
   useEffect(() => {
+    async function checkForLedgerDevices() {
+      const devices: USBDevice[] = await Device.getDevices();
+      const filtered = devices.filter(
+        (d) => d.vendorId === LEDGER_USB_VENDOR_ID
+      );
+      if (filtered[0]) {
+        setIsConnected(true);
+        setIsUnlocked(true);
+        setIsHandshakeApp(true);
+        console.log("Ledger connected");
+      } else {
+        setIsConnected(false);
+        setIsUnlocked(false);
+        setIsHandshakeApp(false);
+        console.log("Ledger disconnected");
+      }
+    }
     checkForLedgerDevices();
 
     usb.addEventListener("connect", checkForLedgerDevices);
@@ -932,7 +923,7 @@ function ConnectLedger(props: {
       }
 
       const xpub = await getAccountXpub(device, network);
-      setXpub(xpub);
+      props.setXpub(xpub);
     } catch (e: any) {
       console.error(e);
       setIsLoading(false);

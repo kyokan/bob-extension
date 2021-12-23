@@ -52,7 +52,6 @@ export default function ConfirmLedger(): ReactElement {
         type: MessageTypes.USE_LEDGER_PROXY,
         payload: txJSON,
       });
-      await dispatch(fetchPendingTransactions());
     } catch (e: any) {
       setIsLoading(false);
       console.log("catch error:", e);

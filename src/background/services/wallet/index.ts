@@ -1650,6 +1650,8 @@ class WalletService extends GenericService {
       const retMtx = await ledger.signTransaction(mtx, options);
       retMtx.check();
 
+      // await this.wdb._addTX(tx, entry);
+
       await pushMessage(ledgerConfirmed(true));
       await this.removeTxFromQueue(txJSON);
       await this.exec("node", "sendRawTransaction", retMtx.toHex());
