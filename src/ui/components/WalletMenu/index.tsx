@@ -29,7 +29,7 @@ export default function WalletMenu(): ReactElement {
 
   useEffect(() => {
     (async function onAppHeaderMount() {
-      const walletsDetails = [];
+      const walletAddresses = [];
       for (const wallet of wallets) {
         const wid = wallet.wid;
         const response = await postMessage({
@@ -42,9 +42,9 @@ export default function WalletMenu(): ReactElement {
         if (wid === currentWallet) {
           setCurrentAddress(response);
         }
-        walletsDetails.push({address: response, watchOnly: wallet.watchOnly});
+        walletAddresses.push({address: response, watchOnly: wallet.watchOnly});
       }
-      setAddresses(walletsDetails);
+      setAddresses(walletAddresses);
     })();
   }, [walletIDs.join(","), currentWallet]);
 
