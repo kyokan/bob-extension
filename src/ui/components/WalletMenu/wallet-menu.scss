@@ -18,21 +18,32 @@
   &__menu {
     position: absolute;
     z-index: 200;
-    border-radius: .1875rem;
+    border-radius: 0.1875rem;
     top: 100%;
     right: 0;
     background-color: $white;
-    box-shadow: 0 2px 2px 1px rgba($black, .1);
+    box-shadow: 0 2px 2px 1px rgba($black, 0.1);
     width: 16rem;
 
     &__divider {
       border-top: 1px solid $border-gray;
     }
 
+    &__pill {
+      @extend%row-nowrap;
+      @extend%clickable;
+      background-color: rgba($black, 0.035);
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+      color: $primary-text;
+      margin-left: 0.5rem;
+      padding: 0.15rem 0.5rem;
+    }
+
     &__row {
       @extend %row-nowrap;
       align-items: center;
-      padding: .25rem .5rem;
+      padding: 0.25rem 0.5rem;
       cursor: pointer;
       transition: background-color 200ms ease-in-out;
 
@@ -46,17 +57,19 @@
         border: 1px solid transparent;
         width: 1.5rem;
         height: 1.5rem;
-        padding: .125rem;
+        padding: 0.125rem;
       }
 
       &__name {
         @extend %lite-font;
+        display: flex;
+        align-items: center;
         font-weight: 500;
         margin-left: 1rem;
       }
 
       &:hover {
-        background-color: rgba($black, .035);
+        background-color: rgba($black, 0.035);
       }
 
       &:active {

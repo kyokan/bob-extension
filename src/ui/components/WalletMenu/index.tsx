@@ -69,7 +69,10 @@ export default function WalletMenu(): ReactElement {
               >
                 <Identicon value={address.address} />
                 <div className="wallet-menu__menu__row__name">
-                  {walletIDs[i]} {address.watchOnly && "(Ledger)"}
+                  {walletIDs[i]}
+                  {address.watchOnly && (
+                    <div className="wallet-menu__menu__pill">Ledger</div>
+                  )}
                 </div>
               </div>
             );
