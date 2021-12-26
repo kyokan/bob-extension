@@ -67,6 +67,7 @@ declare interface WalletService {
   selectedID: string;
   locked: boolean;
   rescanning: boolean;
+  watchOnly: boolean;
   pollerTimeout?: any;
   _getTxNonce: number;
   _getNameNonce: number;
@@ -86,6 +87,7 @@ class WalletService extends GenericService {
     this.selectedID = "";
     this.locked = true;
     this.rescanning = false;
+    this.watchOnly = false;
     this.forceStopRescan = false;
     this._getTxNonce = 0;
     this._getNameNonce = 0;
@@ -120,6 +122,7 @@ class WalletService extends GenericService {
         time: tip.time,
       },
       rescanning: this.rescanning,
+      watchOnly: this.watchOnly,
     };
   };
 
@@ -188,6 +191,29 @@ class WalletService extends GenericService {
     }
 
     this.selectedID = id;
+  };
+
+  listWallets = async (includeUnencrypted = false, returnObjects = true) => {
+    const wallets = await this.wdb.getWallets();
+    const ret = [];
+
+    for (const wid of wallets) {
+      const info = await this.wdb.get(wid);
+      const {
+        master: {encrypted},
+        watchOnly,
+      } = info;
+      if (includeUnencrypted === true || encrypted || watchOnly) {
+        if (returnObjects) {
+          ret.push({wid, encrypted, watchOnly});
+        } else {
+          console.log("else")
+          ret.push(wid);
+        }
+      }
+    }
+
+    return ret;
   };
 
   getWalletIDs = async (): Promise<string[]> => {

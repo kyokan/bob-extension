@@ -224,6 +224,10 @@ const controllers: {
     return app.exec("wallet", "createWallet", message.payload);
   },
 
+  [MessageTypes.GET_WALLETS]: async (app, message) => {
+    return app.exec("wallet", "listWallets");
+  },
+
   [MessageTypes.GET_WALLET_IDS]: async (app, message) => {
     return app.exec("wallet", "getWalletIDs");
   },
@@ -234,6 +238,10 @@ const controllers: {
 
   [MessageTypes.GET_WALLET_BALANCE]: async (app, message) => {
     return app.exec("wallet", "getWalletBalance", message.payload);
+  },
+
+  [MessageTypes.GET_WALLET_INFO]: async (app, message) => {
+    return app.exec("wallet", "getWalletInfo", message.payload);
   },
 
   [MessageTypes.UNLOCK_WALLET]: async (app, message) => {

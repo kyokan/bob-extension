@@ -4,6 +4,7 @@ import Onboarding from "@src/ui/pages/Onboarding";
 import {useDispatch} from "react-redux";
 import {
   fetchWallets,
+  fetchWalletIDs,
   fetchWalletState,
   useInitialized,
   useWalletState,
@@ -47,6 +48,7 @@ export default function Popup(): ReactElement {
           },
         });
         await dispatch(fetchWallets());
+        await dispatch(fetchWalletIDs());
         await dispatch(fetchWalletState());
         await dispatch(fetchLatestBlock());
       } catch (e) {

@@ -82,24 +82,23 @@ export default function ConfirmLedger(): ReactElement {
     }
   }, [ledgerErr]);
 
-  async function checkForLedgerDevices() {
-    const devices: USBDevice[] = await Device.getDevices();
-    const filtered = devices.filter((d) => d.vendorId === LEDGER_USB_VENDOR_ID);
-    
-    if (filtered[0]) {
-      setIsConnected(true);
-      setIsUnlocked(true);
-      setIsHandshakeApp(true);
-      console.log("Ledger connected");
-    } else {
-      setIsConnected(false);
-      setIsUnlocked(false);
-      setIsHandshakeApp(false);
-      console.log("Ledger disconnected");
-    }
-  }
-
   useEffect(() => {
+    async function checkForLedgerDevices() {
+      const devices: USBDevice[] = await Device.getDevices();
+      const filtered = devices.filter((d) => d.vendorId === LEDGER_USB_VENDOR_ID);
+      
+      if (filtered[0]) {
+        setIsConnected(true);
+        setIsUnlocked(true);
+        setIsHandshakeApp(true);
+        console.log("Ledger connected");
+      } else {
+        setIsConnected(false);
+        setIsUnlocked(false);
+        setIsHandshakeApp(false);
+        console.log("Ledger disconnected");
+      }
+    }
     checkForLedgerDevices();
 
     usb.addEventListener("connect", checkForLedgerDevices);

@@ -8,6 +8,7 @@ import {ThunkDispatch} from "redux-thunk";
 
 export enum ActionType {
   SET_WALLET_IDS = "wallet/setWalletIDs",
+  SET_WALLETS = "wallet/setWallets",
   SET_WALLET_STATE = "wallet/setWalletState",
   SET_WALLET_BALANCE = "wallet/setWalletBalance",
 }
@@ -20,6 +21,11 @@ type Action = {
 };
 
 type State = {
+  wallets: {
+    wid: string;
+    encrypted: string;
+    watchOnly: boolean;
+  }[];
   walletIDs: string[];
   currentWallet: string;
   locked: boolean;
@@ -37,6 +43,7 @@ type State = {
 };
 
 const initialState: State = {
+  wallets: [],
   walletIDs: [],
   currentWallet: "",
   locked: true,
@@ -93,7 +100,7 @@ export const createWallet =
     }
 
     await new Promise((r) => setTimeout(r, 1000));
-    await dispatch(fetchWallets());
+    await dispatch(fetchWalletIDs());
     await dispatch(selectWallet(walletName));
     return;
   };
@@ -140,6 +147,14 @@ export const setWalletBalance = (balance: {
 };
 
 export const fetchWallets = () => async (dispatch: Dispatch) => {
+  const wallets = await postMessage({type: MessageTypes.GET_WALLETS});
+  dispatch({
+    type: ActionType.SET_WALLETS,
+    payload: wallets,
+  });
+};
+
+export const fetchWalletIDs = () => async (dispatch: Dispatch) => {
   const walletIDs = await postMessage({type: MessageTypes.GET_WALLET_IDS});
   dispatch({
     type: ActionType.SET_WALLET_IDS,
@@ -167,6 +182,11 @@ export default function wallet(state = initialState, action: Action): State {
           lockedUnconfirmed: action.payload.lockedUnconfirmed,
         },
       };
+    case ActionType.SET_WALLETS:
+      return {
+        ...state,
+        wallets: action.payload,
+      };
     case ActionType.SET_WALLET_IDS:
       return {
         ...state,
@@ -185,6 +205,12 @@ export default function wallet(state = initialState, action: Action): State {
       return state;
   }
 }
+
+export const useWallets = () => {
+  return useSelector((state: AppRootState) => {
+    return state.wallet.wallets;
+  }, deepEqual);
+};
 
 export const useWalletIDs = () => {
   return useSelector((state: AppRootState) => {
@@ -205,6 +231,7 @@ export const useWalletState = () => {
       locked: state.wallet.locked,
       tip: state.wallet.tip,
       rescanning: state.wallet.rescanning,
+      watchOnly: state.wallet.watchOnly,
     };
   }, deepEqual);
 };
