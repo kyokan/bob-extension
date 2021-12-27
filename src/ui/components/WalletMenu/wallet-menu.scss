@@ -32,10 +32,10 @@
     &__pill {
       @extend%row-nowrap;
       @extend%clickable;
-      background-color: rgba($black, 0.035);
+      background-color: rgba($black, 0.05);
       border-radius: 0.25rem;
       font-size: 0.6875rem;
-      color: $primary-text;
+      color: rgba($primary-text, 0.75);
       margin-left: 0.5rem;
       padding: 0.15rem 0.5rem;
     }
@@ -63,9 +63,11 @@
       &__name {
         @extend %lite-font;
         display: flex;
+        flex: 1;
         align-items: center;
+        justify-content: space-between;
         font-weight: 500;
-        margin-left: 1rem;
+        margin-left: 0.5rem;
       }
 
       &:hover {

@@ -5,7 +5,6 @@ import {
   selectWallet,
   useCurrentWallet,
   useWallets,
-  useWalletIDs,
   useWalletState,
 } from "@src/ui/ducks/wallet";
 import {useHistory} from "react-router";
@@ -17,7 +16,7 @@ import {useDispatch} from "react-redux";
 
 export default function WalletMenu(): ReactElement {
   const wallets = useWallets();
-  const walletIDs = wallets.map((wallet, idx) => wallet.wid);
+  const walletIDs = wallets.map((wallet) => wallet.wid);
   const history = useHistory();
   const dispatch = useDispatch();
   const {currentWallet, locked} = useWalletState();
