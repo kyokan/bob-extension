@@ -19,6 +19,7 @@ const bdb = require('bdb');
 const DB = require('bdb/lib/db');
 const layout = require('hsd/lib/wallet/layout').txdb;
 const {Resource} = require('hsd/lib/dns/resource');
+const blake2b = require('bcrypto/lib/blake2b');
 import {get, put} from '@src/util/db';
 import pushMessage from "@src/util/pushMessage";
 import {ActionType as WalletActionType, setWalletBalance} from "@src/ui/ducks/wallet";
@@ -36,6 +37,7 @@ const {types, typesByVal} = rules;
 
 const networkType = process.env.NETWORK_TYPE || 'main';
 const LOOKAHEAD = 100;
+const MAGIC_STRING = `handshake signed message:\n`;
 
 export default class WalletService extends GenericService {
   network: typeof Network;
@@ -87,7 +89,7 @@ export default class WalletService extends GenericService {
     await wallet.unlock(password, 60000);
     this.passphrase = password;
     this.locked = false;
-    await wallet.lock();
+  //  await wallet.lock();
     this.emit('unlocked', this.selectedID);
   };
 
@@ -1219,6 +1221,53 @@ export default class WalletService extends GenericService {
       return false;
     }
   };
+
+  signMessage = async(address: string, msg: string): Promise<string> => {
+    if(!address || !msg) {
+      throw new Error('Requires parameters address of type string and msg of type string.');
+    }
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+
+    const key = await wallet.getKey(Address.from(address));
+    if(!key)
+      throw new Error('Address not found.');
+
+    if(!wallet.master.key)
+      throw new Error('Wallet is locked');
+
+    const _msg = Buffer.from(MAGIC_STRING + msg, 'utf8');
+    const hash = blake2b.digest(_msg);
+
+    const sig = key.sign(hash);
+
+    return sig.toString('base64');
+  }
+
+  signMessageWithName = async (name: string, msg: string): Promise<string> => {
+    if (!name || !msg) {
+      throw new Error('Requires parameters name of type string and msg of type string.');
+    }
+    else if (!rules.verifyName(name)) {
+      throw new Error('Requires valid name per Handshake protocol rules.');
+    }
+
+
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+
+    const ns = await wallet.getNameStateByName(name);
+    if(!ns || !ns.owner)
+      throw new Error('Cannot find the name owner.');
+
+    const coin = await wallet.getCoin(ns.owner.hash, ns.owner.index);
+    if(!coin)
+      throw new Error('Cannot find the address of the name owner.');
+
+    const address = coin.address.toString(this.network);
+
+    return this.signMessage(address, msg);
+  }
 
   async shouldContinue() {
     if (this.forceStopRescan) {

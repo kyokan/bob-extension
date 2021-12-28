@@ -129,6 +129,50 @@ export default class NodeService extends GenericService {
     return name;
   }
 
+  async verifyMessage(msg: string, signature: string, address: string) {
+    if(!msg || !signature || !address) {
+      throw new Error('Required paremeters include msg as a string, signature as a string, and address as a string.');
+    }
+
+    const headers = await this.getHeaders();
+    const result = await this.fetch(null, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        method: 'verifymessage',
+        params: [address, signature, msg]
+      }),
+    });
+    if(result.error) {
+      throw new Error('Error when verifymessage');
+    }
+    else {
+      return result.result;
+    }
+  }
+
+  async verifyMessageWithName(msg: string, signature: string, name: string) {
+    if(!msg || !signature || !name) {
+      throw new Error('Required paremeters include msg as a string, signature as a string, and name as a string.');
+    }
+    if(!rules.verifyName(name))
+      throw new Error('Invalid name.');
+
+    const ni = await this.getNameInfo(name);
+    const ownerHash = ni.result.info.owner.hash;
+    const ownerIndex = ni.result.info.owner.index;
+
+    if(!ownerHash)
+      throw new Error('Could not find owner');
+
+    const address = await this.getCoin(ownerHash, ownerIndex);
+
+    if(!address)
+      throw new Error('Could not find owner');
+
+    return await this.verifyMessage(msg, signature, address.address);
+  }
+
   async getNameInfo(tld: string) {
     const headers = await this.getHeaders();
     return this.fetch(null, {

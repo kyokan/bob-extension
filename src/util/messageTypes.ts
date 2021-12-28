@@ -39,6 +39,8 @@ enum MessageTypes {
   UPDATE_TX_FROM_QUEUE = 'updateTxFromQueue',
   REMOVE_TX_FROM_QUEUE = 'removeTxFromQueue',
   REVEAL_SEED = 'reveal_seed',
+  SIGN_MESSAGE = 'signMessage',
+  SIGN_MESSAGE_WITH_NAME = 'signMessageWithName',
 
   // node
   GET_LATEST_BLOCK = 'get_latest_block',
@@ -46,6 +48,8 @@ enum MessageTypes {
   GET_NAME_BY_HASH = 'get_name_by_hash',
   HASH_NAME = 'hashName',
   ESTIMATE_SMART_FEE = 'estimate_smart_fee',
+  VERIFY_MESSAGE = 'verifyMessage',
+  VERIFY_MESSAGE_WITH_NAME = 'verifyMessageWithName',
 
   // settings
   GET_API = 'get_api',
