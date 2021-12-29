@@ -133,19 +133,6 @@ class WalletService extends GenericService {
     return wallet.getJSON(false, balance);
   };
 
-  getAccountInfo = async (id?: string) => {
-    const walletId = id || this.selectedID;
-    const wallet = await this.wdb.get(walletId);
-    if (!wallet) return null;
-
-    const account = await wallet.getAccount("default");
-    const balance = await wallet.getBalance(account.accountIndex);
-    return {
-      wid: walletId,
-      ...account.getJSON(balance),
-    };
-  };
-
   pushState = async () => {
     const walletState = await this.getState();
     await pushMessage({
@@ -193,21 +180,25 @@ class WalletService extends GenericService {
     this.selectedID = id;
   };
 
-  listWallets = async (includeUnencrypted = false, returnObjects = true) => {
+  getWalletIDs = async (): Promise<string[]> => {
+    return this.wdb.getWallets();
+  };
+
+  getWallets = async (includeUnencrypted = false, returnObjects = true) => {
     const wallets = await this.wdb.getWallets();
     const ret = [];
 
     for (const wid of wallets) {
       const info = await this.wdb.get(wid);
       const {
+        accountDepth,
         master: {encrypted},
         watchOnly,
       } = info;
       if (includeUnencrypted === true || encrypted || watchOnly) {
         if (returnObjects) {
-          ret.push({wid, encrypted, watchOnly});
+          ret.push({wid, accountDepth, encrypted, watchOnly});
         } else {
-          console.log("else")
           ret.push(wid);
         }
       }
@@ -216,8 +207,31 @@ class WalletService extends GenericService {
     return ret;
   };
 
-  getWalletIDs = async (): Promise<string[]> => {
-    return this.wdb.getWallets();
+  getWalletAccounts = async (walletId: string) => {
+    const wallet = await this.wdb.get(walletId || "primary");
+    const allAccounts = await wallet.getAccounts();
+    const accounts = [];
+
+    for (const accountId of allAccounts) {
+      const account = await this.getAccountInfo(accountId);
+      const {accountIndex, name, type, watchOnly, wid} = account;
+      accounts.push({accountIndex, name, type, watchOnly, wid});
+    }
+
+    return accounts;
+  };
+
+  getAccountInfo = async (accountName?: string, id?: string) => {
+    const walletId = id || this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    if (!wallet) return null;
+
+    const account = await wallet.getAccount(accountName || "default");
+    const balance = await wallet.getBalance(account.accountIndex);
+    return {
+      wid: walletId,
+      ...account.getJSON(balance),
+    };
   };
 
   getWalletReceiveAddress = async (
@@ -1572,6 +1586,7 @@ class WalletService extends GenericService {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const mtx = MTX.fromJSON(txJSON);
+    const latestBlockNow = await this.exec("node", "getLatestBlock");
 
     let res, extra;
     if (!Array.isArray(txJSON)) {
@@ -1639,7 +1654,8 @@ class WalletService extends GenericService {
           // We could try to just pass the name in from the functions that
           // call _ledgerProxy(), but that wouldn't work for send____All()
           const hash = output.covenant.items[0];
-          const name = await this.nodeService.getNameByHash(hash);
+          const nameByHash = await this.exec("node", "getNameByHash", hash);
+          const name = nameByHash.result;
 
           options.covenants.push(new LedgerCovenant({index, name}));
           break;
@@ -1676,9 +1692,10 @@ class WalletService extends GenericService {
       const retMtx = await ledger.signTransaction(mtx, options);
       retMtx.check();
 
-      // await this.wdb._addTX(tx, entry);
+      const txImmutable = retMtx.toTX();
 
       await pushMessage(ledgerConfirmed(true));
+      // await this.wdb._addTX(txImmutable, latestBlockNow);
       await this.removeTxFromQueue(txJSON);
       await this.exec("node", "sendRawTransaction", retMtx.toHex());
       await pushMessage(ledgerConnectHide());

@@ -4,6 +4,8 @@ enum MessageTypes {
   CREATE_NEW_WALLET = "create_new_wallet",
   GET_WALLET_STATE = "get_wallet_state",
   GET_WALLETS = "get_wallets",
+  GET_WALLET_ACCOUNTS = "get_wallet_accounts",
+  GET_ACCOUNT_INFO = "get_account_info",
   GET_WALLET_IDS = "get_wallet_ids",
   GET_WALLET_RECEIVE_ADDRESS = "get_wallet_receive_address",
   GET_WALLET_BALANCE = "get_wallet_balance",
@@ -43,7 +45,6 @@ enum MessageTypes {
   REVEAL_SEED = "reveal_seed",
   LEDGER_PROXY = "_ledgerProxy",
   USE_LEDGER_PROXY = "use_ledger_proxy",
-  GET_ACCOUNT_INFO = "get_account_info",
 
   // node
   GET_LATEST_BLOCK = "get_latest_block",

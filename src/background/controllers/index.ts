@@ -225,7 +225,20 @@ const controllers: {
   },
 
   [MessageTypes.GET_WALLETS]: async (app, message) => {
-    return app.exec("wallet", "listWallets");
+    return app.exec("wallet", "getWallets");
+  },
+
+  [MessageTypes.GET_WALLET_ACCOUNTS]: async (app, message) => {
+    return app.exec("wallet", "getWalletAccounts", message.payload);
+  },
+
+  [MessageTypes.GET_ACCOUNT_INFO]: async (app, message) => {
+    return app.exec(
+      "wallet",
+      "getAccountInfo",
+      message.payload?.accountName,
+      message.payload?.id
+      );
   },
 
   [MessageTypes.GET_WALLET_IDS]: async (app, message) => {

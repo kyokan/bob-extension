@@ -69,7 +69,7 @@ export default function DomainPage(): ReactElement {
             <Name name={name} slash />
           </div>
           <div className="domain-page__header__content__expiry">
-            {`Expired on ${expiry}`}
+            {`Expires on ${expiry}`}
           </div>
           <div className="domain-page__header__content__buttons">
             {!domain?.ownerCovenantType && <RedeemButton name={name} />}

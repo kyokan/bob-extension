@@ -11,6 +11,7 @@ export enum ActionType {
   SET_WALLETS = "wallet/setWallets",
   SET_WALLET_STATE = "wallet/setWalletState",
   SET_WALLET_BALANCE = "wallet/setWalletBalance",
+  SET_WALLET_ACCOUNTS = "wallet/setWalletAccounts",
 }
 
 type Action = {
@@ -23,11 +24,19 @@ type Action = {
 type State = {
   wallets: {
     wid: string;
+    accountDepth: number;
     encrypted: string;
     watchOnly: boolean;
   }[];
   walletIDs: string[];
   currentWallet: string;
+  walletAccounts: {
+    accountIndex: number;
+    name: string;
+    type: string;
+    watchOnly: boolean;
+    wid: string;
+  }[];
   locked: boolean;
   rescanning: boolean;
   watchOnly: boolean;
@@ -46,6 +55,7 @@ const initialState: State = {
   wallets: [],
   walletIDs: [],
   currentWallet: "",
+  walletAccounts: [],
   locked: true,
   rescanning: false,
   watchOnly: false,
@@ -67,13 +77,16 @@ export const createWallet =
     password: string;
     optIn: boolean;
     isLedger: boolean;
-    xpub: string | null;
+    xpub: string;
   }) =>
   async (dispatch: ThunkDispatch<AppRootState, any, Action>) => {
     const {walletName, seedphrase, password, optIn, isLedger, xpub} = opt;
     if (!walletName) throw new Error("Wallet name cannot be empty.");
     if (!seedphrase && !isLedger) throw new Error("Invalid seedphrase.");
     if (!password) throw new Error("Password cannot be empty.");
+    if (isLedger && !xpub) throw new Error("xpub empty.");
+
+    console.log("duck xPub:", xpub);
 
     if (isLedger) {
       await postMessage({
@@ -154,6 +167,18 @@ export const fetchWallets = () => async (dispatch: Dispatch) => {
   });
 };
 
+export const fetchWalletAccounts =
+  (walletId: string) => async (dispatch: Dispatch) => {
+    const accounts = await postMessage({
+      type: MessageTypes.GET_WALLET_ACCOUNTS,
+      payload: walletId,
+    });
+    dispatch({
+      type: ActionType.SET_WALLET_ACCOUNTS,
+      payload: accounts,
+    });
+  };
+
 export const fetchWalletIDs = () => async (dispatch: Dispatch) => {
   const walletIDs = await postMessage({type: MessageTypes.GET_WALLET_IDS});
   dispatch({
@@ -170,6 +195,7 @@ export const selectWallet =
       payload: id,
     });
     await dispatch(fetchWalletState());
+    await dispatch(fetchWalletAccounts(id));
   };
 
 export default function wallet(state = initialState, action: Action): State {
@@ -200,6 +226,11 @@ export default function wallet(state = initialState, action: Action): State {
         tip: action.payload.tip,
         rescanning: action.payload.rescanning,
         watchOnly: action.payload.watchOnly,
+      };
+    case ActionType.SET_WALLET_ACCOUNTS:
+      return {
+        ...state,
+        walletAccounts: action.payload,
       };
     default:
       return state;
@@ -233,6 +264,12 @@ export const useWalletState = () => {
       rescanning: state.wallet.rescanning,
       watchOnly: state.wallet.watchOnly,
     };
+  }, deepEqual);
+};
+
+export const useWalletAccounts = () => {
+  return useSelector((state: AppRootState) => {
+    return state.wallet.walletAccounts;
   }, deepEqual);
 };
 

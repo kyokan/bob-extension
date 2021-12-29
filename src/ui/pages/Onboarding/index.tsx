@@ -5,7 +5,11 @@ import semver from "semver";
 import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
-import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
+import wallet, {
+  createWallet,
+  useInitialized,
+  useWalletIDs,
+} from "@src/ui/ducks/wallet";
 import TermsOfUse from "@src/ui/pages/Onboarding/Terms";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import Checkbox from "@src/ui/components/Checkbox";
@@ -46,8 +50,12 @@ export default function Onboarding(): ReactElement {
   const history = useHistory();
   const dispatch = useDispatch();
 
+  useEffect(() => {
+    console.log("xpub:", xpub)
+  }, [xpub]);
+
   const onCreateWallet = useCallback(async () => {
-    const isLedger = onboardingType === "connect"
+    const isLedger = onboardingType === "connect";
     postMessage({
       type: MessageTypes.MP_TRACK,
       payload: {
@@ -830,16 +838,16 @@ function OptInAnalytics(props: {
 }
 
 function ConnectLedger(props: {
-  setXpub: (xpub: string) => void;
   xpub: string;
+  setXpub: (xpub: string) => void;
   onCreateWallet: () => Promise<void>;
 }): ReactElement {
+  const {onCreateWallet, setXpub, xpub} = props;
   const history = useHistory();
   const [isConnected, setIsConnected] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isHandshakeApp, setIsHandshakeApp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
 
@@ -884,15 +892,14 @@ function ConnectLedger(props: {
     };
   }, []);
 
-  const onCreateWallet = useCallback(async () => {
-    setIsLoading(true);
+  const createWallet = useCallback(async () => {
+    setErrorMessage("");
     try {
-      await props.onCreateWallet();
+      await onCreateWallet();
     } catch (e: any) {
       setErrorMessage(e.message);
     }
-    setIsLoading(false);
-  }, [props.onCreateWallet]);
+  }, [onCreateWallet]);
 
   const onConnectLedger = useCallback(async () => {
     setIsLoading(true);
@@ -915,7 +922,6 @@ function ConnectLedger(props: {
       );
       if (!semver.gte(appVersion, LEDGER_MINIMUM_VERSION)) {
         setIsLoading(false);
-        setIsCreating(false);
         setErrorMessage(
           `Ledger app version ${LEDGER_MINIMUM_VERSION} is required. (${appVersion} installed)`
         );
@@ -923,23 +929,22 @@ function ConnectLedger(props: {
       }
 
       const xpub = await getAccountXpub(device, network);
-      props.setXpub(xpub);
+      setXpub(xpub);
     } catch (e: any) {
       console.error(e);
       setIsLoading(false);
-      setIsCreating(false);
       setErrorMessage(`Error connecting to device. ${e.message}`);
       return;
     }
 
     setIsLoading(false);
-    setIsCreating(true);
 
     // set a small timeout to clearly show that this is
     // a two-phase process.
-    setTimeout(async () => {
-      onCreateWallet();
-    }, 2000);
+    
+    // setTimeout(async () => {
+    //   createWallet();
+    // }, 2000);
   }, []);
 
   return (

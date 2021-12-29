@@ -8,6 +8,7 @@ import {
   fetchWalletState,
   useInitialized,
   useWalletState,
+  fetchWalletAccounts,
 } from "@src/ui/ducks/wallet";
 import {useLedgerConnect} from "@src/ui/ducks/ledger";
 import AppHeader from "@src/ui/components/AppHeader";
@@ -50,6 +51,7 @@ export default function Popup(): ReactElement {
         await dispatch(fetchWallets());
         await dispatch(fetchWalletIDs());
         await dispatch(fetchWalletState());
+        await dispatch(fetchWalletAccounts(currentWallet));
         await dispatch(fetchLatestBlock());
       } catch (e) {
         console.error(e);
