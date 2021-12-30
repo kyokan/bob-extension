@@ -224,8 +224,17 @@ const controllers: {
     return app.exec("wallet", "createWallet", message.payload);
   },
 
-  [MessageTypes.GET_WALLETS]: async (app, message) => {
-    return app.exec("wallet", "getWallets");
+  [MessageTypes.CREATE_NEW_WALLET_ACCOUNT]: async (app, message) => {
+    return app.exec(
+      "wallet",
+      "createWalletAccount",
+      message.payload.options,
+      message.payload.walletId
+    );
+  },
+
+  [MessageTypes.GET_WALLETS_INFO]: async (app, message) => {
+    return app.exec("wallet", "getWalletsInfo");
   },
 
   [MessageTypes.GET_WALLET_ACCOUNTS]: async (app, message) => {
@@ -238,7 +247,7 @@ const controllers: {
       "getAccountInfo",
       message.payload?.accountName,
       message.payload?.id
-      );
+    );
   },
 
   [MessageTypes.GET_WALLET_IDS]: async (app, message) => {

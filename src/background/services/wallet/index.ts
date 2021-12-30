@@ -184,9 +184,9 @@ class WalletService extends GenericService {
     return this.wdb.getWallets();
   };
 
-  getWallets = async (includeUnencrypted = false, returnObjects = true) => {
+  getWalletsInfo = async () => {
     const wallets = await this.wdb.getWallets();
-    const ret = [];
+    const walletsInfo = [];
 
     for (const wid of wallets) {
       const info = await this.wdb.get(wid);
@@ -195,25 +195,19 @@ class WalletService extends GenericService {
         master: {encrypted},
         watchOnly,
       } = info;
-      if (includeUnencrypted === true || encrypted || watchOnly) {
-        if (returnObjects) {
-          ret.push({wid, accountDepth, encrypted, watchOnly});
-        } else {
-          ret.push(wid);
-        }
-      }
+      walletsInfo.push({wid, accountDepth, encrypted, watchOnly});
     }
 
-    return ret;
+    return walletsInfo;
   };
 
-  getWalletAccounts = async (walletId: string) => {
-    const wallet = await this.wdb.get(walletId || "primary");
-    const allAccounts = await wallet.getAccounts();
+  getWalletAccounts = async (id?: string) => {
+    const wallet = await this.wdb.get(id || "primary");
+    const walletAccounts = await wallet.getAccounts();
     const accounts = [];
 
-    for (const accountId of allAccounts) {
-      const account = await this.getAccountInfo(accountId);
+    for (const accountName of walletAccounts) {
+      const account = await this.getAccountInfo(accountName);
       const {accountIndex, name, type, watchOnly, wid} = account;
       accounts.push({accountIndex, name, type, watchOnly, wid});
     }
@@ -573,6 +567,26 @@ class WalletService extends GenericService {
     await this.selectWallet(options.id);
     await this.unlockWallet(options.passphrase);
     return wallet.getJSON(false, balance);
+  };
+
+  createWalletAccount = async (
+    options: {name: string; passphrase: string; type: string},
+    walletId: string
+  ) => {
+    const {name, passphrase} = options;
+    const wallet = await this.wdb.get(walletId || "primary");
+    
+    if (!wallet) return null;
+
+    const result = await wallet.createAccount(options, passphrase);
+    console.log(result);
+    // await this.selectAccount(name);
+    // const account = await wallet.getAccount(name || "default");
+    const balance = await wallet.getBalance(result.accountIndex);
+    return {
+      wid: walletId,
+      ...result.getJSON(balance),
+    };
   };
 
   createReveal = async (opts: {name: string; rate?: number}) => {

@@ -23,20 +23,21 @@ type Action = {
 
 type State = {
   wallets: {
-    wid: string;
     accountDepth: number;
     encrypted: string;
     watchOnly: boolean;
+    wid: string;
   }[];
   walletIDs: string[];
   currentWallet: string;
-  walletAccounts: {
+  accounts: {
     accountIndex: number;
     name: string;
     type: string;
     watchOnly: boolean;
     wid: string;
   }[];
+  currentAccount: string;
   locked: boolean;
   rescanning: boolean;
   watchOnly: boolean;
@@ -55,7 +56,8 @@ const initialState: State = {
   wallets: [],
   walletIDs: [],
   currentWallet: "",
-  walletAccounts: [],
+  accounts: [],
+  currentAccount: "",
   locked: true,
   rescanning: false,
   watchOnly: false,
@@ -160,7 +162,7 @@ export const setWalletBalance = (balance: {
 };
 
 export const fetchWallets = () => async (dispatch: Dispatch) => {
-  const wallets = await postMessage({type: MessageTypes.GET_WALLETS});
+  const wallets = await postMessage({type: MessageTypes.GET_WALLETS_INFO});
   dispatch({
     type: ActionType.SET_WALLETS,
     payload: wallets,
@@ -230,7 +232,7 @@ export default function wallet(state = initialState, action: Action): State {
     case ActionType.SET_WALLET_ACCOUNTS:
       return {
         ...state,
-        walletAccounts: action.payload,
+        accounts: action.payload,
       };
     default:
       return state;
@@ -269,7 +271,7 @@ export const useWalletState = () => {
 
 export const useWalletAccounts = () => {
   return useSelector((state: AppRootState) => {
-    return state.wallet.walletAccounts;
+    return state.wallet.accounts;
   }, deepEqual);
 };
 

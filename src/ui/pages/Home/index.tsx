@@ -57,6 +57,21 @@ export default function Home(): ReactElement {
   const pageElement = useRef<HTMLDivElement>(null);
   const [fixHeader, setFixHeader] = useState(false);
 
+  const onCreateAccount = async () => {
+    const result = await postMessage({
+      type: MessageTypes.CREATE_NEW_WALLET_ACCOUNT,
+      payload: {
+        options: {
+          name: "testAccountB",
+          passphrase: "WhoAmEye137",
+          type: "pubkeyhash",
+        },
+        walletId: "testWallet",
+      },
+    });
+    console.log("create account:", result);
+  };
+
   useEffect(() => {
     return () => {
       (async function onHomeUnmount() {
@@ -135,6 +150,9 @@ export default function Home(): ReactElement {
         <SendButton />
         <ReceiveButton />
         <RevealButton />
+      </div>
+      <div>
+        <button onClick={onCreateAccount}>create account</button>
       </div>
       <div className="home__list" ref={listElement}>
         <div className="home__list__header">
