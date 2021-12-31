@@ -62,11 +62,11 @@ export default function Home(): ReactElement {
       type: MessageTypes.CREATE_NEW_WALLET_ACCOUNT,
       payload: {
         options: {
-          name: "testAccountB",
-          passphrase: "WhoAmEye137",
+          name: "testAccountA",
+          passphrase: "testcreate",
           type: "pubkeyhash",
         },
-        walletId: "testWallet",
+        walletId: "testcreate",
       },
     });
     console.log("create account:", result);

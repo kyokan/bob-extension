@@ -62,7 +62,7 @@ export default function WalletMenu(): ReactElement {
           {addresses.map((address, i) => {
             return (
               <div
-                key={address.address}
+                key={i}
                 className="wallet-menu__menu__row"
                 onClick={() => onSelectWallet(walletIDs[i])}
               >

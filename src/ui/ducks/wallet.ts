@@ -79,16 +79,17 @@ export const createWallet =
     password: string;
     optIn: boolean;
     isLedger: boolean;
-    xpub: string;
+    xpub: string | undefined;
   }) =>
   async (dispatch: ThunkDispatch<AppRootState, any, Action>) => {
     const {walletName, seedphrase, password, optIn, isLedger, xpub} = opt;
     if (!walletName) throw new Error("Wallet name cannot be empty.");
     if (!seedphrase && !isLedger) throw new Error("Invalid seedphrase.");
     if (!password) throw new Error("Password cannot be empty.");
-    if (isLedger && !xpub) throw new Error("xpub empty.");
 
-    console.log("duck xPub:", xpub);
+    // console.log("duck walletName:", walletName);
+    // console.log("duck isLedger:", isLedger);
+    // console.log("duck xPub:", xpub);
 
     if (isLedger) {
       await postMessage({

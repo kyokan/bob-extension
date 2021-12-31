@@ -5,11 +5,7 @@ import semver from "semver";
 import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
-import wallet, {
-  createWallet,
-  useInitialized,
-  useWalletIDs,
-} from "@src/ui/ducks/wallet";
+import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
 import TermsOfUse from "@src/ui/pages/Onboarding/Terms";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import Checkbox from "@src/ui/components/Checkbox";
@@ -45,17 +41,23 @@ export default function Onboarding(): ReactElement {
   const [walletName, setWalletName] = useState("");
   const [seedphrase, setSeedphrase] = useState("");
   const [password, setPassword] = useState("");
-  const [xpub, setXpub] = useState("");
+  // const [xpub, setXpub] = useState("");
+  const [isLedger, setIsLedger] = useState(false);
   const [optIn, setOptIn] = useState(false);
   const history = useHistory();
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    console.log("xpub:", xpub)
-  }, [xpub]);
+  // useEffect(() => {
+  //   console.log("onb xpub:", xpub);
+  //   console.log("onb isLedger:", isLedger);
+  // }, [xpub, isLedger]);
 
-  const onCreateWallet = useCallback(async () => {
-    const isLedger = onboardingType === "connect";
+  const onCreateWallet = useCallback(async (xpub?: string) => {
+    // console.log("create isLedger:", isLedger);
+    // console.log("create xPub:", xpub);
+    // console.log("create optIn:", optIn);
+    // console.log("create password:", password);
+    // console.log("create walletName:", walletName);
     postMessage({
       type: MessageTypes.MP_TRACK,
       payload: {
@@ -78,7 +80,7 @@ export default function Onboarding(): ReactElement {
       })
     );
     history.push("/");
-  }, [walletName, seedphrase, password, optIn, onboardingType, xpub]);
+  }, [walletName, seedphrase, password, optIn, onboardingType, isLedger]);
 
   return (
     <div className="onboarding">
@@ -134,8 +136,10 @@ export default function Onboarding(): ReactElement {
         </Route>
         <Route path="/onboarding/connect-ledger">
           <ConnectLedger
-            xpub={xpub}
-            setXpub={setXpub}
+            isLedger={isLedger}
+            setIsLedger={setIsLedger}
+            // xpub={xpub}
+            // setXpub={setXpub}
             onCreateWallet={onCreateWallet}
           />
         </Route>
@@ -217,7 +221,7 @@ function Welcome(props: {}): ReactElement {
             });
           }}
         >
-          Connect Ledger
+          Connect ledger
         </Button>
       </OnboardingModalFooter>
     </OnboardingModal>
@@ -838,11 +842,13 @@ function OptInAnalytics(props: {
 }
 
 function ConnectLedger(props: {
-  xpub: string;
-  setXpub: (xpub: string) => void;
-  onCreateWallet: () => Promise<void>;
+  isLedger: boolean;
+  setIsLedger: (isLedger: boolean) => void;
+  // xpub: string;
+  // setXpub: (xpub: string) => void;
+  onCreateWallet: (xpub: string) => Promise<void>;
 }): ReactElement {
-  const {onCreateWallet, setXpub, xpub} = props;
+  const {onCreateWallet, setIsLedger, isLedger} = props;
   const history = useHistory();
   const [isConnected, setIsConnected] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -850,6 +856,10 @@ function ConnectLedger(props: {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const initialized = useInitialized();
+
+  useEffect(() => {
+    setIsLedger(true);
+  }, []);
 
   useEffect(() => {
     postMessage({
@@ -892,14 +902,14 @@ function ConnectLedger(props: {
     };
   }, []);
 
-  const createWallet = useCallback(async () => {
-    setErrorMessage("");
-    try {
-      await onCreateWallet();
-    } catch (e: any) {
-      setErrorMessage(e.message);
-    }
-  }, [onCreateWallet]);
+  // const createWallet = useCallback(async () => {
+  //   setErrorMessage("");
+  //   try {
+  //     await onCreateWallet();
+  //   } catch (e: any) {
+  //     setErrorMessage(e.message);
+  //   }
+  // }, [onCreateWallet]);
 
   const onConnectLedger = useCallback(async () => {
     setIsLoading(true);
@@ -929,7 +939,7 @@ function ConnectLedger(props: {
       }
 
       const xpub = await getAccountXpub(device, network);
-      setXpub(xpub);
+      await onCreateWallet(xpub)
     } catch (e: any) {
       console.error(e);
       setIsLoading(false);
@@ -941,11 +951,11 @@ function ConnectLedger(props: {
 
     // set a small timeout to clearly show that this is
     // a two-phase process.
-    
+
     // setTimeout(async () => {
-    //   createWallet();
+    //   createWallet()
     // }, 2000);
-  }, []);
+  }, [isLedger, onCreateWallet]);
 
   return (
     <OnboardingModal>
