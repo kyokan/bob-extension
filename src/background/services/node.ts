@@ -3,11 +3,15 @@ const bdb = require('bdb');
 const DB = require('bdb/lib/db');
 const rules = require("hsd/lib/covenants/rules");
 import {get, put} from '@src/util/db';
+const {states,statesByVal} = require('hsd/lib/covenants/namestate');
+const Network = require("hsd/lib/protocol/network");
+const networkType = process.env.NETWORK_TYPE || 'main';
 
 const NAME_CACHE: string[] = [];
 const NAME_MAP: { [hash: string]: string } = {};
 export default class NodeService extends GenericService {
   store: typeof DB;
+  network: typeof Network;
 
   async getHeaders(): Promise<any> {
     const { apiHost, apiKey } = await this.exec('setting', 'getAPI');
@@ -161,9 +165,12 @@ export default class NodeService extends GenericService {
     const ni = await this.getNameInfo(name);
     const ownerHash = ni.result.info.owner.hash;
     const ownerIndex = ni.result.info.owner.index;
+    const state = ni.result.info.state;
 
     if(!ownerHash)
       throw new Error('Could not find owner');
+    else if(state!==statesByVal[states.CLOSED])
+      throw new Error('Invalid name state.');
 
     const address = await this.getCoin(ownerHash, ownerIndex);
 
@@ -269,6 +276,7 @@ export default class NodeService extends GenericService {
   async start() {
     this.store = bdb.create('/node-store');
     await this.store.open();
+    this.network = Network.get(networkType);
   }
 
   async stop() {
