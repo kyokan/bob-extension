@@ -23,8 +23,14 @@
   @extend %row-nowrap;
   align-items: center;
   border-bottom: 1px solid $border-gray;
-  padding: 1rem 1.25rem;
-  @extend %clickable;
+  padding: $gutter;
+
+  &--clickable {
+    &:hover {
+      @extend %clickable;
+      background-color: $lightgray;
+    }
+  }
 
   &__l {
     flex: 1 1 auto;
@@ -34,22 +40,27 @@
     @extend %h3-font;
     color: $primary-text;
     font-weight: 400;
-    margin-bottom: 1rem;
+    margin-bottom: 0.35rem;
+  }
+
+  &__row {
+    @extend %row-nowrap;
+    justify-content: space-between;
   }
 
   &__children {
-    @extend %col-nowrap;
-    margin-top: .5rem;
+    @extend %row-nowrap;
+    margin-right: 0.5rem;
+    width: 100%;
   }
 
   &__actions {
     @extend %row-nowrap;
-    margin-top: .5rem;
     justify-content: flex-end;
 
     .button {
       height: auto;
-      padding: .25rem .75rem;
+      padding: 0.25rem 0.75rem;
 
       .loader {
         height: 1.1875rem !important;
@@ -81,7 +92,8 @@
 }
 
 .reveal-seed {
-  p, small {
+  p,
+  small {
     text-align: center;
   }
 
@@ -105,8 +117,10 @@
   }
 }
 
-.analytics {
+.analytics,
+.network {
   &__toggle {
     align-self: flex-end;
+    margin-top: 0.5rem;
   }
 }

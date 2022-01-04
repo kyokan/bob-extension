@@ -8,7 +8,7 @@
   border: none;
   width: 100%;
   color: $primary-text;
-  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  font-family: "Work Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
   resize: none;
 
   &::placeholder {
@@ -38,7 +38,7 @@
 
   &__group {
     @extend %row-nowrap;
-    background-color: rgba($black, .025);
+    background-color: rgba($black, .05);
     border-bottom: 1px solid transparent;
     border-radius: .125rem;
 

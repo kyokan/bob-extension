@@ -22,9 +22,9 @@ select {
   padding: .375rem .5rem;
   cursor: pointer;
   outline: none;
-  background-color: rgba($black, .025);
+  background-color: $lightgray;
   color: $primary-text;
-  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  font-family: "Work Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
   border: 1px solid transparent;
   border-radius: .125rem;
 
@@ -32,8 +32,4 @@ select {
     background-color: rgba($black, .035);
     border: 1px solid $primary-blue;
   }
-}
-
-option {
-
 }

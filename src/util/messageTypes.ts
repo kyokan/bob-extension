@@ -53,6 +53,8 @@ enum MessageTypes {
   SET_RPC_KEY = 'set_rpc_key',
   GET_ANALYTICS = 'getAnalytics',
   SET_ANALYTICS = 'setAnalytics',
+  SET_RESOLVER = 'setResolver',
+  GET_RESOLVER = 'getResolver',
 
   // analytics
   MP_TRACK = 'mp_track',
