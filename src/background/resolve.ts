@@ -27,8 +27,10 @@ export default function resolve(details: OnBeforeRequestDetailsType) {
     ? hostname.split('.')[hostname.split('.').length - 1]
     : hostname;
 
+  const IP_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
   // @ts-ignore
-  if (normalTLDs[tld]) {
+  if (normalTLDs[tld] || IP_REGEX.test(hostname)) {
     return;
   }
 
