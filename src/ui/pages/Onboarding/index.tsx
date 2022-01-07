@@ -670,7 +670,7 @@ function OptInAnalytics(props: {
     setLoading(true);
     try {
       await props.onCreateWallet();
-    } catch (e) {
+    } catch (e: any) {
       setErrorMessage(e.message);
     }
     setLoading(false);

@@ -18,7 +18,7 @@ import resolve from "@src/background/resolve";
     try {
       const res = await handleMessage(app, request);
       return [null, res];
-    } catch (e) {
+    } catch (e: any) {
       return [e.message, null];
     }
   });
@@ -37,7 +37,7 @@ import resolve from "@src/background/resolve";
     {urls: ["<all_urls>"]},
     ["blocking"]
   );
-  
+
   app.on("wallet.locked", async () => {
     const tabs = await browser.tabs.query({active: true});
     for (let tab of tabs) {

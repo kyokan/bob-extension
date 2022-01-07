@@ -55,7 +55,7 @@ export default function RepairBidModal(props: Props): ReactElement {
       } else {
         setError('Invalid bid value');
       }
-    } catch (e) {
+    } catch (e: any) {
       setError(e.message);
     }
   }, [bid, bidValue, dispatch]);

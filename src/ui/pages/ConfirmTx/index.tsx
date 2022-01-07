@@ -59,7 +59,7 @@ export default function ConfirmTx(): ReactElement {
         payload: {txJSON},
       });
       await dispatch(fetchPendingTransactions());
-    } catch (e) {
+    } catch (e: any) {
       setErrorMessage(e.message);
     }
 
