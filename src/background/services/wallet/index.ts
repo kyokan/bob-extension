@@ -89,7 +89,7 @@ export default class WalletService extends GenericService {
     await wallet.unlock(password, 60000);
     this.passphrase = password;
     this.locked = false;
-  //  await wallet.lock();
+    await wallet.lock();
     this.emit('unlocked', this.selectedID);
   };
 
@@ -1226,48 +1226,66 @@ export default class WalletService extends GenericService {
     if(!address || !msg) {
       throw new Error('Requires parameters address of type string and msg of type string.');
     }
+
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
 
-    const key = await wallet.getKey(Address.from(address));
-    if(!key)
-      throw new Error('Address not found.');
+    try {
+      await wallet.unlock(this.passphrase, 60000);
+      const key = await wallet.getKey(Address.from(address));
 
-    if(!wallet.master.key)
-      throw new Error('Wallet is locked');
+      if(!key) {
+        throw new Error('Address not found.');
+      }
 
-    const _msg = Buffer.from(MAGIC_STRING + msg, 'utf8');
-    const hash = blake2b.digest(_msg);
+      if(!wallet.master.key) {
+        throw new Error('Wallet is locked');
+      }
 
-    const sig = key.sign(hash);
+      const _msg = Buffer.from(MAGIC_STRING + msg, 'utf8');
+      const hash = blake2b.digest(_msg);
 
-    return sig.toString('base64');
-  }
+      const sig = key.sign(hash);
+
+      return sig.toString('base64');
+    } finally {
+      await wallet.lock();
+    }
+
+  };
 
   signMessageWithName = async (name: string, msg: string): Promise<string> => {
     if (!name || !msg) {
       throw new Error('Requires parameters name of type string and msg of type string.');
-    }
-    else if (!rules.verifyName(name)) {
+    } else if (!rules.verifyName(name)) {
       throw new Error('Requires valid name per Handshake protocol rules.');
     }
-
 
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
 
-    const ns = await wallet.getNameStateByName(name);
-    if(!ns || !ns.owner)
-      throw new Error('Cannot find the name owner.');
+    try {
+      await wallet.unlock(this.passphrase, 60000);
 
-    const coin = await wallet.getCoin(ns.owner.hash, ns.owner.index);
-    if(!coin)
-      throw new Error('Cannot find the address of the name owner.');
+      const ns = await wallet.getNameStateByName(name);
 
-    const address = coin.address.toString(this.network);
+      if(!ns || !ns.owner) {
+        throw new Error('Cannot find the name owner.');
+      }
 
-    return this.signMessage(address, msg);
-  }
+      const coin = await wallet.getCoin(ns.owner.hash, ns.owner.index);
+
+      if(!coin) {
+        throw new Error('Cannot find the address of the name owner.');
+      }
+
+      const address = coin.address.toString(this.network);
+
+      return this.signMessage(address, msg);
+    } finally {
+      await wallet.lock();
+    }
+  };
 
   async shouldContinue() {
     if (this.forceStopRescan) {
