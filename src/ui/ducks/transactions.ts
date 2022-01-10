@@ -26,7 +26,7 @@ type State = {
   pending: string[];
   order: string[];
   map: {
-    [txHash: string]: Transaction;
+    [txHash: string]: Transaction|SignMessageRequest;
   };
   offset: number;
   fetching: boolean;
@@ -40,7 +40,24 @@ const initialState: State = {
   fetching: false,
 };
 
+export const SIGN_MESSAGE_METHOD = 'SIGN_MESSAGE';
+export const SIGN_MESSAGE_WITH_NAME_METHOD = 'SIGN_MESSAGE_WITH_NAME';
+
+export type SignMessageRequest = {
+  hash: string;
+  method: 'SIGN_MESSAGE' | 'SIGN_MESSAGE_WITH_NAME';
+  walletId: string;
+  data: {
+    name?: string;
+    address?: string;
+    message: string
+  };
+  bid: undefined;
+  height: 0;
+}
+
 export type Transaction = {
+  method: undefined;
   block: string;
   confirmations: number;
   date: Date;
@@ -260,7 +277,7 @@ export const useTXFetching = (): boolean => {
   }, deepEqual)
 };
 
-export const useTXByHash = (hash: string): Transaction | undefined => {
+export const useTXByHash = (hash: string): Transaction | SignMessageRequest | undefined => {
   return useSelector((state: AppRootState) => {
     return state.transactions.map[hash];
   }, deepEqual)

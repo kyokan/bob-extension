@@ -1,6 +1,7 @@
-import {Transaction} from "@src/ui/ducks/transactions";
+import {SignMessageRequest, Transaction} from "@src/ui/ducks/transactions";
 
-export function getTXValue(tx: Transaction): number {
+export function getTXValue(tx: Transaction|SignMessageRequest): number {
+  if (tx.method) return -1;
   // Look for covenants. A TX with multiple covenant types is not supported
   let covAction = null;
   let covValue = 0;
@@ -79,7 +80,11 @@ export function getTXValue(tx: Transaction): number {
   return outputValue - inputValue + tx.fee;
 }
 
-export function getTXAction(tx: Transaction): string {
+export function getTXAction(tx: Transaction|SignMessageRequest): string {
+  if (tx.method) {
+    return tx.method;
+  }
+
   // Look for covenants. A TX with multiple covenant types is not supported
   let covAction = null;
   let covValue = 0;
@@ -153,7 +158,9 @@ export function getTXAction(tx: Transaction): string {
 }
 
 
-export function getBidBlind(tx: Transaction): string | undefined {
+export function getBidBlind(tx: Transaction|SignMessageRequest): string | undefined {
+  if (tx.method) return;
+
   for (let i = 0; i < tx.outputs.length; i++) {
     const output = tx.outputs[i];
 
@@ -170,7 +177,9 @@ export function getBidBlind(tx: Transaction): string | undefined {
   }
 }
 
-export function getBidValue(tx: Transaction): number | undefined {
+export function getBidValue(tx: Transaction|SignMessageRequest): number | undefined {
+  if (tx.method) return;
+
   for (let i = 0; i < tx.outputs.length; i++) {
     const output = tx.outputs[i];
 
@@ -187,7 +196,9 @@ export function getBidValue(tx: Transaction): number | undefined {
   }
 }
 
-export function getBidAddress(tx: Transaction): string | undefined {
+export function getBidAddress(tx: Transaction|SignMessageRequest): string | undefined {
+  if (tx.method) return;
+
   for (let i = 0; i < tx.outputs.length; i++) {
     const output = tx.outputs[i];
 
@@ -204,7 +215,9 @@ export function getBidAddress(tx: Transaction): string | undefined {
   }
 }
 
-export function getTXRecipient(tx: Transaction): string {
+export function getTXRecipient(tx: Transaction|SignMessageRequest): string {
+  if (tx.method) return '';
+
   // Look for covenants. A TX with multiple covenant types is not supported
   let covAction = null;
   let covValue = 0;
@@ -277,7 +290,9 @@ export function getTXRecipient(tx: Transaction): string {
   return output.address;
 }
 
-export function getTXNameHash(tx: Transaction): string {
+export function getTXNameHash(tx: Transaction|SignMessageRequest): string {
+  if (tx.method) return '';
+
   // Look for covenants. A TX with multiple covenant types is not supported
   let covAction = null;
   for (let i = 0; i < tx.outputs.length; i++) {
@@ -304,7 +319,9 @@ export function getTXNameHash(tx: Transaction): string {
   return '';
 }
 
-export function getTXRecords(tx: Transaction): string {
+export function getTXRecords(tx: Transaction|SignMessageRequest): string {
+  if (tx.method) return '';
+
   // Look for covenants. A TX with multiple covenant types is not supported
   for (let i = 0; i < tx.outputs.length; i++) {
     const output = tx.outputs[i];

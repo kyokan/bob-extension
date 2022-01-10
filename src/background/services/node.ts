@@ -3,11 +3,15 @@ const bdb = require('bdb');
 const DB = require('bdb/lib/db');
 const rules = require("hsd/lib/covenants/rules");
 import {get, put} from '@src/util/db';
+const {states,statesByVal} = require('hsd/lib/covenants/namestate');
+const Network = require("hsd/lib/protocol/network");
+const networkType = process.env.NETWORK_TYPE || 'main';
 
 const NAME_CACHE: string[] = [];
 const NAME_MAP: { [hash: string]: string } = {};
 export default class NodeService extends GenericService {
   store: typeof DB;
+  network: typeof Network;
 
   async getHeaders(): Promise<any> {
     const { apiHost, apiKey } = await this.exec('setting', 'getAPI');
@@ -129,6 +133,53 @@ export default class NodeService extends GenericService {
     return name;
   }
 
+  async verifyMessage(msg: string, signature: string, address: string) {
+    if(!msg || !signature || !address) {
+      throw new Error('Required paremeters include msg as a string, signature as a string, and address as a string.');
+    }
+
+    const headers = await this.getHeaders();
+    const result = await this.fetch(null, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        method: 'verifymessage',
+        params: [address, signature, msg]
+      }),
+    });
+    if(result.error) {
+      throw new Error('Error when verifymessage');
+    }
+    else {
+      return result.result;
+    }
+  }
+
+  async verifyMessageWithName(msg: string, signature: string, name: string) {
+    if(!msg || !signature || !name) {
+      throw new Error('Required paremeters include msg as a string, signature as a string, and name as a string.');
+    }
+    if(!rules.verifyName(name))
+      throw new Error('Invalid name.');
+
+    const ni = await this.getNameInfo(name);
+    const ownerHash = ni.result.info.owner.hash;
+    const ownerIndex = ni.result.info.owner.index;
+    const state = ni.result.info.state;
+
+    if(!ownerHash)
+      throw new Error('Could not find owner');
+    else if(state!==statesByVal[states.CLOSED])
+      throw new Error('Invalid name state.');
+
+    const address = await this.getCoin(ownerHash, ownerIndex);
+
+    if(!address)
+      throw new Error('Could not find owner');
+
+    return await this.verifyMessage(msg, signature, address.address);
+  }
+
   async getNameInfo(tld: string) {
     const headers = await this.getHeaders();
     return this.fetch(null, {
@@ -225,6 +276,7 @@ export default class NodeService extends GenericService {
   async start() {
     this.store = bdb.create('/node-store');
     await this.store.open();
+    this.network = Network.get(networkType);
   }
 
   async stop() {
