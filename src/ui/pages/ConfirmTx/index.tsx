@@ -3,7 +3,7 @@ import {RegularView, RegularViewContent, RegularViewFooter, RegularViewHeader} f
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import {getTXAction, getTXNameHash, getTXRecipient, getTXRecords, getTXValue} from "@src/util/transaction";
-import {fetchPendingTransactions, Transaction} from "@src/ui/ducks/transactions";
+import {fetchPendingTransactions, SignMessageRequest, Transaction} from "@src/ui/ducks/transactions";
 import Input from "@src/ui/components/Input";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import postMessage from "@src/util/postMessage";
@@ -51,7 +51,7 @@ export default function ConfirmTx(): ReactElement {
     });
   }, []);
 
-  const submitTx = useCallback(async (txJSON: Transaction) => {
+  const submitTx = useCallback(async (txJSON: Transaction|SignMessageRequest) => {
     setConfirming(true);
     try {
       await postMessage({
@@ -67,7 +67,7 @@ export default function ConfirmTx(): ReactElement {
 
   }, []);
 
-  const removeTx = useCallback((txJSON: Transaction) => {
+  const removeTx = useCallback((txJSON: Transaction|SignMessageRequest) => {
     return postMessage({
       type: MessageTypes.REJECT_TX,
       payload: txJSON,
@@ -80,6 +80,58 @@ export default function ConfirmTx(): ReactElement {
         hash={pendingTx.hash}
         onCancel={() => setUpdating(false)}
       />
+    );
+  }
+
+  if (pendingTx.method) {
+    return (
+      <RegularView className="confirm-tx">
+        <RegularViewHeader>Signature Request</RegularViewHeader>
+        <RegularViewContent>
+          {
+            pendingTx.data.address && (
+              <Input
+                label="Address"
+                value={pendingTx.data.address}
+                spellCheck={false}
+                disabled
+              />
+            )
+          }
+          {
+            pendingTx.data.name && (
+              <Input
+                label="Name"
+                value={pendingTx.data.name}
+                spellCheck={false}
+                disabled
+              />
+            )
+          }
+          <Textarea
+            label="Message"
+            value={pendingTx.data.message}
+            spellCheck={false}
+            disabled
+          />
+        </RegularViewContent>
+        { errorMessage && <small className="error-message">{errorMessage}</small> }
+        <RegularViewFooter>
+          <Button
+            btnType={ButtonType.secondary}
+            onClick={() => removeTx(pendingTx)}
+          >
+            Reject
+          </Button>
+          <Button
+            onClick={() => submitTx(pendingTx)}
+            disabled={confirming}
+            loading={confirming}
+          >
+            Confirm
+          </Button>
+        </RegularViewFooter>
+      </RegularView>
     );
   }
 
@@ -121,6 +173,8 @@ function NetTotal(props: {hash: string}): ReactElement {
   const value = getTXValue(pendingTx);
   const action = getTXAction(pendingTx);
 
+  if (pendingTx.method) return <></>;
+
   switch (action) {
     case 'REVEAL':
     case 'REDEEM':
@@ -157,6 +211,8 @@ function TxDetail(props: { hash: string }): ReactElement {
   const pendingTx = useQueuedTXByHash(props.hash);
   const action = getTXAction(pendingTx);
   const [isViewingDetail, setViewDetail] = useState(false);
+
+  if (pendingTx.method) return <></>;
 
   return !actionToTitle[action] || isViewingDetail
     ? (
@@ -256,6 +312,8 @@ function ConfirmContent(props: { hash: string }): ReactElement {
     })()
 
   }, [nameHash]);
+
+  if (pendingTx.method) return <></>;
 
   switch (action) {
     case 'SEND':

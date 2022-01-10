@@ -101,6 +101,8 @@ export const TransactionRow = (props: { hash: string }): ReactElement => {
     setRepairModal(true);
   }, [tx!.hash]);
 
+  if (tx?.method) return <></>;
+
   return (
     <div
       className={classNames("transaction", {

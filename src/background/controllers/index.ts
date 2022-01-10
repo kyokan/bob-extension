@@ -44,11 +44,19 @@ const controllers: {
     const {payload} = message;
     const {address, msg} = payload;
     return new Promise(async (resolve, reject) => {
+      const queue = await app.exec('wallet', 'getTxQueue');
+
+      if (queue.length) {
+        return reject(new Error('user has unconfirmed tx.'));
+      }
+
       app.exec('analytics', 'track', {
         name: 'Bob3 Sign',
       });
 
-      return resolve(app.exec('wallet', 'signMessage', address, msg));
+      const requestJson = await app.exec('wallet', 'createSignMessageRequest', msg, address);
+
+      await app.exec('wallet', 'addTxToQueue', requestJson);
 
       const popup = await openPopup();
       closePopupOnAcceptOrReject(app, resolve, reject, popup);
@@ -59,11 +67,19 @@ const controllers: {
     const {payload} = message;
     const {name, msg} = payload;
     return new Promise(async (resolve, reject) => {
+      const queue = await app.exec('wallet', 'getTxQueue');
+
+      if (queue.length) {
+        return reject(new Error('user has unconfirmed tx.'));
+      }
+
       app.exec('analytics', 'track', {
         name: 'Bob3 Sign with Name',
       });
 
-      return resolve(app.exec('wallet', 'signMessageWithName', name, msg));
+      const requestJson = await app.exec('wallet', 'createSignMessageRequest', msg, undefined, name);
+
+      await app.exec('wallet', 'addTxToQueue', requestJson);
 
       const popup = await openPopup();
       closePopupOnAcceptOrReject(app, resolve, reject, popup);
