@@ -87,10 +87,6 @@ export const createWallet =
     if (!seedphrase && !isLedger) throw new Error("Invalid seedphrase.");
     if (!password) throw new Error("Password cannot be empty.");
 
-    // console.log("duck walletName:", walletName);
-    // console.log("duck isLedger:", isLedger);
-    // console.log("duck xPub:", xpub);
-
     if (isLedger) {
       await postMessage({
         type: MessageTypes.CREATE_NEW_WALLET,

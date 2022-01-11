@@ -41,23 +41,12 @@ export default function Onboarding(): ReactElement {
   const [walletName, setWalletName] = useState("");
   const [seedphrase, setSeedphrase] = useState("");
   const [password, setPassword] = useState("");
-  // const [xpub, setXpub] = useState("");
   const [isLedger, setIsLedger] = useState(false);
   const [optIn, setOptIn] = useState(false);
   const history = useHistory();
   const dispatch = useDispatch();
 
-  // useEffect(() => {
-  //   console.log("onb xpub:", xpub);
-  //   console.log("onb isLedger:", isLedger);
-  // }, [xpub, isLedger]);
-
   const onCreateWallet = useCallback(async (xpub?: string) => {
-    // console.log("create isLedger:", isLedger);
-    // console.log("create xPub:", xpub);
-    // console.log("create optIn:", optIn);
-    // console.log("create password:", password);
-    // console.log("create walletName:", walletName);
     postMessage({
       type: MessageTypes.MP_TRACK,
       payload: {
@@ -138,8 +127,6 @@ export default function Onboarding(): ReactElement {
           <ConnectLedger
             isLedger={isLedger}
             setIsLedger={setIsLedger}
-            // xpub={xpub}
-            // setXpub={setXpub}
             onCreateWallet={onCreateWallet}
           />
         </Route>
@@ -842,13 +829,11 @@ function OptInAnalytics(props: {
 }
 
 function ConnectLedger(props: {
+  onCreateWallet: (xpub: string) => Promise<void>;
   isLedger: boolean;
   setIsLedger: (isLedger: boolean) => void;
-  // xpub: string;
-  // setXpub: (xpub: string) => void;
-  onCreateWallet: (xpub: string) => Promise<void>;
 }): ReactElement {
-  const {onCreateWallet, setIsLedger, isLedger} = props;
+  const {onCreateWallet, isLedger, setIsLedger} = props;
   const history = useHistory();
   const [isConnected, setIsConnected] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -902,24 +887,7 @@ function ConnectLedger(props: {
     };
   }, []);
 
-  // const createWallet = useCallback(async () => {
-  //   setErrorMessage("");
-  //   try {
-  //     await onCreateWallet();
-  //   } catch (e: any) {
-  //     setErrorMessage(e.message);
-  //   }
-  // }, [onCreateWallet]);
-
-  const onConnectLedger = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage("");
-
-    if (!isSupported) {
-      alert("Could not find WebUSB.");
-      throw new Error("Could not find WebUSB.");
-    }
-
+  const connectToDevice = async () => {
     try {
       const device = await Device.requestDevice();
       await device.set({
@@ -938,24 +906,30 @@ function ConnectLedger(props: {
         return;
       }
 
-      const xpub = await getAccountXpub(device, network);
-      await onCreateWallet(xpub)
+      const accountXpub = await getAccountXpub(device, network);
+      return accountXpub
     } catch (e: any) {
       console.error(e);
       setIsLoading(false);
       setErrorMessage(`Error connecting to device. ${e.message}`);
       return;
     }
+  };
+
+  const onConnectLedger = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    if (!isSupported) {
+      alert("Could not find WebUSB.");
+      throw new Error("Could not find WebUSB.");
+    }
+
+    const xpub = await connectToDevice()
+    await onCreateWallet(xpub)
 
     setIsLoading(false);
-
-    // set a small timeout to clearly show that this is
-    // a two-phase process.
-
-    // setTimeout(async () => {
-    //   createWallet()
-    // }, 2000);
-  }, [isLedger, onCreateWallet]);
+  }, [isLedger]);
 
   return (
     <OnboardingModal>

@@ -57,6 +57,7 @@ export default function Home(): ReactElement {
   const pageElement = useRef<HTMLDivElement>(null);
   const [fixHeader, setFixHeader] = useState(false);
 
+  // Test create account
   const onCreateAccount = async () => {
     const result = await postMessage({
       type: MessageTypes.CREATE_NEW_WALLET_ACCOUNT,
@@ -151,9 +152,18 @@ export default function Home(): ReactElement {
         <ReceiveButton />
         <RevealButton />
       </div>
+
+      {/*
+        /
+        /
+        /
+        
+        Test create account
+      */}
       <div>
         <button onClick={onCreateAccount}>create account</button>
       </div>
+
       <div className="home__list" ref={listElement}>
         <div className="home__list__header">
           <div
