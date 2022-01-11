@@ -1706,10 +1706,10 @@ class WalletService extends GenericService {
       const retMtx = await ledger.signTransaction(mtx, options);
       retMtx.check();
 
-      const txImmutable = retMtx.toTX();
+      // const txImmutable = retMtx.toTX();
+      // await this.wdb._addTX(txImmutable, latestBlockNow);
 
       await pushMessage(ledgerConfirmed(true));
-      // await this.wdb._addTX(txImmutable, latestBlockNow);
       await this.removeTxFromQueue(txJSON);
       await this.exec("node", "sendRawTransaction", retMtx.toHex());
       await pushMessage(ledgerConnectHide());
