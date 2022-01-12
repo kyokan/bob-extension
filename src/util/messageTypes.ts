@@ -40,6 +40,8 @@ enum MessageTypes {
   RESET_TRANSACTIONS = "reset_transactions",
   REVEAL_SEED = "reveal_seed",
   SELECT_WALLET = "select_wallet",
+  SIGN_MESSAGE = 'signMessage',
+  SIGN_MESSAGE_WITH_NAME = 'signMessageWithName',
   STOP_RESCAN = "stop_rescan",
   SUBMIT_TX = "submit_tx",
   UNLOCK_WALLET = "unlock_wallet",
@@ -53,6 +55,8 @@ enum MessageTypes {
   GET_NAME_BY_HASH = "get_name_by_hash",
   GET_NAME_RESOURCE = "get_name_resource",
   HASH_NAME = "hashName",
+  VERIFY_MESSAGE = 'verifyMessage',
+  VERIFY_MESSAGE_WITH_NAME = 'verifyMessageWithName',
 
   // settings
   GET_ANALYTICS = "getAnalytics",

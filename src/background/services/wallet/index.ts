@@ -22,7 +22,9 @@ import {
 import {
   ActionType,
   setTransactions,
-  Transaction,
+  SIGN_MESSAGE_METHOD,
+  SIGN_MESSAGE_WITH_NAME_METHOD, SignMessageRequest,
+  Transaction
 } from "@src/ui/ducks/transactions";
 import {ActionTypes, setDomainNames} from "@src/ui/ducks/domains";
 import {ActionType as QueueActionType, setTXQueue} from "@src/ui/ducks/queue";
@@ -33,7 +35,8 @@ import {UpdateRecordType} from "@src/contentscripts/bob3";
 import {getBidBlind, getTXAction} from "@src/util/transaction";
 import {setInfo} from "@src/ui/ducks/node";
 import nodeService from "../node";
-const Mnemonic = require("hsd/lib/hd/mnemonic");
+import crypto from 'crypto';
+const Mnemonic = require('hsd/lib/hd/mnemonic');
 const WalletDB = require("hsd/lib/wallet/walletdb");
 const Network = require("hsd/lib/protocol/network");
 const Covenant = require("hsd/lib/primitives/covenant");
@@ -55,11 +58,14 @@ const layout = require("hsd/lib/wallet/layout").txdb;
 const {Resource} = require("hsd/lib/dns/resource");
 
 const {Device} = USB;
+const blake2b = require('bcrypto/lib/blake2b');
+
 const {types, typesByVal} = rules;
 const networkType = process.env.NETWORK_TYPE || "main";
 
 const LOOKAHEAD = 100;
 const ONE_MINUTE = 60000;
+const MAGIC_STRING = `handshake signed message:\n`;
 
 declare interface WalletService {
   transactions?: any[] | null;
@@ -1138,14 +1144,11 @@ class WalletService extends GenericService {
     });
   };
 
-  submitTx = async (opts: {txJSON: Transaction; password: string}) => {
+  submitTx = async (opts: {txJSON: Transaction|SignMessageRequest; password: string}) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    const mtx = MTX.fromJSON(opts.txJSON);
     const action = getTXAction(opts.txJSON);
-    const latestBlockNow = await this.exec("node", "getLatestBlock");
-
-    this.wdb.height = latestBlockNow.height;
+    
     this.exec("analytics", "track", {
       name: "Submit",
       data: {
@@ -1153,29 +1156,57 @@ class WalletService extends GenericService {
       },
     });
 
+    let returnValue;
+
     if (wallet.watchOnly) {
+      if (opts.txJSON.method === SIGN_MESSAGE_WITH_NAME_METHOD) {
+        await pushMessage(ledgerConnectErr("cannot sign message with name with watch-only wallet"));
+        return;
+      }
+  
+      if (opts.txJSON.method === SIGN_MESSAGE_METHOD) {
+        await pushMessage(ledgerConnectErr("cannot sign message with watch-only wallet"));
+        return;
+      }
+
       await pushMessage(ledgerConnectShow());
     } else {
-      const tx = await wallet.sendMTX(mtx, this.passphrase);
-      await this.removeTxFromQueue(opts.txJSON);
-      await this.exec("node", "sendRawTransaction", tx.toHex());
-      const json = tx.getJSON(this.network);
-      this.emit("txAccepted", json);
+      if (opts.txJSON.method === SIGN_MESSAGE_WITH_NAME_METHOD) {
+        returnValue = await this.signMessageWithName(opts.txJSON.data.name!, opts.txJSON.data.message);
+      }
+  
+      if (opts.txJSON.method === SIGN_MESSAGE_METHOD) {
+        returnValue = await this.signMessage(opts.txJSON.data.address!, opts.txJSON.data.message);
+      }
+  
+      if (!opts.txJSON.method) {
+        const latestBlockNow = await this.exec('node', 'getLatestBlock');
+        this.wdb.height = latestBlockNow.height;
+        const mtx = MTX.fromJSON(opts.txJSON);
+        const tx = await wallet.sendMTX(mtx, this.passphrase);
+        await this.exec('node', 'sendRawTransaction', tx.toHex());
+        returnValue = tx.getJSON(this.network);
+      }
 
-      return json;
+      await this.removeTxFromQueue(opts.txJSON);
+      this.emit('txAccepted', returnValue);
+      return returnValue;
     }
   };
 
-  async _addOutputPathToTxQueue(queue: Transaction[]): Promise<Transaction[]> {
+  async _addOutputPathToTxQueue(queue: Transaction[]|SignMessageRequest[]): Promise<Transaction[]|SignMessageRequest[]> {
     for (let i = 0; i < queue.length; i++) {
       const tx = queue[i];
-      for (
-        let outputIndex = 0;
-        outputIndex < tx.outputs.length;
-        outputIndex++
-      ) {
-        const output = tx.outputs[outputIndex];
-        output.owned = await this.hasAddress(output.address);
+
+      if (tx.method) {
+        continue;
+      }
+
+      if (!tx.method) {
+        for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
+          const output = tx.outputs[outputIndex];
+          output.owned = await this.hasAddress(output.address);
+        }
       }
     }
 
@@ -1317,6 +1348,104 @@ class WalletService extends GenericService {
       return !!key;
     } catch (e) {
       return false;
+    }
+  };
+
+  createSignMessageRequest = async (message: string, address?: string, name?: string): Promise<SignMessageRequest> => {
+    const walletId = this.selectedID;
+
+    if (typeof address === 'string') {
+      return {
+        hash: crypto.createHash('sha256').update(Buffer.from(address + message + Date.now()).toString('hex')).digest('hex'),
+        method: SIGN_MESSAGE_METHOD,
+        walletId: walletId,
+        data: {
+          address,
+          message,
+        },
+        bid: undefined,
+        height: 0,
+      };
+    }
+
+    if (typeof name === 'string') {
+      return {
+        hash: crypto.createHash('sha256').update(Buffer.from(name + message + Date.now()).toString('hex')).digest('hex'),
+        method: SIGN_MESSAGE_WITH_NAME_METHOD,
+        walletId: walletId,
+        data: {
+          name,
+          message,
+        },
+        bid: undefined,
+        height: 0,
+      }
+    }
+
+    throw new Error('name or address must be present');
+  };
+
+  signMessage = async(address: string, msg: string): Promise<string> => {
+    if(!address || !msg) {
+      throw new Error('Requires parameters address of type string and msg of type string.');
+    }
+
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+
+    try {
+      await wallet.unlock(this.passphrase, 60000);
+      const key = await wallet.getKey(Address.from(address));
+
+      if(!key) {
+        throw new Error('Address not found.');
+      }
+
+      if(!wallet.master.key) {
+        throw new Error('Wallet is locked');
+      }
+
+      const _msg = Buffer.from(MAGIC_STRING + msg, 'utf8');
+      const hash = blake2b.digest(_msg);
+
+      const sig = key.sign(hash);
+
+      return sig.toString('base64');
+    } finally {
+      await wallet.lock();
+    }
+  };
+
+  signMessageWithName = async (name: string, msg: string): Promise<string> => {
+    if (!name || !msg) {
+      throw new Error('Requires parameters name of type string and msg of type string.');
+    } else if (!rules.verifyName(name)) {
+      throw new Error('Requires valid name per Handshake protocol rules.');
+    }
+
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+
+    try {
+      await wallet.unlock(this.passphrase, 60000);
+
+      const ns = await wallet.getNameStateByName(name);
+
+      if(!ns || !ns.owner) {
+        throw new Error('Cannot find the name owner.');
+      }
+
+      const coin = await wallet.getCoin(ns.owner.hash, ns.owner.index);
+
+      if(!coin) {
+        throw new Error('Cannot find the address of the name owner.');
+      }
+
+      const address = coin.address.toString(this.network);
+
+      return this.signMessage(address, msg);
+    } finally {
+      await wallet.lock();
     }
   };
 

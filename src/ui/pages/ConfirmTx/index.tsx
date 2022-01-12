@@ -1,17 +1,9 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {useDispatch} from "react-redux";
 import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
-import {
-  getTXAction,
-  getTXNameHash,
-  getTXRecipient,
-  getTXRecords,
-  getTXValue,
-} from "@src/util/transaction";
-import {
-  fetchPendingTransactions,
-  Transaction,
-} from "@src/ui/ducks/transactions";
+import Button, {ButtonType} from "@src/ui/components/Button";
+import {getTXAction, getTXNameHash, getTXRecipient, getTXRecords, getTXValue} from "@src/util/transaction";
+import {fetchPendingTransactions, SignMessageRequest, Transaction} from "@src/ui/ducks/transactions";
 import Input from "@src/ui/components/Input";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import postMessage from "@src/util/postMessage";
@@ -21,7 +13,6 @@ import {toUnicode} from "@src/util/name";
 import Textarea from "@src/ui/components/Textarea";
 import {toBIND} from "@src/util/records";
 import ErrorMessage from "@src/ui/components/ErrorMessage";
-import Button, {ButtonType} from "@src/ui/components/Button";
 import {
   RegularView,
   RegularViewContent,
@@ -67,7 +58,7 @@ export default function ConfirmTx(): ReactElement {
     });
   }, []);
 
-  const submitTx = useCallback(async (txJSON: Transaction) => {
+  const submitTx = useCallback(async (txJSON: Transaction|SignMessageRequest) => {
     setConfirming(true);
 
     try {
@@ -83,7 +74,7 @@ export default function ConfirmTx(): ReactElement {
     setConfirming(false);
   }, []);
 
-  const removeTx = useCallback((txJSON: Transaction) => {
+  const removeTx = useCallback((txJSON: Transaction|SignMessageRequest) => {
     return postMessage({
       type: MessageTypes.REJECT_TX,
       payload: txJSON,
@@ -93,6 +84,58 @@ export default function ConfirmTx(): ReactElement {
   if (isUpdating) {
     return (
       <UpdateTx hash={pendingTx.hash} onCancel={() => setUpdating(false)} />
+    );
+  }
+
+  if (pendingTx.method) {
+    return (
+      <RegularView className="confirm-tx">
+        <RegularViewHeader>Signature Request</RegularViewHeader>
+        <RegularViewContent>
+          {
+            pendingTx.data.address && (
+              <Input
+                label="Address"
+                value={pendingTx.data.address}
+                spellCheck={false}
+                disabled
+              />
+            )
+          }
+          {
+            pendingTx.data.name && (
+              <Input
+                label="Name"
+                value={pendingTx.data.name}
+                spellCheck={false}
+                disabled
+              />
+            )
+          }
+          <Textarea
+            label="Message"
+            value={pendingTx.data.message}
+            spellCheck={false}
+            disabled
+          />
+        </RegularViewContent>
+        { errorMessage && <small className="error-message">{errorMessage}</small> }
+        <RegularViewFooter>
+          <Button
+            btnType={ButtonType.secondary}
+            onClick={() => removeTx(pendingTx)}
+          >
+            Reject
+          </Button>
+          <Button
+            onClick={() => submitTx(pendingTx)}
+            disabled={confirming}
+            loading={confirming}
+          >
+            Confirm
+          </Button>
+        </RegularViewFooter>
+      </RegularView>
     );
   }
 
@@ -133,6 +176,8 @@ function NetTotal(props: {hash: string}): ReactElement {
   const value = getTXValue(pendingTx);
   const action = getTXAction(pendingTx);
 
+  if (pendingTx.method) return <></>;
+
   switch (action) {
     case "REVEAL":
     case "REDEEM":
@@ -168,33 +213,43 @@ function TxDetail(props: {hash: string}): ReactElement {
   const action = getTXAction(pendingTx);
   const [isViewingDetail, setViewDetail] = useState(false);
 
-  return !actionToTitle[action] || isViewingDetail ? (
-    <>
-      <div className="confirm-tx__detail-group">
-        <div className="confirm-tx__inputs-group">
-          <div className="confirm-tx__inputs-group__title">Inputs</div>
-          {pendingTx.inputs.map((input) => {
-            if (!input.coin) return null;
-            return (
-              <div className="confirm-tx__input-group">
-                <div className="confirm-tx__input-group__top">
-                  {input.coin.covenant.action !== "NONE" && (
-                    <div className="confirm-tx__input-group__action">
-                      {input.coin.covenant.action}
-                    </div>
-                  )}
-                  <a
-                    className="confirm-tx__input-group__address"
-                    href={`https://blockexplorer.com/address/${input.coin.address}`}
-                    target="_blank"
-                  >
-                    {ellipsify(input.coin.address)}
-                  </a>
+  if (pendingTx.method) return <></>;
+
+  return !actionToTitle[action] || isViewingDetail
+    ? (
+      <>
+        <div className="confirm-tx__detail-group">
+          <div className="confirm-tx__inputs-group">
+            <div className="confirm-tx__inputs-group__title">Inputs</div>
+            {pendingTx.inputs.map(input => {
+              if (!input.coin) return null;
+              return (
+                <>
+                <div className="confirm-tx__input-group">
+                  <div className="confirm-tx__input-group__top">
+                    {
+                      input.coin.covenant.action !== "NONE" && (
+                        <div className="confirm-tx__input-group__action">
+                          {input.coin.covenant.action}
+                        </div>
+                      )
+                    }
+                    <a
+                      className="confirm-tx__input-group__address"
+                      href={`https://blockexplorer.com/address/${input.coin.address}`}
+                      target="_blank"
+                    >
+                      {ellipsify(input.coin.address)}
+                    </a>
+                  </div>
+                  <div className="confirm-tx__input-group__value">
+                    {fromDollaryDoos(input.coin.value, 6)} HNS
+                  </div>
                 </div>
                 <div className="confirm-tx__input-group__value">
                   {fromDollaryDoos(input.coin.value, 6)} HNS
                 </div>
-              </div>
+              </>
             );
           })}
         </div>
@@ -263,6 +318,8 @@ function ConfirmContent(props: {hash: string}): ReactElement {
       setName(toUnicode(result));
     })();
   }, [nameHash]);
+
+  if (pendingTx.method) return <></>;
 
   switch (action) {
     case "SEND":

@@ -1,4 +1,4 @@
-import React, {ReactElement, useCallback, useEffect, useState} from "react";
+import React, { ReactElement, useCallback, useEffect, useState } from "react";
 import BobIcon from "../../../static/icons/bob-black-large.png";
 import "./login.scss";
 import Icon from "@src/ui/components/Icon";

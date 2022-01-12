@@ -1,4 +1,4 @@
-import {Transaction} from "@src/ui/ducks/transactions";
+import {SignMessageRequest, Transaction} from "@src/ui/ducks/transactions";
 import {useSelector} from "react-redux";
 import {AppRootState} from "@src/ui/store/configureAppStore";
 import deepEqual from "fast-deep-equal";
@@ -20,7 +20,7 @@ type Action = {
 type State = {
   order: string[];
   map: {
-    [txHash: string]: Transaction;
+    [txHash: string]: Transaction|SignMessageRequest;
   };
 };
 
@@ -29,7 +29,7 @@ const initialState: State = {
   map: {},
 };
 
-export const setTXQueue = (transactions: Transaction[]) => ({
+export const setTXQueue = (transactions: Transaction[]|SignMessageRequest[]) => ({
   type: ActionType.SET_TX_QUEUE,
   payload: transactions,
 });
@@ -44,14 +44,11 @@ export default function queue(state = initialState, action: Action): State {
     case ActionType.SET_TX_QUEUE:
       return {
         ...state,
-        order: action.payload.map((tx: Transaction) => tx.hash),
-        map: action.payload.reduce(
-          (map: {[h: string]: Transaction}, tx: Transaction) => {
-            map[tx.hash] = tx;
-            return map;
-          },
-          {}
-        ),
+        order: action.payload.map((tx: Transaction|SignMessageRequest) => tx.hash),
+        map: action.payload.reduce((map: {[h: string]: Transaction|SignMessageRequest}, tx: Transaction|SignMessageRequest) => {
+          map[tx.hash] = tx;
+          return map;
+        }, {}),
       };
     default:
       return state;

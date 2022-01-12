@@ -217,11 +217,56 @@ async function isLocked() {
   return !!(res && res.locked);
 }
 
+/**
+ * Sign and Verify
+ */
+async function sign(address: string, msg: string) {
+  return await post({
+    type: MessageTypes.SIGN_MESSAGE,
+    payload: {
+      address,
+      msg
+    }
+  });
+}
+async function signWithName(name: string, msg: string) {
+  return await post({
+    type: MessageTypes.SIGN_MESSAGE_WITH_NAME,
+    payload: {
+      name,
+      msg
+    }
+  });
+}
+async function verify(msg: string, signature: string, address: string) {
+  return await post({
+    type: MessageTypes.VERIFY_MESSAGE,
+    payload: {
+      msg,
+      signature,
+      address
+    }
+  });
+}
+async function verifyWithName(msg: string, signature: string, name: string) {
+  return await post({
+    type: MessageTypes.VERIFY_MESSAGE_WITH_NAME,
+    payload: {
+      msg,
+      signature,
+      name
+    }
+  });
+}
 
 /**
  * Wallet Client
  */
 const wallet = {
+  sign,
+  signWithName,
+  verify,
+  verifyWithName,
   getBalance,
   getAddress,
   createReveal,

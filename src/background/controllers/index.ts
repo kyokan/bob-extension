@@ -39,6 +39,52 @@ const controllers: {
     });
   },
 
+  [MessageTypes.SIGN_MESSAGE]: async (app, message) => {
+    const {payload} = message;
+    const {address, msg} = payload;
+    return new Promise(async (resolve, reject) => {
+      const queue = await app.exec('wallet', 'getTxQueue');
+
+      if (queue.length) {
+        return reject(new Error('user has unconfirmed tx.'));
+      }
+
+      app.exec('analytics', 'track', {
+        name: 'Bob3 Sign',
+      });
+
+      const requestJson = await app.exec('wallet', 'createSignMessageRequest', msg, address);
+
+      await app.exec('wallet', 'addTxToQueue', requestJson);
+
+      const popup = await openPopup();
+      closePopupOnAcceptOrReject(app, resolve, reject, popup);
+    });
+  },
+
+  [MessageTypes.SIGN_MESSAGE_WITH_NAME]: async (app, message) => {
+    const {payload} = message;
+    const {name, msg} = payload;
+    return new Promise(async (resolve, reject) => {
+      const queue = await app.exec('wallet', 'getTxQueue');
+
+      if (queue.length) {
+        return reject(new Error('user has unconfirmed tx.'));
+      }
+
+      app.exec('analytics', 'track', {
+        name: 'Bob3 Sign with Name',
+      });
+
+      const requestJson = await app.exec('wallet', 'createSignMessageRequest', msg, undefined, name);
+
+      await app.exec('wallet', 'addTxToQueue', requestJson);
+
+      const popup = await openPopup();
+      closePopupOnAcceptOrReject(app, resolve, reject, popup);
+    });
+  },
+
   [MessageTypes.SEND_TX]: async (app, message) => {
     const {payload} = message;
     const {amount, address} = payload;
@@ -436,6 +482,18 @@ const controllers: {
     return app.exec("node", "getLatestBlock");
   },
 
+  [MessageTypes.VERIFY_MESSAGE]: async (app, message) => {
+    const {payload} = message;
+    const {msg,signature,address} = payload;
+    return app.exec('node', 'verifyMessage', msg, signature, address);
+  },
+
+  [MessageTypes.VERIFY_MESSAGE_WITH_NAME]: async (app, message) => {
+    const {payload} = message;
+    const {msg,signature,name} = payload;
+    return app.exec('node', 'verifyMessageWithName', msg, signature, name);
+  },
+
   [MessageTypes.GET_API]: async (app, message) => {
     return app.exec("setting", "getAPI");
   },
@@ -462,6 +520,14 @@ const controllers: {
 
   [MessageTypes.SET_RESOLVE_HNS]: async (app, message) => {
     return app.exec("setting", "setResolveHns", message.payload);
+  },
+
+  [MessageTypes.GET_RESOLVER]: async (app, message) => {
+    return app.exec('setting', 'getResolver');
+  },
+
+  [MessageTypes.SET_RESOLVER]: async (app, message) => {
+    return app.exec('setting', 'setResolver', message.payload);
   },
 
   [MessageTypes.RESET_DB]: async (app, message) => {

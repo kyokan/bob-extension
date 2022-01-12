@@ -302,7 +302,7 @@ function SecurityContent(): ReactElement {
         payload: password,
       });
       setMnemonic(mnemonic);
-      setRevealError('');
+      setRevealError("");
     } catch (e: any) {
       setRevealError(e.message);
     }

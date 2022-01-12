@@ -111,6 +111,8 @@ export const TransactionRow = (props: {hash: string}): ReactElement => {
     [tx!.hash]
   );
 
+  if (tx?.method) return <></>;
+
   return (
     <div
       className={classNames("transaction", {
