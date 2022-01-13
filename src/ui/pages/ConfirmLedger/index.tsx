@@ -21,6 +21,7 @@ import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
 import {
   Transaction,
   fetchPendingTransactions,
+  SignMessageRequest
 } from "@src/ui/ducks/transactions";
 import {LEDGER_USB_VENDOR_ID} from "@src/util/constants";
 
@@ -42,7 +43,7 @@ export default function ConfirmLedger(): ReactElement {
 
   const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
 
-  const confirmTx = useCallback(async (txJSON: Transaction) => {
+  const confirmTx = useCallback(async (txJSON: Transaction|SignMessageRequest) => {
     setIsLoading(false);
 
     try {
@@ -61,7 +62,7 @@ export default function ConfirmLedger(): ReactElement {
     setIsLoading(false);
   }, []);
 
-  const removeTx = useCallback(async (txJSON: Transaction) => {
+  const removeTx = useCallback(async (txJSON: Transaction|SignMessageRequest) => {
     await postMessage({
       type: MessageTypes.REJECT_TX,
       payload: txJSON,

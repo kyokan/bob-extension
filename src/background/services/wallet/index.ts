@@ -23,7 +23,8 @@ import {
   ActionType,
   setTransactions,
   SIGN_MESSAGE_METHOD,
-  SIGN_MESSAGE_WITH_NAME_METHOD, SignMessageRequest,
+  SIGN_MESSAGE_WITH_NAME_METHOD,
+  SignMessageRequest,
   Transaction
 } from "@src/ui/ducks/transactions";
 import {ActionTypes, setDomainNames} from "@src/ui/ducks/domains";
@@ -1729,7 +1730,6 @@ class WalletService extends GenericService {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const mtx = MTX.fromJSON(txJSON);
-    const latestBlockNow = await this.exec("node", "getLatestBlock");
 
     let res, extra;
     if (!Array.isArray(txJSON)) {
@@ -1831,18 +1831,23 @@ class WalletService extends GenericService {
         throw new Error(
           "Ledger public key does not match wallet. (Wrong device?)"
         );
-
+      
+      const latestBlockNow = await this.exec("node", "getLatestBlock");
+      this.wdb.height = latestBlockNow.height;
+      
       const retMtx = await ledger.signTransaction(mtx, options);
       retMtx.check();
-
-      // const txImmutable = retMtx.toTX();
-      // await this.wdb._addTX(txImmutable, latestBlockNow);
-
+      
       await pushMessage(ledgerConfirmed(true));
-      await this.removeTxFromQueue(txJSON);
+
+      const tx = retMtx.toTX();
+      await this.wdb.addTX(tx);
+
       await this.exec("node", "sendRawTransaction", retMtx.toHex());
       await pushMessage(ledgerConnectHide());
+      
       const json = retMtx.getJSON(this.network);
+      await this.removeTxFromQueue(txJSON);
       this.emit("txAccepted", json);
 
       return json;

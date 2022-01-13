@@ -522,14 +522,6 @@ const controllers: {
     return app.exec("setting", "setResolveHns", message.payload);
   },
 
-  [MessageTypes.GET_RESOLVER]: async (app, message) => {
-    return app.exec('setting', 'getResolver');
-  },
-
-  [MessageTypes.SET_RESOLVER]: async (app, message) => {
-    return app.exec('setting', 'setResolver', message.payload);
-  },
-
   [MessageTypes.RESET_DB]: async (app, message) => {
     return app.exec("db", "resetDB", message.payload);
   },
