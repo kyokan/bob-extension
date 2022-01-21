@@ -57,6 +57,22 @@ export default function Home(): ReactElement {
   const pageElement = useRef<HTMLDivElement>(null);
   const [fixHeader, setFixHeader] = useState(false);
 
+  // Test create account
+  const onCreateAccount = async () => {
+    const result = await postMessage({
+      type: MessageTypes.CREATE_NEW_WALLET_ACCOUNT,
+      payload: {
+        options: {
+          name: "testAccountA",
+          passphrase: "testcreate",
+          type: "pubkeyhash",
+        },
+        walletId: "testcreate",
+      },
+    });
+    console.log("create account:", result);
+  };
+
   useEffect(() => {
     return () => {
       (async function onHomeUnmount() {
@@ -127,7 +143,7 @@ export default function Home(): ReactElement {
             {`${formatNumber(fromDollaryDoos(spendable))} HNS`}
           </div>
           {/* <small className="home__account-info__locked"> */}
-           {/* {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(lockedUnconfirmed))} HNS locked up`} */}
+          {/* {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(lockedUnconfirmed))} HNS locked up`} */}
           {/* </small> */}
         </div>
       </div>
@@ -135,6 +151,13 @@ export default function Home(): ReactElement {
         <SendButton />
         <ReceiveButton />
         <RevealButton />
+      </div>
+
+      {/*
+        Test create account
+      */}
+      <div>
+        <button onClick={onCreateAccount}>create account</button>
       </div>
 
       <div className="home__list" ref={listElement}>

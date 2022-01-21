@@ -816,10 +816,10 @@ function OptInAnalytics(props: {
       </OnboardingModalContent>
       <OnboardingModalFooter>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-        <div className="terms__checkbox">
-          <Checkbox checked={optIn} onChange={() => setOptIn(!optIn)} />
+        <label className="terms__checkbox" htmlFor="optin">
+          <Checkbox id="optin" checked={optIn} onChange={() => setOptIn(!optIn)} />
           <small>Yes, opt me in.</small>
-        </div>
+        </label>
         <Button onClick={onNext} disabled={loading} loading={loading}>
           Next
         </Button>
