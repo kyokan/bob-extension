@@ -34,6 +34,7 @@ import resolve from "@src/background/resolve";
   browser.webRequest.onBeforeRequest.addListener(
     // @ts-ignore
     resolve.bind(this, app),
+    // () => ({ redirectUrl: 'data:text/html;base64,PCFET0NUWVBFIGh0bWw+CjxodG1sPgo8aGVhZD4KICA8bWV0YSBjaGFyc2V0PSJ1dGYtOCI+CiAgPG1ldGEgaHR0cC1lcXVpdj0iWC1VQS1Db21wYXRpYmxlIiBjb250ZW50PSJJRT1lZGdlIj4KICA8dGl0bGU+RGVtbyBQYWdlPC90aXRsZT4KICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Ii4vaW5kZXguY3NzIj4KPC9oZWFkPgo8Ym9keT4KICA8aDE+SGVsbG88L2gxPgogIDxkaXY+CiAgICBIZWxsbywgV29ybGQKICA8L2Rpdj4KPC9ib2R5Pgo8L2h0bWw+'}),
     {urls: ["<all_urls>"]},
     ["blocking"]
   );
@@ -45,6 +46,14 @@ import resolve from "@src/background/resolve";
         type: MessageTypes.DISCONNECTED,
       });
     }
+  });
+
+  browser.omnibox.onInputEntered.addListener(async (text, disposition) => {
+    await waitForStartApp();
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    browser.tabs.update(tab.id, {
+      url: browser.extension.getURL('federalist.html') + '?h=' + text,
+    });
   });
 
   async function waitForStartApp() {

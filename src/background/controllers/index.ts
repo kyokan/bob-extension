@@ -491,6 +491,10 @@ const controllers: {
   [MessageTypes.MP_TRACK]: async (app, message) => {
     return app.exec('analytics', 'track', message.payload.name, message.payload.data);
   },
+
+  [MessageTypes.CONSUME]: async (app, message) => {
+    return app.exec('torrent', 'consume', message.payload);
+  },
 };
 
 export default controllers;

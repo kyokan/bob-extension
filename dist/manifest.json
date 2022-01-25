@@ -3,6 +3,9 @@
     "name": "Bob Extension",
     "description": "Chrome Extension for Handshake",
     "version": "0.4.1",
+    "omnibox": {
+        "keyword": "bob"
+    },
     "browser_action": {
         "default_icon": "icon-16.png",
         "default_popup": "popup.html"

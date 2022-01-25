@@ -77,6 +77,9 @@ enum MessageTypes {
   SEND_REVEAL = 'send_reveal',
   SEND_REDEEM = 'send_redeem',
   SEND_UPDATE = 'send_update',
+
+  // Torrent
+  CONSUME = 'torrent/consume',
 }
 
 export default MessageTypes;

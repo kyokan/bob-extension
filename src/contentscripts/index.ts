@@ -40,7 +40,6 @@ import MessageTypes from "@src/util/messageTypes";
         return;
     }
   });
-
 })();
 
 
