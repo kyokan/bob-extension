@@ -79,7 +79,8 @@ enum MessageTypes {
   SEND_UPDATE = 'send_update',
 
   // Torrent
-  CONSUME = 'torrent/consume',
+  CHECK_TORRENT = 'torrent/check',
+  OPEN_FEDERALIST = 'federalist/open',
 }
 
 export default MessageTypes;

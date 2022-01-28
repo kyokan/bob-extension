@@ -1,18 +1,16 @@
-import {WebRequest} from "webextension-polyfill-ts";
+import {browser, WebRequest} from "webextension-polyfill-ts";
 import normalTLDs from "../static/normal-tld.json";
 import OnBeforeRequestDetailsType = WebRequest.OnBeforeRequestDetailsType;
 import {AppService} from "@src/util/svc";
+import {consume, getTorrentDataURL, torrentCache} from "@src/util/webtorrent";
 const magnet = require('magnet-uri');
-const ed = require('supercop.js');
-const WebTorrent = require('webtorrent');
 
-const torrentCache: any = {};
 // run script when a request is about to occur
-export default async function resolve(
+export default function resolve(
   app: AppService,
   details: OnBeforeRequestDetailsType
 ) {
-  const isResolverActive = await app.exec("setting", "getResolver");
+  // const isResolverActive = await app.exec("setting", "getResolver");
   const originalUrl = new URL(details.url);
   const hostname = originalUrl.hostname;
   const protocol = originalUrl.protocol;
@@ -30,7 +28,6 @@ export default async function resolve(
     : hostname;
 
   const IP_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-
   // @ts-ignore
   if (normalTLDs[tld] || IP_REGEX.test(hostname)) {
     return;
@@ -39,30 +36,10 @@ export default async function resolve(
   const port = originalUrl.protocol == "https:" ? "443" : "80";
   const access = originalUrl.protocol == "https:" ? "HTTPS" : "PROXY";
 
-  const [magnetURI, dmtURI] = await getMagnetRecord(hostname, app);
-  const pathname = originalUrl.pathname.slice(1) || 'index.html';
-
-  if (magnetURI) {
-    let torrent = torrentCache[hostname];
-    if (!torrent) {
-      torrent = await consume(magnetURI);
-      torrentCache[hostname] = torrent;
-    }
-
-    const files = torrent.files;
-
-    for (let file of files) {
-      if (file.name === pathname) {
-        const blobURL = await getTorrentBlobURL(file);
-        console.log(blobURL)
-        return Promise.resolve({redirectUrl : blobURL});
-      }
-    }
-  }
 
   // Check the local cache to save having to fetch the value from the server again.
   if (sessionStorage.getItem(hostname) == undefined) {
-    const ipAddresses = await getIPAddresses(hostname);
+    const ipAddresses = getIPAddresses(hostname);
 
     if (ipAddresses[0]) {
       sessionStorage.setItem(hostname, ipAddresses[0]);
@@ -89,7 +66,47 @@ export default async function resolve(
 
     chrome.proxy.settings.set({value: config, scope: "regular"}, function () {});
   }
+
+  // Resolve Federalist
+  const magnetURI = getMagnetRecord(hostname, app);
+  const pathname = originalUrl.pathname.slice(1) || 'index.html';
+  const [_, extension] = pathname.split('.');
+
+  if (magnetURI) {
+    let torrent = torrentCache[hostname];
+
+    if (!torrent) {
+      browser.tabs.update(details.tabId, {
+        url: browser.extension.getURL('federalist.html') + '?h=' + hostname,
+      });
+      setTimeout(() => {
+        consume(magnetURI, hostname);
+      }, 1000);
+      return;
+    }
+
+    const files = torrent.files;
+
+    for (let file of files) {
+      if (file.name === pathname) {
+        const dataURL = getTorrentDataURL(file, `${hostname}/${pathname}`, extension);
+
+        if (dataURL) {
+          return {
+            redirectUrl: dataURL,
+          };
+        } else {
+          browser.tabs.update(details.tabId, {
+            url: browser.extension.getURL('federalist.html') + '?h=' + hostname,
+          });
+          return;
+        }
+      }
+    }
+  }
 }
+
+
 
 function sleep(milliseconds: number, resolved: string) {
   // synchronous XMLHttpRequests from Chrome extensions are not blocking event handlers. That's why we use this
@@ -105,87 +122,99 @@ function sleep(milliseconds: number, resolved: string) {
   }
 }
 
-async function getTorrentBlobURL(file: any): Promise<string> {
-  return new Promise((resolve, reject) => {
-    file.getBlobURL((err: any, url: string) => {
-      if (err) return reject(err);
-      resolve(url);
-    });
-  })
-
-}
-
-async function getIPAddresses(hostname: string): Promise<string[]> {
+function getIPAddresses(hostname: string): string[] {
+  const start = Date.now();
+  let done = false;
+  let ipAddresses: any = [];
+  const xhr = new XMLHttpRequest();
   const url = "https://api.handshakeapi.com/hsd/lookup/"+hostname;
-  const resp = await fetch(url);
-  const ipAddresses = await resp.json();
+  xhr.open("GET", url, false);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4) {
+      ipAddresses = JSON.parse(xhr.responseText);
+      sessionStorage.setItem(hostname, ipAddresses[0]);
+      done = true;
+    }
+  };
+  xhr.send();
+
+  for (let i = 0; i < 1e7; i++) {
+    if (new Date().getTime() - start > 10000 || done) {
+      break;
+    }
+  }
+
   return ipAddresses;
 }
 
-async function getMagnetRecord(hostname: string, app: AppService): Promise<(string|null)[]> {
-  if (hostname === 'dklm') return ['magnet:?xt=urn:btih:278d9ed2307560be3dae6e3a593e94f82ca8deb2&dn=dist', null];
+export function consumeDMT(pubkey: string): string {
+  const start = Date.now();
+  let infohash: string = '';
+  let done = false;
+  const xhr = new XMLHttpRequest();
+  const url = "http://localhost:3000/dmt/" + pubkey;
+  xhr.open("GET", url, false);
+  xhr.setRequestHeader("Content-Type", "application/json");
 
-  const resp = await fetch('https://api.handshakeapi.com/hsd', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      method: 'getnameresource',
-      params: [hostname],
-    }),
-  });
-  const json = await resp.json();
-
-  if (!json?.error) {
-    const records = json?.result?.records || [];
-    for (let record of records) {
-      if (record.type === 'TXT') {
-        const text: string = record.txt[0];
-        const parsed = magnet.decode(text);
-        if (parsed?.xt) {
-          return [text, null];
-        } else if (parsed?.xs) {
-          return [null, text];
-        }
-      }
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4) {
+      const json = xhr.responseText;
+      infohash = json;
+      done = true;
     }
-    return [null, null];
+  };
+
+  xhr.send();
+
+  for (let i = 0; i < 1e7; i++) {
+    if (new Date().getTime() - start > 10000 || done) {
+      break;
+    }
   }
 
-  return [null, null];
+  return 'magnet:?xt=urn:btih:' + infohash;
 }
 
-async function consume(uri: string) {
-  const client = new WebTorrent({
-    dht: {verify: ed.verify },
-  });
+export function getMagnetRecord(hostname: string, app: AppService): string|null {
+  const start = Date.now();
+  let done = false;
+  let magnetURI: string|null = null;
 
-  // const parsed = magnet.decode(uri);
+  const xhr = new XMLHttpRequest();
+  const url = "https://api.handshakeapi.com/hsd";
+  xhr.open("POST", url, false);
+  xhr.setRequestHeader("Content-Type", "application/json");
 
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4) {
+      const json = JSON.parse(xhr.responseText);
+      if (!json?.error) {
+        const records = json?.result?.records || [];
+        for (let record of records) {
+          if (record.type === 'TXT') {
+            const text: string = record.txt[0];
+            const parsed = magnet.decode(text);
+            if (parsed?.xt || parsed?.xs) {
+              magnetURI = text;
+            }
+          }
+        }
+      }
 
+      done = true;
+    }
+  };
 
-  return new Promise((resolve, reject) => {
-    client.on('error', () => {
-      reject();
-    });
+  xhr.send(JSON.stringify({
+    method: 'getnameresource',
+    params: [hostname],
+  }));
 
-    client.add(
-      uri,
-      {
-        announce: [
-          'udp://tracker.leechers-paradise.org:6969',
-          'udp://tracker.coppersurfer.tk:6969',
-          'udp://tracker.opentrackr.org:1337',
-          'udp://explodie.org:6969',
-          'udp://tracker.empire-js.us:1337',
-          'wss://tracker.btorrent.xyz',
-          'wss://tracker.openwebtorrent.com',
-        ],
-      },
-      (torrent: any) => {
-        resolve(torrent);
-      },
-    );
-  })
+  for (let i = 0; i < 1e7; i++) {
+    if (new Date().getTime() - start > 10000 || done) {
+      break;
+    }
+  }
+
+  return magnetURI;
 }

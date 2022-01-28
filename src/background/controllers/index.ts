@@ -1,11 +1,13 @@
 import MessageTypes from "@src/util/messageTypes";
 import {AppService} from "@src/util/svc";
 import {MessageAction} from "@src/util/postMessage";
-import {browser} from "webextension-polyfill-ts";
+import {browser, Runtime} from "webextension-polyfill-ts";
 import {toDollaryDoos} from "@src/util/number";
+import {torrentCache, torrentFileStatus, torrentURICache} from "@src/util/webtorrent";
+import MessageSender = Runtime.MessageSender;
 
 const controllers: {
-  [type: string]: (app: AppService, message: MessageAction) => Promise<any>;
+  [type: string]: (app: AppService, message: MessageAction, sender: MessageSender) => Promise<any>;
 } = {
 
   [MessageTypes.CONNECT]: async (app, message) => {
@@ -492,8 +494,26 @@ const controllers: {
     return app.exec('analytics', 'track', message.payload.name, message.payload.data);
   },
 
-  [MessageTypes.CONSUME]: async (app, message) => {
-    return app.exec('torrent', 'consume', message.payload);
+  [MessageTypes.CHECK_TORRENT]: async (app, message) => {
+    const torrent = torrentCache[message.payload];
+    const magnetURI = torrentURICache[message.payload];
+    const status = torrentFileStatus[message.payload];
+    return {
+      status: status,
+      downloaded: torrent?.downloaded,
+      downloadSpeed: torrent?.downloadSpeed,
+      progress: torrent?.progress,
+      length: torrent?.length,
+      ready: torrent?.ready,
+      uri: magnetURI,
+    };
+  },
+
+  [MessageTypes.OPEN_FEDERALIST]: async (app, message, sender) => {
+    browser.tabs.update(sender.tab?.id, {
+      url: `http://${message.payload}/`,
+    });
+    return;
   },
 };
 
