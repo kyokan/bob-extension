@@ -53,11 +53,18 @@ export function consume(uri: string, hostname: string) {
       torrent.on('done', async function () {
         const files = torrent.files;
         for (let file of files) {
-          const [_, extension] = file.name.split('.');
-          await getTorrentDataURLAsync(file, `${hostname}/${file.name}`, extension);
+          await getTorrentDataURLAsync(file, `${hostname}/${file.name}`);
         }
 
         torrentFileStatus[hostname] = true;
+
+        setTimeout(() => {
+          const t = torrentCache[hostname];
+          delete torrentCache[hostname];
+          delete torrentURICache[hostname];
+          delete torrentFileStatus[hostname];
+          if (t.destroy) t.destroy();
+        }, 15 * 60 * 1000);
       });
     },
   );
@@ -65,28 +72,32 @@ export function consume(uri: string, hostname: string) {
   torrentURICache[hostname] = magnetURI;
 }
 
-export const torrentFileCache: any = {};
-export function getTorrentDataURL(file: any, filepath: string, extension: string) {
-  if (torrentFileCache[filepath]) return torrentFileCache[filepath];
+export function getTorrentDataURL(file: any, filepath: string) {
+  const cached = localStorage.getItem(filepath);
+
+  if (cached) return cached;
 
   file.getBuffer((err: any, buf: Buffer) => {
     const base64 = buf.toString('base64');
     const mimeType = mime.lookup(file.name);
     const dataUrl = `data:${mimeType};base64,${base64}`;
-    torrentFileCache[filepath] = dataUrl.slice(0, 2000000);
+    localStorage.setItem(filepath, dataUrl.slice(0, 2000000));
   });
 }
 
-function getTorrentDataURLAsync(file: any, filepath: string, extension: string) {
-  if (torrentFileCache[filepath]) return torrentFileCache[filepath];
+function getTorrentDataURLAsync(file: any, filepath: string) {
+  const cached = localStorage.getItem(filepath);
+
+  if (cached) return cached;
 
   return new Promise((resolve) => {
     file.getBuffer((err: any, buf: Buffer) => {
       const base64 = buf.toString('base64');
       const mimeType = mime.lookup(file.name);
       const dataUrl = `data:${mimeType};base64,${base64}`;
-      torrentFileCache[filepath] = dataUrl.slice(0, 2000000);
-      resolve(torrentFileCache[filepath]);
+      const limitedUrl = dataUrl.slice(0, 2000000);
+      localStorage.setItem(filepath, limitedUrl);
+      resolve(limitedUrl);
     });
   })
 }

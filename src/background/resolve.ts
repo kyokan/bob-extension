@@ -70,7 +70,6 @@ export default function resolve(
   // Resolve Federalist
   const magnetURI = getMagnetRecord(hostname, app);
   const pathname = originalUrl.pathname.slice(1) || 'index.html';
-  const [_, extension] = pathname.split('.');
 
   if (magnetURI) {
     let torrent = torrentCache[hostname];
@@ -89,7 +88,7 @@ export default function resolve(
 
     for (let file of files) {
       if (file.name === pathname) {
-        const dataURL = getTorrentDataURL(file, `${hostname}/${pathname}`, extension);
+        const dataURL = getTorrentDataURL(file, `${hostname}/${pathname}`);
 
         if (dataURL) {
           return {
