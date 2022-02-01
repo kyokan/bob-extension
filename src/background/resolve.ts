@@ -8,14 +8,9 @@ const magnet = require('magnet-uri');
 export default function resolve(
   details: OnBeforeRequestDetailsType
 ) {
-  // const isResolverActive = await app.exec("setting", "getResolver");
   const originalUrl = new URL(details.url);
   const hostname = originalUrl.hostname;
   const protocol = originalUrl.protocol;
-
-  // if (!isResolverActive) {
-  //   return;
-  // }
 
   if (!["http:", "https:"].includes(protocol)) {
     return;
