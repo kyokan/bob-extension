@@ -11,7 +11,9 @@ const client = new WebTorrent({
 
 export const torrentCache: any = {};
 export const torrentURICache: any = {};
+export const torrentDMTCache: any = {};
 export const torrentFileStatus: any = {};
+export const torrentError: any = {};
 
 export function consume(uri: string, hostname: string) {
   if (torrentURICache[hostname]) {
@@ -27,8 +29,16 @@ export function consume(uri: string, hostname: string) {
   let magnetURI = uri;
 
   if (parsed?.xs) {
+    torrentError[hostname] = '';
+    torrentDMTCache[hostname] = uri;
     magnetURI = consumeDMT(parsed?.publicKey);
+
+    if (!magnetURI) {
+      torrentError[hostname] = 'unable to resolve dht';
+    }
   }
+
+  if (!magnetURI) return;
 
   client.on('error', (err: any) => {
     console.error('webtorrent error', err);
@@ -60,10 +70,12 @@ export function consume(uri: string, hostname: string) {
 
         setTimeout(() => {
           const t = torrentCache[hostname];
-          delete torrentCache[hostname];
-          delete torrentURICache[hostname];
-          delete torrentFileStatus[hostname];
-          if (t.destroy) t.destroy();
+          if (torrentCache[hostname]) delete torrentCache[hostname];
+          if (torrentURICache[hostname]) delete torrentURICache[hostname];
+          if (torrentFileStatus[hostname]) delete torrentFileStatus[hostname];
+          if (torrentDMTCache[hostname]) delete torrentDMTCache[hostname];
+          if (torrentError[hostname]) delete torrentError[hostname];
+          if (t?.destroy) t.destroy();
         }, 15 * 60 * 1000);
       });
     },

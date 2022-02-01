@@ -151,7 +151,7 @@ export function consumeDMT(pubkey: string): string {
   let infohash: string = '';
   let done = false;
   const xhr = new XMLHttpRequest();
-  const url = "http://localhost:3000/dmt/" + pubkey;
+  const url = "http://18.236.141.188:3000/dmt/" + pubkey;
   xhr.open("GET", url, false);
   xhr.setRequestHeader("Content-Type", "application/json");
 
@@ -169,6 +169,10 @@ export function consumeDMT(pubkey: string): string {
     if (new Date().getTime() - start > 10000 || done) {
       break;
     }
+  }
+
+  if (!infohash) {
+    return '';
   }
 
   return 'magnet:?xt=urn:btih:' + infohash;

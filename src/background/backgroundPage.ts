@@ -9,7 +9,7 @@ import MessageTypes from "@src/util/messageTypes";
 import AnalyticsService from "@src/background/services/analytics";
 import resolve, {getMagnetRecord} from "@src/background/resolve";
 import MessageSender = Runtime.MessageSender;
-import {consume} from "@src/util/webtorrent";
+import {consume, torrentError} from "@src/util/webtorrent";
 
 (async function () {
   let app: AppService;
@@ -56,6 +56,7 @@ import {consume} from "@src/util/webtorrent";
 
 
     if (magnetURI) {
+      torrentError[hostname] = '';
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       browser.tabs.update(tab.id, {
         url: browser.extension.getURL('federalist.html') + '?h=' + hostname,

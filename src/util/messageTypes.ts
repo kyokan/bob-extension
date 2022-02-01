@@ -80,6 +80,8 @@ enum MessageTypes {
 
   // Torrent
   CHECK_TORRENT = 'torrent/check',
+  CONSUME_TORRENT = 'torrent/consume',
+  CLEAR_TORRENT = 'torrent/clear',
   OPEN_FEDERALIST = 'federalist/open',
 }
 

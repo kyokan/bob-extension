@@ -7,9 +7,14 @@ import hero from "@src/ui/pages/FederalistStatus/hero";
 export default function FederalistStatus(): ReactElement {
   const [hostname, setHostname] = useState<string|null>('');
   const [progress, setProgress] = useState(0);
+  const [downloaded, setDownloaded] = useState(0);
+  const [downloadSpeed, setDownloadSpeed] = useState(0);
   const [status, setStatus] = useState(false);
   const [ready, setReady] = useState(false);
   const [uri, setURI] = useState('');
+  const [numPeers, setNumPeers] = useState(0);
+  const [error, setError] = useState('');
+  const [dht, setDHT] = useState('');
   const [secondsLeft, setSecondsLeft] = useState(5);
 
   useEffect(() => {
@@ -27,6 +32,9 @@ export default function FederalistStatus(): ReactElement {
       let status = false;
       let ready = false;
       let uri = '';
+      let numPeers = 0;
+      let error = '';
+      let dht = '';
 
       while (!status && hostname) {
         const resp = await postMessage({
@@ -40,6 +48,9 @@ export default function FederalistStatus(): ReactElement {
         status = resp.status;
         ready = resp.ready;
         uri = resp.uri;
+        numPeers = resp.numPeers;
+        error = resp.error;
+        dht = resp.dht;
 
         console.log(resp);
 
@@ -47,6 +58,11 @@ export default function FederalistStatus(): ReactElement {
         setStatus(status);
         setReady(ready);
         setURI(uri);
+        setNumPeers(numPeers || 0);
+        setError(error);
+        setDHT(dht);
+        setDownloaded(downloaded || 0);
+        setDownloadSpeed(downloadSpeed || 0);
 
         if (status) {
           for (let i = 0; i < 5; i++) {
@@ -77,6 +93,34 @@ export default function FederalistStatus(): ReactElement {
       });
   }, [hostname]);
 
+  const reset = useCallback(async () => {
+    setProgress(0);
+    setStatus(false);
+    setReady(false);
+    setURI('');
+    setNumPeers(0);
+    setError('');
+    setDHT('');
+    setDownloaded(0);
+    setDownloadSpeed(0);
+
+    await postMessage({
+      type: MessageTypes.CLEAR_TORRENT,
+      payload: hostname,
+    });
+
+    await new Promise(resolve => {
+      setTimeout(resolve, 500);
+    });
+
+    await postMessage({
+      type: MessageTypes.CONSUME_TORRENT,
+      payload: hostname,
+    });
+
+    window.location.reload();
+  }, [hostname]);
+
   let statusText = '';
 
   if (status) {
@@ -96,9 +140,19 @@ export default function FederalistStatus(): ReactElement {
       <div className="federalist__progress">
         <div className="federalist__progress__title">
           <div className="federalist__progress__title__text">
-            {statusText}
+            { error ? 'something went wrong :(' : statusText}
           </div>
           <div className="federalist__progress__title__uri">
+            {
+              (dht && !uri) && (
+                <a
+                  className="federalist__progress__title__uri-button"
+                  href={dht}
+                >
+                  DHT Link
+                </a>
+              )
+            }
             {
               uri && (
                 <a
@@ -109,6 +163,17 @@ export default function FederalistStatus(): ReactElement {
                 </a>
               )
             }
+            {
+              (uri || dht) && (
+                <div
+                  className="federalist__progress__title__reset-button"
+                  onClick={reset}
+                >
+                  Reset
+                </div>
+              )
+            }
+
           </div>
         </div>
         <div className="federalist__progress__bar">
@@ -117,6 +182,20 @@ export default function FederalistStatus(): ReactElement {
             style={{ width: `${Math.floor(progress * 100)}%` }}
           />
         </div>
+        {
+          error && (
+            <div className="federalist__progress__error">
+              <span>{`${error} - please contact site administrator`}</span>
+            </div>
+          )
+        }
+        {
+          uri && (
+            <div className="federalist__progress__desc">
+              <span>{`Peers: ${numPeers} - Downloaded: ${prettyBytes(downloaded)} - Download Speed: ${prettyBytes(downloadSpeed)}`}</span>
+            </div>
+          )
+        }
         {
           status && (
             <div className="federalist__progress__desc">
@@ -128,4 +207,9 @@ export default function FederalistStatus(): ReactElement {
       </div>
     </div>
   )
+}
+
+function prettyBytes(bytes: number): string {
+  if (bytes < 999999) return (bytes / 1000).toFixed(2) + ' KB';
+  return (bytes / 1000000).toFixed(2) + ' MB';
 }

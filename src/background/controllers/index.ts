@@ -3,8 +3,16 @@ import {AppService} from "@src/util/svc";
 import {MessageAction} from "@src/util/postMessage";
 import {browser, Runtime} from "webextension-polyfill-ts";
 import {toDollaryDoos} from "@src/util/number";
-import {torrentCache, torrentFileStatus, torrentURICache} from "@src/util/webtorrent";
+import {
+  consume,
+  torrentCache,
+  torrentDMTCache,
+  torrentError,
+  torrentFileStatus,
+  torrentURICache
+} from "@src/util/webtorrent";
 import MessageSender = Runtime.MessageSender;
+import {getMagnetRecord} from "@src/background/resolve";
 
 const controllers: {
   [type: string]: (app: AppService, message: MessageAction, sender: MessageSender) => Promise<any>;
@@ -494,9 +502,35 @@ const controllers: {
     return app.exec('analytics', 'track', message.payload.name, message.payload.data);
   },
 
+  [MessageTypes.CONSUME_TORRENT]: async (app, message) => {
+    const magnetURI = getMagnetRecord(message.payload, app);
+
+    if (magnetURI) {
+      setTimeout(() => {
+        consume(magnetURI, message.payload);
+      }, 500);
+      return true;
+    }
+
+    return false;
+  },
+
+  [MessageTypes.CLEAR_TORRENT]: async (app, message) => {
+    const t = torrentCache[message.payload];
+    if (torrentCache[message.payload]) delete torrentCache[message.payload];
+    if (torrentURICache[message.payload]) delete torrentURICache[message.payload];
+    if (torrentDMTCache[message.payload]) delete torrentDMTCache[message.payload];
+    if (torrentError[message.payload]) delete torrentError[message.payload];
+    if (torrentFileStatus[message.payload]) delete torrentFileStatus[message.payload];
+    if (t?.destroy) t.destroy();
+    return true;
+  },
+
   [MessageTypes.CHECK_TORRENT]: async (app, message) => {
     const torrent = torrentCache[message.payload];
     const magnetURI = torrentURICache[message.payload];
+    const dhtURI = torrentDMTCache[message.payload];
+    const error = torrentError[message.payload];
     const status = torrentFileStatus[message.payload];
     return {
       status: status,
@@ -506,6 +540,9 @@ const controllers: {
       length: torrent?.length,
       ready: torrent?.ready,
       uri: magnetURI,
+      numPeers: torrent?.numPeers || 0,
+      error: error,
+      dht: dhtURI,
     };
   },
 
