@@ -1,27 +1,93 @@
 import {consumeDMT} from "@src/background/resolve";
 
 const mime = require("mime-types");
-const ed = require('supercop.js');
-const WebTorrent = require('webtorrent');
 const magnet = require('magnet-uri');
+import WebTorrent from 'webtorrent';
+const client = new WebTorrent();
 
-const client = new WebTorrent({
-  dht: {verify: ed.verify },
-});
-
-export const torrentCache: any = {};
-export const torrentURICache: any = {};
-export const torrentDMTCache: any = {};
-export const torrentFileStatus: any = {};
 export const torrentError: any = {};
 
+class TorrentSVC {
+  torrents: { [hostname: string]: WebTorrent.Torrent };
+  torrentURIs: { [hostname: string]: string };
+  torrentDMTs: { [hostname: string]: string };
+  torrentStatuses: { [hostname: string]: boolean };
+  torrentErrors: { [hostname: string]: string };
+
+  constructor() {
+    // @ts-ignore
+    this.torrents = {};
+    this.torrentURIs = {};
+    this.torrentDMTs = {};
+    this.torrentStatuses = {};
+    this.torrentErrors = {};
+  }
+
+  addTorrent(hostname: string, torrent: WebTorrent.Torrent) {
+    this.torrents[hostname] = torrent;
+  }
+
+  addTorrentURI(hostname: string, uri: string) {
+    this.torrentURIs[hostname] = uri;
+  }
+
+  addTorrentDMT(hostname: string, dmt: string) {
+    this.torrentDMTs[hostname] = dmt;
+  }
+
+  addTorrentStatus(hostname: string, status: boolean) {
+    this.torrentStatuses[hostname] = status;
+  }
+
+  addTorrentError(hostname: string, errorMessage: string) {
+    this.torrentErrors[hostname] = errorMessage;
+  }
+
+  clearTorrent(hostname: string) {
+    const torrent = this.torrents[hostname];
+    if (this.torrents[hostname]) delete this.torrents[hostname];
+    if (this.torrentURIs[hostname]) delete this.torrentURIs[hostname];
+    if (this.torrentDMTs[hostname]) delete this.torrentDMTs[hostname];
+    if (this.torrentStatuses[hostname]) delete this.torrentStatuses[hostname];
+    if (this.torrentErrors[hostname]) delete this.torrentErrors[hostname];
+    try {
+      if (torrent?.destroy) torrent.destroy();
+    } catch (e) {}
+    try {
+      if (torrent?.infoHash) client.remove(torrent.infoHash);
+    } catch (e) {}
+
+    const keys = Object.keys(localStorage);
+
+    for (let key of keys) {
+      const [savedHost, filename] = key.split('/');
+
+      if (filename && savedHost === hostname) {
+        localStorage.removeItem(key);
+      }
+    }
+  }
+
+  getTorrent(hostname: string) {
+    return {
+      torrent: this.torrents[hostname],
+      uri: this.torrentURIs[hostname],
+      dmt: this.torrentDMTs[hostname],
+      status: this.torrentStatuses[hostname],
+      error: this.torrentErrors[hostname],
+    }
+  }
+}
+
+export const torrentSVC = new TorrentSVC();
+
 export function consume(uri: string, hostname: string) {
-  if (torrentURICache[hostname]) {
+  if (torrentSVC.getTorrent(hostname).uri) {
     return;
   }
 
-  if (torrentCache[hostname]) {
-    return torrentCache[hostname];
+  if (torrentSVC.getTorrent(hostname).torrent) {
+    return torrentSVC.getTorrent(hostname).torrent;
   }
 
   const parsed = magnet.decode(uri);
@@ -29,12 +95,12 @@ export function consume(uri: string, hostname: string) {
   let magnetURI = uri;
 
   if (parsed?.xs) {
-    torrentError[hostname] = '';
-    torrentDMTCache[hostname] = uri;
+    torrentSVC.clearTorrent(hostname);
+    torrentSVC.addTorrentDMT(hostname, uri);
     magnetURI = consumeDMT(parsed?.publicKey);
 
     if (!magnetURI) {
-      torrentError[hostname] = 'unable to resolve dht';
+      torrentSVC.addTorrentError(hostname, 'unable to resolve dht');
     }
   }
 
@@ -57,31 +123,25 @@ export function consume(uri: string, hostname: string) {
         'wss://tracker.openwebtorrent.com',
       ],
     },
-    (torrent: any) => {
-      torrentCache[hostname] = torrent;
+    (torrent) => {
+      torrentSVC.addTorrent(hostname, torrent);
 
-      torrent.on('done', async function () {
+      torrent.once('done', async function () {
         const files = torrent.files;
         for (let file of files) {
           await getTorrentDataURLAsync(file, `${hostname}/${file.name}`);
         }
 
-        torrentFileStatus[hostname] = true;
+        torrentSVC.addTorrentStatus(hostname, true);
 
         setTimeout(() => {
-          const t = torrentCache[hostname];
-          if (torrentCache[hostname]) delete torrentCache[hostname];
-          if (torrentURICache[hostname]) delete torrentURICache[hostname];
-          if (torrentFileStatus[hostname]) delete torrentFileStatus[hostname];
-          if (torrentDMTCache[hostname]) delete torrentDMTCache[hostname];
-          if (torrentError[hostname]) delete torrentError[hostname];
-          if (t?.destroy) t.destroy();
+          torrentSVC.clearTorrent(hostname);
         }, 15 * 60 * 1000);
       });
     },
   );
 
-  torrentURICache[hostname] = magnetURI;
+  torrentSVC.addTorrentURI(hostname, magnetURI);
 }
 
 export function getTorrentDataURL(file: any, filepath: string) {

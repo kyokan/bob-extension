@@ -5,11 +5,7 @@ import {browser, Runtime} from "webextension-polyfill-ts";
 import {toDollaryDoos} from "@src/util/number";
 import {
   consume,
-  torrentCache,
-  torrentDMTCache,
-  torrentError,
-  torrentFileStatus,
-  torrentURICache
+  torrentSVC,
 } from "@src/util/webtorrent";
 import MessageSender = Runtime.MessageSender;
 import {getMagnetRecord} from "@src/background/resolve";
@@ -516,22 +512,15 @@ const controllers: {
   },
 
   [MessageTypes.CLEAR_TORRENT]: async (app, message) => {
-    const t = torrentCache[message.payload];
-    if (torrentCache[message.payload]) delete torrentCache[message.payload];
-    if (torrentURICache[message.payload]) delete torrentURICache[message.payload];
-    if (torrentDMTCache[message.payload]) delete torrentDMTCache[message.payload];
-    if (torrentError[message.payload]) delete torrentError[message.payload];
-    if (torrentFileStatus[message.payload]) delete torrentFileStatus[message.payload];
-    if (t?.destroy) t.destroy();
-    return true;
+    torrentSVC.clearTorrent(message.payload);
   },
 
   [MessageTypes.CHECK_TORRENT]: async (app, message) => {
-    const torrent = torrentCache[message.payload];
-    const magnetURI = torrentURICache[message.payload];
-    const dhtURI = torrentDMTCache[message.payload];
-    const error = torrentError[message.payload];
-    const status = torrentFileStatus[message.payload];
+    const torrent = torrentSVC.getTorrent(message.payload).torrent;
+    const magnetURI = torrentSVC.getTorrent(message.payload).uri;
+    const dhtURI = torrentSVC.getTorrent(message.payload).dmt;
+    const error = torrentSVC.getTorrent(message.payload).error;
+    const status = torrentSVC.getTorrent(message.payload).status;
     return {
       status: status,
       downloaded: torrent?.downloaded,

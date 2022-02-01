@@ -57,6 +57,7 @@ export default class SettingService extends GenericService {
 
   setResolver = async (optIn = false) => {
     await put(this.store, RESOLVER_OPT_IN_KEY, optIn);
+    this.emit('resolverChanged', optIn);
     return true;
   };
 

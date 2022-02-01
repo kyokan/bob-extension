@@ -9,7 +9,7 @@ import MessageTypes from "@src/util/messageTypes";
 import AnalyticsService from "@src/background/services/analytics";
 import resolve, {getMagnetRecord} from "@src/background/resolve";
 import MessageSender = Runtime.MessageSender;
-import {consume, torrentError} from "@src/util/webtorrent";
+import {consume, torrentError, torrentSVC} from "@src/util/webtorrent";
 
 (async function () {
   let app: AppService;
@@ -33,13 +33,30 @@ import {consume, torrentError} from "@src/util/webtorrent";
   await startedApp.start();
   app = startedApp;
 
-  browser.webRequest.onBeforeRequest.addListener(
-    // @ts-ignore
-    resolve.bind(this, app),
-    // () => ({ redirectUrl: 'data:text/html;base64,PCFET0NUWVBFIGh0bWw+CjxodG1sPgo8aGVhZD4KICA8bWV0YSBjaGFyc2V0PSJ1dGYtOCI+CiAgPG1ldGEgaHR0cC1lcXVpdj0iWC1VQS1Db21wYXRpYmxlIiBjb250ZW50PSJJRT1lZGdlIj4KICA8dGl0bGU+RGVtbyBQYWdlPC90aXRsZT4KICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Ii4vaW5kZXguY3NzIj4KPC9oZWFkPgo8Ym9keT4KICA8aDE+SGVsbG88L2gxPgogIDxkaXY+CiAgICBIZWxsbywgV29ybGQKICA8L2Rpdj4KPC9ib2R5Pgo8L2h0bWw+'}),
-    {urls: ["<all_urls>"]},
-    ["blocking"]
-  );
+  // @ts-ignore
+  const onBeforeRequest = resolve.bind(this);
+
+  const optIn = await app.exec('setting', 'getResolver');
+
+  if (optIn) {
+    browser.webRequest.onBeforeRequest.addListener(
+      onBeforeRequest,
+      {urls: ["<all_urls>"]},
+      ["blocking"]
+    );
+  }
+
+  app.on('setting.resolverChanged', (optIn: boolean) => {
+    if (optIn) {
+      browser.webRequest.onBeforeRequest.addListener(
+        onBeforeRequest,
+        {urls: ["<all_urls>"]},
+        ["blocking"]
+      );
+    } else {
+      browser.webRequest.onBeforeRequest.removeListener(onBeforeRequest);
+    }
+  });
 
   app.on("wallet.locked", async () => {
     const tabs = await browser.tabs.query({active: true});
@@ -52,11 +69,14 @@ import {consume, torrentError} from "@src/util/webtorrent";
 
   browser.omnibox.onInputEntered.addListener(async (hostname, disposition) => {
     await waitForStartApp();
-    const magnetURI = getMagnetRecord(hostname, app);
+    const optIn = await app.exec('setting', 'getResolver');
 
+    if (!optIn) return;
+
+    const magnetURI = getMagnetRecord(hostname);
 
     if (magnetURI) {
-      torrentError[hostname] = '';
+      torrentSVC.addTorrentError(hostname, '');
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       browser.tabs.update(tab.id, {
         url: browser.extension.getURL('federalist.html') + '?h=' + hostname,

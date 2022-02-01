@@ -1,13 +1,11 @@
 import {browser, WebRequest} from "webextension-polyfill-ts";
 import normalTLDs from "../static/normal-tld.json";
 import OnBeforeRequestDetailsType = WebRequest.OnBeforeRequestDetailsType;
-import {AppService} from "@src/util/svc";
-import {consume, getTorrentDataURL, torrentCache} from "@src/util/webtorrent";
+import {consume, getTorrentDataURL, torrentSVC} from "@src/util/webtorrent";
 const magnet = require('magnet-uri');
 
 // run script when a request is about to occur
 export default function resolve(
-  app: AppService,
   details: OnBeforeRequestDetailsType
 ) {
   // const isResolverActive = await app.exec("setting", "getResolver");
@@ -68,13 +66,14 @@ export default function resolve(
   }
 
   // Resolve Federalist
-  const magnetURI = getMagnetRecord(hostname, app);
+  const magnetURI = getMagnetRecord(hostname);
   const pathname = originalUrl.pathname.slice(1) || 'index.html';
 
   if (magnetURI) {
-    let torrent = torrentCache[hostname];
+    let torrent = torrentSVC.getTorrent(hostname).torrent;
 
     if (!torrent) {
+      torrentSVC.addTorrentError(hostname, '');
       browser.tabs.update(details.tabId, {
         url: browser.extension.getURL('federalist.html') + '?h=' + hostname,
       });
@@ -178,7 +177,7 @@ export function consumeDMT(pubkey: string): string {
   return 'magnet:?xt=urn:btih:' + infohash;
 }
 
-export function getMagnetRecord(hostname: string, app: AppService): string|null {
+export function getMagnetRecord(hostname: string): string|null {
   const start = Date.now();
   let done = false;
   let magnetURI: string|null = null;
