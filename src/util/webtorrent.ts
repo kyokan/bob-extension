@@ -5,8 +5,6 @@ const magnet = require('magnet-uri');
 import WebTorrent from 'webtorrent';
 const client = new WebTorrent();
 
-export const torrentError: any = {};
-
 class TorrentSVC {
   torrents: { [hostname: string]: WebTorrent.Torrent };
   torrentURIs: { [hostname: string]: string };

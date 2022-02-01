@@ -9,7 +9,7 @@ import MessageTypes from "@src/util/messageTypes";
 import AnalyticsService from "@src/background/services/analytics";
 import resolve, {getMagnetRecord} from "@src/background/resolve";
 import MessageSender = Runtime.MessageSender;
-import {consume, torrentError, torrentSVC} from "@src/util/webtorrent";
+import {consume, torrentSVC} from "../util/webtorrent";
 
 (async function () {
   let app: AppService;

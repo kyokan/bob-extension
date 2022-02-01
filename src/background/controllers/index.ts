@@ -499,7 +499,7 @@ const controllers: {
   },
 
   [MessageTypes.CONSUME_TORRENT]: async (app, message) => {
-    const magnetURI = getMagnetRecord(message.payload, app);
+    const magnetURI = getMagnetRecord(message.payload);
 
     if (magnetURI) {
       setTimeout(() => {

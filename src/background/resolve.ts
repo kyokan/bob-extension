@@ -1,7 +1,7 @@
 import {browser, WebRequest} from "webextension-polyfill-ts";
 import normalTLDs from "../static/normal-tld.json";
 import OnBeforeRequestDetailsType = WebRequest.OnBeforeRequestDetailsType;
-import {consume, getTorrentDataURL, torrentSVC} from "@src/util/webtorrent";
+import {consume, getTorrentDataURL, torrentSVC} from "../util/webtorrent";
 const magnet = require('magnet-uri');
 
 // run script when a request is about to occur
