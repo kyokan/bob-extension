@@ -1,0 +1,126 @@
+@import "../../../util/variables";
+
+$green: #34dda9;
+$gray: #d5d5d5;
+$red: #ff6969;
+
+body {
+  font-family: "Work Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: white;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color:  rgba(255, 255, 255, 0);
+}
+
+html, body {
+  font-size: $text-base-size;
+  width: 100vw;
+  height: 100vh;
+}
+
+#federalist {
+  @extend %col-nowrap;
+  width: 100vw;
+  height: 100vh;
+  background-color: #4e4e4e;
+  align-items: center;
+  justify-items: center;
+}
+
+.federalist {
+  @extend %col-nowrap;
+  align-items: center;
+  color: #34dda9;
+  margin: 12rem auto auto;
+
+  &__hero {
+    width: 24rem;
+  }
+
+  &__progress {
+    @extend %col-nowrap;
+    align-items: center;
+
+    &__title {
+      @extend %row-nowrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-weight: 600;
+      margin-bottom: .5rem;
+      width: 100%;
+      height: 2rem;
+
+      &__text {
+        flex: 1 1 auto;
+      }
+
+      &__uri {
+        @extend %row-nowrap;
+        flex: 1 1 auto;
+        justify-content: flex-end;
+      }
+
+      &__uri-button {
+        font-size: .75rem;
+        border: 1px solid $green;
+        color: $green;
+        padding: .125rem .3125rem;
+        text-decoration: none;
+        border-radius: .25rem;
+      }
+
+      &__reset-button {
+        font-size: .75rem;
+        border: 1px solid $gray;
+        color: $gray;
+        padding: .125rem .3125rem;
+        text-decoration: none;
+        border-radius: .25rem;
+        cursor: pointer;
+        margin-left: .25rem;
+        transition: color 150ms ease-in-out,
+        border 150ms ease-in-out;
+
+        &:hover {
+          border-color: $red;
+          color: $red;
+        }
+      }
+    }
+
+    &__bar {
+      border: 2px solid $green;
+      border-radius: 2rem;
+      width: 36rem;
+      padding: .125rem;
+
+      &__content {
+        height: 1rem;
+        background-color: darken($green, 5);
+        border-radius: 2rem;
+        transition: width 100ms ease-in-out;
+      }
+    }
+
+    &__desc {
+      margin-top: .25rem;
+      font-size: .875rem;
+    }
+
+    &__error {
+      color: $red;
+      margin-top: .25rem;
+      font-size: .875rem;
+    }
+  }
+
+  &__redirect {
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+
+}

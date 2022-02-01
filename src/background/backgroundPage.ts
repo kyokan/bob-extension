@@ -1,4 +1,4 @@
-import {browser} from "webextension-polyfill-ts";
+import {browser, Runtime} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
@@ -7,7 +7,9 @@ import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
 import MessageTypes from "@src/util/messageTypes";
 import AnalyticsService from "@src/background/services/analytics";
-import resolve from "@src/background/resolve";
+import resolve, {getMagnetRecord} from "@src/background/resolve";
+import MessageSender = Runtime.MessageSender;
+import {consume, torrentError, torrentSVC} from "@src/util/webtorrent";
 
 (async function () {
   let app: AppService;
@@ -16,7 +18,7 @@ import resolve from "@src/background/resolve";
     await waitForStartApp();
 
     try {
-      const res = await handleMessage(app, request);
+      const res = await handleMessage(app, request, sender);
       return [null, res];
     } catch (e: any) {
       return [e.message, null];
@@ -31,12 +33,30 @@ import resolve from "@src/background/resolve";
   await startedApp.start();
   app = startedApp;
 
-  browser.webRequest.onBeforeRequest.addListener(
-    // @ts-ignore
-    resolve.bind(this, app),
-    {urls: ["<all_urls>"]},
-    ["blocking"]
-  );
+  // @ts-ignore
+  const onBeforeRequest = resolve.bind(this);
+
+  const optIn = await app.exec('setting', 'getResolver');
+
+  if (optIn) {
+    browser.webRequest.onBeforeRequest.addListener(
+      onBeforeRequest,
+      {urls: ["<all_urls>"]},
+      ["blocking"]
+    );
+  }
+
+  app.on('setting.resolverChanged', (optIn: boolean) => {
+    if (optIn) {
+      browser.webRequest.onBeforeRequest.addListener(
+        onBeforeRequest,
+        {urls: ["<all_urls>"]},
+        ["blocking"]
+      );
+    } else {
+      browser.webRequest.onBeforeRequest.removeListener(onBeforeRequest);
+    }
+  });
 
   app.on("wallet.locked", async () => {
     const tabs = await browser.tabs.query({active: true});
@@ -45,6 +65,32 @@ import resolve from "@src/background/resolve";
         type: MessageTypes.DISCONNECTED,
       });
     }
+  });
+
+  browser.omnibox.onInputEntered.addListener(async (hostname, disposition) => {
+    await waitForStartApp();
+    const optIn = await app.exec('setting', 'getResolver');
+
+    if (!optIn) return;
+
+    const magnetURI = getMagnetRecord(hostname);
+
+    if (magnetURI) {
+      torrentSVC.addTorrentError(hostname, '');
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      browser.tabs.update(tab.id, {
+        url: browser.extension.getURL('federalist.html') + '?h=' + hostname,
+      });
+      setTimeout(() => {
+        consume(magnetURI, hostname);
+      }, 1000);
+    } else {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      await browser.tabs.update(tab.id, {
+        url: 'http://' + hostname + '/',
+      });
+    }
+
   });
 
   async function waitForStartApp() {
@@ -62,10 +108,10 @@ import resolve from "@src/background/resolve";
   }
 })();
 
-function handleMessage(app: AppService, message: MessageAction) {
+function handleMessage(app: AppService, message: MessageAction, sender: MessageSender) {
   const controller = controllers[message.type];
 
   if (controller) {
-    return controller(app, message);
+    return controller(app, message, sender);
   }
 }
