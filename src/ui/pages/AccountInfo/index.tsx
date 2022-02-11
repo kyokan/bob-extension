@@ -24,10 +24,10 @@ import ErrorMessage from "@src/ui/components/ErrorMessage";
 import "./account-info.scss";
 
 export default function ReceiveTx() {
+  const history = useHistory();
   const dispatch = useDispatch();
   const address = useReceiveAddress();
   const currentAccount = useCurrentAccount();
-  const history = useHistory();
   const [rename, setRename] = useState(currentAccount);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditable, setIsEditable] = useState(false);

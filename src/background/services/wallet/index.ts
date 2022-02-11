@@ -674,13 +674,13 @@ class WalletService extends GenericService {
       type: "pubkeyhash",
       passphrase: this.passphrase,
     };
+
     if (!wallet) return null;
 
     const result = await wallet.createAccount(options, this.passphrase);
-    console.log(result);
-    // await this.selectAccount(name);
-    // const account = await wallet.getAccount(name || "default");
+    // console.log("Create wallet account:", result);
     const balance = await wallet.getBalance(result.accountIndex);
+
     return {
       wid: this.selectedID,
       ...result.getJSON(balance),
