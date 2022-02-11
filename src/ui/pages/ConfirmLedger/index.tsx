@@ -21,7 +21,7 @@ import {useQueuedTXByHash, useTXQueue} from "@src/ui/ducks/queue";
 import {
   Transaction,
   fetchPendingTransactions,
-  SignMessageRequest
+  SignMessageRequest,
 } from "@src/ui/ducks/transactions";
 import {LEDGER_USB_VENDOR_ID} from "@src/util/constants";
 
@@ -43,34 +43,39 @@ export default function ConfirmLedger(): ReactElement {
 
   const pendingTx = useQueuedTXByHash(pendingTXHashes[currentIndex]);
 
-  const confirmTx = useCallback(async (txJSON: Transaction|SignMessageRequest) => {
-    setIsLoading(false);
-
-    try {
-      setIsLoading(true);
+  const confirmTx = useCallback(
+    async (txJSON: Transaction | SignMessageRequest) => {
       setErrorMessage("");
+
+      try {
+        setIsLoading(true);
+        await postMessage({
+          type: MessageTypes.USE_LEDGER_PROXY,
+          payload: txJSON,
+        });
+      } catch (e: any) {
+        setIsLoading(false);
+        console.log("catch error:", e);
+        setErrorMessage(e.message);
+      }
+
+      setIsLoading(false);
+    },
+    []
+  );
+
+  const removeTx = useCallback(
+    async (txJSON: Transaction | SignMessageRequest) => {
       await postMessage({
-        type: MessageTypes.USE_LEDGER_PROXY,
+        type: MessageTypes.REJECT_TX,
         payload: txJSON,
       });
-    } catch (e: any) {
-      setIsLoading(false);
-      console.log("catch error:", e);
-      setErrorMessage(e.message);
-    }
-
-    setIsLoading(false);
-  }, []);
-
-  const removeTx = useCallback(async (txJSON: Transaction|SignMessageRequest) => {
-    await postMessage({
-      type: MessageTypes.REJECT_TX,
-      payload: txJSON,
-    });
-    setErrorMessage("");
-    dispatch(ledgerConnectHide());
-    history.push("/");
-  }, []);
+      setErrorMessage("");
+      dispatch(ledgerConnectHide());
+      history.push("/");
+    },
+    []
+  );
 
   useEffect(() => {
     if (ledgerErr !== "") {
@@ -86,8 +91,10 @@ export default function ConfirmLedger(): ReactElement {
   useEffect(() => {
     async function checkForLedgerDevices() {
       const devices: USBDevice[] = await Device.getDevices();
-      const filtered = devices.filter((d) => d.vendorId === LEDGER_USB_VENDOR_ID);
-      
+      const filtered = devices.filter(
+        (d) => d.vendorId === LEDGER_USB_VENDOR_ID
+      );
+
       if (filtered[0]) {
         setIsConnected(true);
         setIsUnlocked(true);

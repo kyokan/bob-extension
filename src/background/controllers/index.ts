@@ -258,6 +258,10 @@ const controllers: {
     return app.exec("wallet", "getState");
   },
 
+  [MessageTypes.SELECT_ACCOUNT]: async (app, message) => {
+    return app.exec("wallet", "selectAccount", message.payload);
+  },
+
   [MessageTypes.SELECT_WALLET]: async (app, message) => {
     return app.exec("wallet", "selectWallet", message.payload);
   },
@@ -274,17 +278,12 @@ const controllers: {
     return app.exec(
       "wallet",
       "createWalletAccount",
-      message.payload.options,
-      message.payload.walletId
+      message.payload
     );
   },
 
   [MessageTypes.GET_WALLETS_INFO]: async (app, message) => {
     return app.exec("wallet", "getWalletsInfo");
-  },
-
-  [MessageTypes.GET_WALLET_ACCOUNTS]: async (app, message) => {
-    return app.exec("wallet", "getWalletAccounts", message.payload);
   },
 
   [MessageTypes.GET_ACCOUNT_INFO]: async (app, message) => {
@@ -293,6 +292,32 @@ const controllers: {
       "getAccountInfo",
       message.payload?.accountName,
       message.payload?.id
+    );
+  },
+
+  [MessageTypes.GET_ACCOUNT_KEY]: async (app, message) => {
+    return app.exec(
+      "wallet",
+      "getAccountKey",
+      message.payload?.accountName,
+      message.payload?.id
+    );
+  },
+
+  [MessageTypes.GET_ACCOUNTS_INFO]: async (app, message) => {
+    return app.exec("wallet", "getAccountsInfo", message.payload);
+  },
+
+  [MessageTypes.GET_ACCOUNT_NAMES]: async (app, message) => {
+    return app.exec("wallet", "getAccountNames", message.payload);
+  },
+
+  [MessageTypes.RENAME_ACCOUNT]: async (app, message) => {
+    return app.exec(
+      "wallet",
+      "renameAccount",
+      message.payload.currentName,
+      message.payload.rename
     );
   },
 

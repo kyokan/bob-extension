@@ -3,9 +3,10 @@ import Identicon from "@src/ui/components/Identicon";
 import {
   lockWallet,
   selectWallet,
-  useCurrentWallet,
   useWallets,
   useWalletState,
+  selectAccount,
+  setCurrentAccount,
 } from "@src/ui/ducks/wallet";
 import {useHistory} from "react-router";
 import postMessage from "@src/util/postMessage";
@@ -21,7 +22,7 @@ export default function WalletMenu(): ReactElement {
   const dispatch = useDispatch();
   const {currentWallet, locked} = useWalletState();
   const [addresses, setAddresses] = useState<
-    {address: string; watchOnly: boolean}[]
+    {address: string; watchOnly: boolean; accounts: string[]}[]
   >([]);
   const [currentAddress, setCurrentAddress] = useState<string>("");
   const [isOpen, setOpen] = useState(false);
@@ -41,14 +42,23 @@ export default function WalletMenu(): ReactElement {
         if (wid === currentWallet) {
           setCurrentAddress(response);
         }
-        walletAddresses.push({address: response, watchOnly: wallet.watchOnly});
+        walletAddresses.push({
+          address: response,
+          watchOnly: wallet.watchOnly,
+          accounts: wallet.accounts,
+        });
       }
       setAddresses(walletAddresses);
     })();
-  }, [walletIDs.join(","), currentWallet]);
+  }, [walletIDs.join(","), currentWallet, wallets]);
 
   const onSelectWallet = useCallback((id: string) => {
     dispatch(selectWallet(id));
+    dispatch(setCurrentAccount("default"));
+  }, []);
+
+  const onSelectAccount = useCallback((accountName: string) => {
+    dispatch(selectAccount(accountName));
   }, []);
 
   return (
@@ -60,20 +70,52 @@ export default function WalletMenu(): ReactElement {
       {isOpen && (
         <div className="wallet-menu__menu">
           {addresses.map((address, i) => {
+            const multiAccount =
+              !locked && currentWallet === walletIDs[i] && !address.watchOnly;
             return (
-              <div
-                key={i}
-                className="wallet-menu__menu__row"
-                onClick={() => onSelectWallet(walletIDs[i])}
-              >
-                <Identicon value={address.address} />
-                <div className="wallet-menu__menu__row__name">
-                  {walletIDs[i]}
-                  {address.watchOnly && (
-                    <div className="wallet-menu__menu__pill">Ledger</div>
-                  )}
+              <>
+                <div
+                  key={i}
+                  className="wallet-menu__menu__row"
+                  onClick={() => onSelectWallet(walletIDs[i])}
+                >
+                  <Identicon value={address.address} />
+                  <div className="wallet-menu__menu__row__name">
+                    {walletIDs[i]}
+                    {address.watchOnly && (
+                      <div className="wallet-menu__menu__pill">Ledger</div>
+                    )}
+                    {multiAccount && (
+                      <div
+                        className="wallet-menu__menu__create-account"
+                        onClick={() => history.push("/create-account")}
+                      >
+                        <Icon fontAwesome="fa-plus" size={0.6} />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+
+                {multiAccount && (
+                  <div className="wallet-menu__menu__accounts">
+                    {address.accounts.map((account, i) => {
+                      if (account !== "default") {
+                        return (
+                          <div
+                            key={i}
+                            className="wallet-menu__menu__accounts__row"
+                            onClick={() => onSelectAccount(account)}
+                          >
+                            <div className="wallet-menu__menu__accounts__row__name">
+                              {account}
+                            </div>
+                          </div>
+                        );
+                      }
+                    })}
+                  </div>
+                )}
+              </>
             );
           })}
           <div className="wallet-menu__menu__divider" />

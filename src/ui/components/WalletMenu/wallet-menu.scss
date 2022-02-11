@@ -40,12 +40,32 @@
       padding: 0.15rem 0.5rem;
     }
 
+    &__create-account {
+      @extend %clickable;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background-color: $primary-blue;
+      border-radius: 50%;
+      color: $white;
+      height: 1.25rem;
+      width: 1.25rem;
+    }
+
     &__row {
       @extend %row-nowrap;
       align-items: center;
       padding: 0.25rem 0.5rem;
       cursor: pointer;
       transition: background-color 200ms ease-in-out;
+
+      &:hover {
+        background-color: rgba($black, 0.035);
+      }
+
+      &:active {
+        background-color: $lightgray;
+      }
 
       .identicon {
         border: 1px solid $border-gray;
@@ -68,14 +88,46 @@
         justify-content: space-between;
         font-weight: 500;
         margin-left: 0.5rem;
-      }
 
-      &:hover {
-        background-color: rgba($black, 0.035);
+        &:hover {
+          .wallet-menu__menu__create-account {
+            display: flex;
+          }
+        }
       }
+    }
 
-      &:active {
-        background-color: $lightgray;
+    &__accounts {
+      background-color: $lightgray;
+      // border-top: 1px solid $border-gray;
+      // border-bottom: 1px solid $border-gray;
+      max-height: 137.5px;
+      overflow-y: auto;
+
+      &__row {
+        @extend %row-nowrap;
+        align-items: center;
+        padding: 0.5rem 0.5rem;
+        cursor: pointer;
+        transition: background-color 200ms ease-in-out;
+
+        &:hover {
+          background-color: rgba($black, 0.035);
+        }
+
+        &:active {
+          background-color: $lightgray;
+        }
+
+        &__name {
+          @extend %lite-font;
+          display: flex;
+          flex: 1;
+          align-items: center;
+          justify-content: space-between;
+          font-weight: 500;
+          margin-left: 0.5rem;
+        }
       }
     }
   }

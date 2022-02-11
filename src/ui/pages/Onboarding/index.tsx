@@ -269,10 +269,10 @@ function Terms(props: {
         <TermsOfUse />
       </OnboardingModalContent>
       <OnboardingModalFooter>
-        <div className="terms__checkbox">
-          <Checkbox checked={accepted} onChange={() => setAccept(!accepted)} />
+        <label className="terms__checkbox" htmlFor="accept-terms">
+          <Checkbox id="accept-terms" checked={accepted} onChange={() => setAccept(!accepted)} />
           <small>I accept the terms of use.</small>
-        </div>
+        </label>
         <Button
           onClick={() => history.push("/onboarding/name-your-wallet")}
           disabled={!accepted}
@@ -816,8 +816,8 @@ function OptInAnalytics(props: {
       </OnboardingModalContent>
       <OnboardingModalFooter>
         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-        <label className="terms__checkbox" htmlFor="optin">
-          <Checkbox id="optin" checked={optIn} onChange={() => setOptIn(!optIn)} />
+        <label className="terms__checkbox" htmlFor="opt-in">
+          <Checkbox id="opt-in" checked={optIn} onChange={() => setOptIn(!optIn)} />
           <small>Yes, opt me in.</small>
         </label>
         <Button onClick={onNext} disabled={loading} loading={loading}>

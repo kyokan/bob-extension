@@ -8,7 +8,10 @@ import {
   fetchWalletState,
   useInitialized,
   useWalletState,
-  fetchWalletAccounts,
+  useCurrentAccount,
+  fetchAccountNames,
+  fetchAccountsInfo,
+  fetchReceiveAddress,
 } from "@src/ui/ducks/wallet";
 import {useLedgerConnect} from "@src/ui/ducks/ledger";
 import AppHeader from "@src/ui/components/AppHeader";
@@ -27,10 +30,13 @@ import {useTXQueue} from "@src/ui/ducks/queue";
 import Settings from "@src/ui/pages/Settings";
 import DomainPage from "@src/ui/pages/Domain";
 import ConfirmLedger from "@src/ui/pages/ConfirmLedger";
+import CreateAccount from "@src/ui/pages/CreateAccount";
+import AccountInfo from "@src/ui/pages/AccountInfo";
 
 export default function Popup(): ReactElement {
   const dispatch = useDispatch();
   const initialized = useInitialized();
+  const currentAccount = useCurrentAccount();
   const {locked, currentWallet} = useWalletState();
   const [loading, setLoading] = useState(true);
   const queuedTXHashes = useTXQueue();
@@ -51,7 +57,9 @@ export default function Popup(): ReactElement {
         await dispatch(fetchWallets());
         await dispatch(fetchWalletIDs());
         await dispatch(fetchWalletState());
-        await dispatch(fetchWalletAccounts(currentWallet));
+        await dispatch(fetchAccountNames(currentWallet));
+        await dispatch(fetchAccountsInfo(currentWallet));
+        await dispatch(fetchReceiveAddress(currentWallet, currentAccount));
         await dispatch(fetchLatestBlock());
       } catch (e) {
         console.error(e);
@@ -136,6 +144,12 @@ export default function Popup(): ReactElement {
         </Route>
         <Route path="/send">
           <SendTx />
+        </Route>
+        <Route path="/create-account">
+          <CreateAccount />
+        </Route>
+        <Route path="/account-info">
+          <AccountInfo />
         </Route>
         <Route path="/settings">
           <Settings />

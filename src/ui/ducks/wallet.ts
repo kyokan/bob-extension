@@ -11,7 +11,11 @@ export enum ActionType {
   SET_WALLETS = "wallet/setWallets",
   SET_WALLET_STATE = "wallet/setWalletState",
   SET_WALLET_BALANCE = "wallet/setWalletBalance",
-  SET_WALLET_ACCOUNTS = "wallet/setWalletAccounts",
+  SET_ACCOUNT_INFO = "wallet/setAccountInfo",
+  SET_ACCOUNTS_INFO = "wallet/setAccountsInfo",
+  SET_ACCOUNT_NAMES = "wallet/setAccountNames",
+  SET_CURRENT_ACCOUNT = "wallet/setCurrentAccount",
+  SET_RECEIVE_ADDRESS = "wallet/setReceiveAddress",
 }
 
 type Action = {
@@ -27,18 +31,21 @@ type State = {
     encrypted: string;
     watchOnly: boolean;
     wid: string;
+    accounts: string[];
   }[];
   walletIDs: string[];
   currentWallet: string;
-  accounts: {
+  accountInfo: {
     accountIndex: number;
     name: string;
     type: string;
     watchOnly: boolean;
     wid: string;
-  }[];
+  };
+  accountNames: string[];
   currentAccount: string;
   locked: boolean;
+  receiveAddress: string;
   rescanning: boolean;
   watchOnly: boolean;
   tip: {
@@ -56,9 +63,17 @@ const initialState: State = {
   wallets: [],
   walletIDs: [],
   currentWallet: "",
-  accounts: [],
-  currentAccount: "",
+  accountInfo: {
+    accountIndex: 0,
+    name: "",
+    type: "",
+    watchOnly: false,
+    wid: "",
+  },
+  accountNames: [],
+  currentAccount: "default",
   locked: true,
+  receiveAddress: "",
   rescanning: false,
   watchOnly: false,
   tip: {
@@ -166,17 +181,56 @@ export const fetchWallets = () => async (dispatch: Dispatch) => {
   });
 };
 
-export const fetchWalletAccounts =
+export const fetchAccountNames =
+  (walletID: string) => async (dispatch: Dispatch) => {
+    const accountNames = await postMessage({
+      type: MessageTypes.GET_ACCOUNT_NAMES,
+      payload: walletID,
+    });
+    dispatch({
+      type: ActionType.SET_ACCOUNT_NAMES,
+      payload: accountNames,
+    });
+  };
+
+export const setAccountNames = (accountNames: string[]) => {
+  return {
+    type: ActionType.SET_ACCOUNT_NAMES,
+    payload: accountNames,
+  };
+};
+
+export const fetchAccountsInfo =
   (walletId: string) => async (dispatch: Dispatch) => {
-    const accounts = await postMessage({
-      type: MessageTypes.GET_WALLET_ACCOUNTS,
+    const accountsInfo = await postMessage({
+      type: MessageTypes.GET_ACCOUNTS_INFO,
       payload: walletId,
     });
     dispatch({
-      type: ActionType.SET_WALLET_ACCOUNTS,
-      payload: accounts,
+      type: ActionType.SET_ACCOUNTS_INFO,
+      payload: accountsInfo,
     });
   };
+
+export const selectAccount =
+  (accountName: string) =>
+  async (dispatch: ThunkDispatch<AppRootState, any, Action>) => {
+    const selected = await postMessage({
+      type: MessageTypes.SELECT_ACCOUNT,
+      payload: accountName,
+    });
+    dispatch({
+      type: ActionType.SET_ACCOUNT_INFO,
+      payload: selected,
+    });
+  };
+
+export const setCurrentAccount = (accountName: string) => {
+  return {
+    type: ActionType.SET_CURRENT_ACCOUNT,
+    payload: accountName,
+  };
+};
 
 export const fetchWalletIDs = () => async (dispatch: Dispatch) => {
   const walletIDs = await postMessage({type: MessageTypes.GET_WALLET_IDS});
@@ -194,8 +248,31 @@ export const selectWallet =
       payload: id,
     });
     await dispatch(fetchWalletState());
-    await dispatch(fetchWalletAccounts(id));
+    await dispatch(fetchAccountsInfo(id));
+    await dispatch(selectAccount("default"));
   };
+
+export const fetchReceiveAddress =
+  (id: string, accountName: string) => async (dispatch: Dispatch) => {
+    const address = await postMessage({
+      type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
+      payload: {
+        id,
+        accountName,
+      },
+    });
+    dispatch({
+      type: ActionType.SET_RECEIVE_ADDRESS,
+      payload: address,
+    });
+  };
+
+export const setReceiveAddress = (receiveAddress: string) => {
+  return {
+    type: ActionType.SET_RECEIVE_ADDRESS,
+    payload: receiveAddress,
+  };
+};
 
 export default function wallet(state = initialState, action: Action): State {
   switch (action.type) {
@@ -226,10 +303,31 @@ export default function wallet(state = initialState, action: Action): State {
         rescanning: action.payload.rescanning,
         watchOnly: action.payload.watchOnly,
       };
-    case ActionType.SET_WALLET_ACCOUNTS:
+    case ActionType.SET_ACCOUNT_NAMES:
       return {
         ...state,
-        accounts: action.payload,
+        accountNames: action.payload,
+      };
+    case ActionType.SET_CURRENT_ACCOUNT:
+      return {
+        ...state,
+        currentAccount: action.payload,
+      };
+    // case ActionType.SET_ACCOUNTS_INFO:
+    //   return {
+    //     ...state,
+    //     accounts: action.payload,
+    //   };
+    case ActionType.SET_ACCOUNT_INFO:
+      return {
+        ...state,
+        accountInfo: action.payload,
+        currentAccount: action.payload.name,
+      };
+    case ActionType.SET_RECEIVE_ADDRESS:
+      return {
+        ...state,
+        receiveAddress: action.payload,
       };
     default:
       return state;
@@ -266,9 +364,27 @@ export const useWalletState = () => {
   }, deepEqual);
 };
 
-export const useWalletAccounts = () => {
+export const useAccountNames = () => {
   return useSelector((state: AppRootState) => {
-    return state.wallet.accounts;
+    return state.wallet.accountNames;
+  }, deepEqual);
+};
+
+export const useAccountInfo = () => {
+  return useSelector((state: AppRootState) => {
+    return state.wallet.accountInfo;
+  }, deepEqual);
+};
+
+// export const useWalletAccounts = () => {
+//   return useSelector((state: AppRootState) => {
+//     return state.wallet.accounts;
+//   }, deepEqual);
+// };
+
+export const useCurrentAccount = () => {
+  return useSelector((state: AppRootState) => {
+    return state.wallet.currentAccount;
   }, deepEqual);
 };
 
@@ -289,5 +405,11 @@ export const useInitialized = () => {
       wallet: {walletIDs},
     } = state;
     return !!walletIDs.length;
+  }, deepEqual);
+};
+
+export const useReceiveAddress = () => {
+  return useSelector((state: AppRootState) => {
+    return state.wallet.receiveAddress;
   }, deepEqual);
 };

@@ -1,0 +1,61 @@
+@import "./src/util/variables";
+
+.account-menu {
+  cursor: pointer;
+  margin-right: -0.5rem;
+  padding: 0 0.5rem;
+  position: relative;
+  z-index: 250;
+
+  &__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  &__menu {
+    position: absolute;
+    z-index: 200;
+    border-radius: 0.1875rem;
+    top: 100%;
+    right: 0;
+    background-color: $white;
+    box-shadow: 0 2px 2px 1px rgba($black, 0.1);
+    width: 12rem;
+
+    &__row {
+      @extend %row-nowrap;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      transition: background-color 200ms ease-in-out;
+
+      &:hover {
+        background-color: rgba($black, 0.035);
+      }
+
+      &:active {
+        background-color: $lightgray;
+      }
+
+      .icon {
+        border: 1px solid transparent;
+        width: 1.5rem;
+        height: 1.5rem;
+        padding: 0.125rem;
+      }
+
+      &__name {
+        @extend %lite-font;
+        display: flex;
+        flex: 1;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 500;
+        margin-left: 0.5rem;
+      }
+    }
+  }
+}

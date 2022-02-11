@@ -22,16 +22,19 @@ $border-radius: 0.15rem;
 
 %flex {
   display: flex;
+  box-sizing: border-box;
 }
 
 %col-nowrap {
   @extend %flex;
   flex-flow: column nowrap;
+  box-sizing: border-box;
 }
 
 %row-nowrap {
   @extend %flex;
   flex-flow: row nowrap;
+  box-sizing: border-box;
 }
 
 %small-font {

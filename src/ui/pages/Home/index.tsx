@@ -6,15 +6,23 @@ import React, {
   useState,
 } from "react";
 import {
+  fetchWallets,
+  fetchWalletIDs,
+  fetchWalletState,
   fetchWalletBalance,
-  useCurrentWallet,
   useWalletBalance,
+  useCurrentWallet,
+  useCurrentAccount,
+  useAccountNames,
+  useAccountInfo,
+  useReceiveAddress,
 } from "@src/ui/ducks/wallet";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import Identicon from "@src/ui/components/Identicon";
 import {useDispatch} from "react-redux";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
+import truncString from "@src/util/truncString";
 import "./home.scss";
 import {
   ReceiveButton,
@@ -23,6 +31,8 @@ import {
   SendButton,
 } from "@src/ui/components/HomeActionButton";
 import classNames from "classnames";
+import copy from "copy-to-clipboard";
+import Icon from "@src/ui/components/Icon";
 import {
   fetchTransactions,
   resetTransactions,
@@ -40,38 +50,37 @@ import Domains from "@src/ui/components/Domains";
 import {fetchTXQueue} from "@src/ui/ducks/queue";
 import {useLocation} from "react-router";
 import queryString from "querystring";
+import HandshakeSymbol from "@src/ui/components/HandshakeSymbol";
+import AccountMenu from "@src/ui/components/AccountMenu";
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
   const txOffset = useTXOffset();
   const domainOffset = useDomainOffset();
   const currentWallet = useCurrentWallet();
+  const currentAddress = useReceiveAddress();
   const loc = useLocation();
   const parsed = queryString.parse(loc.search.slice(1));
   const [tab, setTab] = useState<"domains" | "activity">(
     (parsed.defaultTab as any) || "activity"
   );
   const {spendable, lockedUnconfirmed} = useWalletBalance();
-  const [currentAddress, setCurrentAddress] = useState("");
   const listElement = useRef<HTMLDivElement>(null);
   const pageElement = useRef<HTMLDivElement>(null);
   const [fixHeader, setFixHeader] = useState(false);
 
-  // Test create account
-  const onCreateAccount = async () => {
-    const result = await postMessage({
-      type: MessageTypes.CREATE_NEW_WALLET_ACCOUNT,
-      payload: {
-        options: {
-          name: "testAccountA",
-          passphrase: "testcreate",
-          type: "pubkeyhash",
-        },
-        walletId: "testcreate",
-      },
-    });
-    console.log("create account:", result);
-  };
+  console.log("currentAddress:", currentAddress);
+
+  const currentAccount = useCurrentAccount();
+  console.log("currentAccount:", currentAccount);
+
+  const accountNames = useAccountNames();
+  console.log("accountNames:", accountNames);
+
+  const accountInfo = useAccountInfo();
+  console.log("accountInfo:", accountInfo);
+
+  const isDefault = currentAccount === "default";
 
   useEffect(() => {
     return () => {
@@ -87,14 +96,15 @@ export default function Home(): ReactElement {
       try {
         await dispatch(fetchWalletBalance());
 
-        const address = await postMessage({
-          type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
-          payload: {
-            id: currentWallet,
-            depth: 0,
-          },
-        });
-        setCurrentAddress(address);
+        // const address = await postMessage({
+        //   type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
+        //   payload: {
+        //     id: currentWallet,
+        //     accountName: currentAccount,
+        //   },
+        // });
+        // setCurrentAddress(address);
+
         await dispatch(fetchTXQueue());
         dispatch(fetchTransactions());
         dispatch(fetchDomainNames());
@@ -135,14 +145,47 @@ export default function Home(): ReactElement {
       ref={pageElement}
       onScroll={_onScroll}
     >
-      <div className="home__top">
-        <Identicon value={currentAddress} />
+      <div className="home__account">
         <div className="home__account-info">
-          <small className="home__account-info__label">{currentWallet}</small>
-          <div className="home__account-info__spendable">
-            {`${formatNumber(fromDollaryDoos(spendable))} HNS`}
+          <span className="home__account-info__label">
+            {currentAccount == "default" || currentAccount == ""
+              ? currentWallet
+              : currentAccount}
+          </span>
+          <span
+            className="home__account-info__address"
+            onClick={() => copy(currentAddress)}
+          >
+            <small>{truncString(currentAddress, 6, 4)}</small>
+            <Icon
+              fontAwesome="fa-copy"
+              solid={false}
+              size={0.65}
+              onClick={() => copy(currentAddress)}
+            />
+          </span>
+        </div>
+        {!isDefault && (
+          <div className="home__account-util">
+            <AccountMenu />
           </div>
-          {/* <small className="home__account-info__locked"> */}
+        )}
+      </div>
+
+      <div className="home__wallet">
+        {/* <Identicon value={currentAddress} /> */}
+        <div className="home__wallet-info">
+          {/* <small className="home__wallet-info__label">{currentWallet}</small> */}
+          <div className="home__wallet-info__spendable">
+            {formatNumber(fromDollaryDoos(spendable))}
+          </div>
+          <div className="hns">
+            <div className="hns__symbol">
+              <HandshakeSymbol fill="black" size={1.25} />
+            </div>
+            hns
+          </div>
+          {/* <small className="home__wallet-info__locked"> */}
           {/* {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(lockedUnconfirmed))} HNS locked up`} */}
           {/* </small> */}
         </div>
@@ -151,13 +194,6 @@ export default function Home(): ReactElement {
         <SendButton />
         <ReceiveButton />
         <RevealButton />
-      </div>
-
-      {/*
-        Test create account
-      */}
-      <div>
-        <button onClick={onCreateAccount}>create account</button>
       </div>
 
       <div className="home__list" ref={listElement}>

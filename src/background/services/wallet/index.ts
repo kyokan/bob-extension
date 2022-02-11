@@ -11,6 +11,9 @@ import {
 import {
   ActionType as WalletActionType,
   setWalletBalance,
+  setReceiveAddress,
+  setCurrentAccount,
+  setAccountNames,
 } from "@src/ui/ducks/wallet";
 import {ActionType as AppActionType} from "@src/ui/ducks/app";
 import {
@@ -25,7 +28,7 @@ import {
   SIGN_MESSAGE_METHOD,
   SIGN_MESSAGE_WITH_NAME_METHOD,
   SignMessageRequest,
-  Transaction
+  Transaction,
 } from "@src/ui/ducks/transactions";
 import {ActionTypes, setDomainNames} from "@src/ui/ducks/domains";
 import {ActionType as QueueActionType, setTXQueue} from "@src/ui/ducks/queue";
@@ -36,8 +39,8 @@ import {UpdateRecordType} from "@src/contentscripts/bob3";
 import {getBidBlind, getTXAction} from "@src/util/transaction";
 import {setInfo} from "@src/ui/ducks/node";
 import nodeService from "../node";
-import crypto from 'crypto';
-const Mnemonic = require('hsd/lib/hd/mnemonic');
+import crypto from "crypto";
+const Mnemonic = require("hsd/lib/hd/mnemonic");
 const WalletDB = require("hsd/lib/wallet/walletdb");
 const Network = require("hsd/lib/protocol/network");
 const Covenant = require("hsd/lib/primitives/covenant");
@@ -59,7 +62,7 @@ const layout = require("hsd/lib/wallet/layout").txdb;
 const {Resource} = require("hsd/lib/dns/resource");
 
 const {Device} = USB;
-const blake2b = require('bcrypto/lib/blake2b');
+const blake2b = require("bcrypto/lib/blake2b");
 
 const {types, typesByVal} = rules;
 const networkType = process.env.NETWORK_TYPE || "main";
@@ -72,6 +75,7 @@ declare interface WalletService {
   transactions?: any[] | null;
   domains?: any[] | null;
   selectedID: string;
+  selectedAccount: string;
   locked: boolean;
   rescanning: boolean;
   watchOnly: boolean;
@@ -92,6 +96,7 @@ class WalletService extends GenericService {
   constructor() {
     super();
     this.selectedID = "";
+    this.selectedAccount = "default";
     this.locked = true;
     this.rescanning = false;
     this.watchOnly = false;
@@ -161,6 +166,12 @@ class WalletService extends GenericService {
 
   selectWallet = async (id: string) => {
     const walletIDs = await this.getWalletIDs();
+    const accountNames = await this.getAccountNames(id);
+    const walletOptions = {
+      id: id,
+      accountName: "default",
+      depth: 0,
+    };
 
     if (!walletIDs.includes(id)) {
       throw new Error(`Cannot find wallet - ${id}`);
@@ -170,6 +181,7 @@ class WalletService extends GenericService {
       const wallet = await this.wdb.get(id);
       await wallet.lock();
       this.emit("locked");
+      this.selectedAccount = "default";
       this.transactions = null;
       this.domains = null;
       this.locked = true;
@@ -177,12 +189,17 @@ class WalletService extends GenericService {
       await pushMessage(setTransactions([]));
       await pushMessage(setDomainNames([]));
       await pushMessage(setTXQueue([]));
+      await pushMessage(setAccountNames(accountNames));
       try {
         await pushMessage(setWalletBalance(await this.getWalletBalance()));
       } catch (e) {
         console.error(e);
       }
     }
+
+    await pushMessage(
+      setReceiveAddress(await this.getWalletReceiveAddress(walletOptions))
+    );
 
     this.selectedID = id;
   };
@@ -197,19 +214,27 @@ class WalletService extends GenericService {
 
     for (const wid of wallets) {
       const info = await this.wdb.get(wid);
+      const accounts = await this.getAccountNames(wid);
       const {
         accountDepth,
         master: {encrypted},
         watchOnly,
       } = info;
-      walletsInfo.push({wid, accountDepth, encrypted, watchOnly});
+      walletsInfo.push({wid, accountDepth, encrypted, watchOnly, accounts});
     }
 
     return walletsInfo;
   };
 
-  getWalletAccounts = async (id?: string) => {
-    const wallet = await this.wdb.get(id || "primary");
+  getAccountNames = async (walletID?: string) => {
+    const wallet = await this.wdb.get(walletID || this.selectedID);
+    const accounts = await wallet.getAccounts();
+
+    return accounts;
+  };
+
+  getAccountsInfo = async (walletID?: string) => {
+    const wallet = await this.wdb.get(walletID || "primary");
     const walletAccounts = await wallet.getAccounts();
     const accounts = [];
 
@@ -235,11 +260,77 @@ class WalletService extends GenericService {
     };
   };
 
+  renameAccount = async (currentName: string, rename: string) => {
+    const wallet = await this.wdb.get(this.selectedID);
+
+    if (rename === currentName) {
+      return;
+    }
+
+    try {
+      await wallet.renameAccount(currentName, rename);
+    } catch (e) {
+      console.error(e);
+    }
+
+    await this.selectAccount(rename);
+    await pushMessage(setCurrentAccount(rename));
+  };
+
+  selectAccount = async (accountName: string) => {
+    const accountNames = await this.getAccountNames();
+    const account = await this.getAccountInfo(accountName);
+    const {accountIndex, name, type, watchOnly, wid} = account;
+    const walletOptions = {
+      id: this.selectedID,
+      accountName,
+      depth: 0,
+    };
+
+    if (!accountNames.includes(accountName)) {
+      throw new Error(`Cannot find account - ${accountName}`);
+    }
+
+    if (this.selectedAccount !== accountName) {
+      this.selectedAccount = accountName;
+      this.transactions = null;
+      this.domains = null;
+      await this.pushState();
+      await pushMessage(setTransactions([]));
+      await pushMessage(setDomainNames([]));
+      await pushMessage(setTXQueue([]));
+
+      try {
+        await pushMessage(
+          setWalletBalance(
+            await this.getWalletBalance(this.selectedID, accountName)
+          )
+        );
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    await pushMessage(
+      setReceiveAddress(await this.getWalletReceiveAddress(walletOptions))
+    );
+
+    return {
+      accountIndex,
+      name,
+      type,
+      watchOnly,
+      wid,
+    };
+  };
+
   getWalletReceiveAddress = async (
-    options: {id?: string; depth: number} = {depth: -1}
+    options: {id?: string; accountName?: string; depth: number} = {
+      depth: -1,
+    }
   ) => {
     const wallet = await this.wdb.get(options.id || this.selectedID);
-    const account = await wallet.getAccount("default");
+    const account = await wallet.getAccount(options.accountName || "default");
     return account
       .deriveReceive(
         options.depth > -1 ? options.depth : account.receiveDepth - 1
@@ -248,10 +339,10 @@ class WalletService extends GenericService {
       .toString(this.network);
   };
 
-  getWalletBalance = async (id?: string) => {
+  getWalletBalance = async (id?: string, accountName?: string) => {
     const walletId = id || this.selectedID;
     const wallet = await this.wdb.get(walletId);
-    const balance = await wallet.getBalance();
+    const balance = await wallet.getBalance(accountName || "default");
     return wallet.getJSON(false, balance).balance;
   };
 
@@ -576,22 +667,22 @@ class WalletService extends GenericService {
     return wallet.getJSON(false, balance);
   };
 
-  createWalletAccount = async (
-    options: {name: string; passphrase: string; type: string},
-    walletId: string
-  ) => {
-    const {name, passphrase} = options;
-    const wallet = await this.wdb.get(walletId || "primary");
-    
+  createWalletAccount = async (accountName: string) => {
+    const wallet = await this.wdb.get(this.selectedID);
+    const options = {
+      name: accountName,
+      type: "pubkeyhash",
+      passphrase: this.passphrase,
+    };
     if (!wallet) return null;
 
-    const result = await wallet.createAccount(options, passphrase);
+    const result = await wallet.createAccount(options, this.passphrase);
     console.log(result);
     // await this.selectAccount(name);
     // const account = await wallet.getAccount(name || "default");
     const balance = await wallet.getBalance(result.accountIndex);
     return {
-      wid: walletId,
+      wid: this.selectedID,
       ...result.getJSON(balance),
     };
   };
@@ -1145,11 +1236,14 @@ class WalletService extends GenericService {
     });
   };
 
-  submitTx = async (opts: {txJSON: Transaction|SignMessageRequest; password: string}) => {
+  submitTx = async (opts: {
+    txJSON: Transaction | SignMessageRequest;
+    password: string;
+  }) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
     const action = getTXAction(opts.txJSON);
-    
+
     this.exec("analytics", "track", {
       name: "Submit",
       data: {
@@ -1161,41 +1255,55 @@ class WalletService extends GenericService {
 
     if (wallet.watchOnly) {
       if (opts.txJSON.method === SIGN_MESSAGE_WITH_NAME_METHOD) {
-        await pushMessage(ledgerConnectErr("cannot sign message with name with watch-only wallet"));
+        await pushMessage(
+          ledgerConnectErr(
+            "cannot sign message with name with watch-only wallet"
+          )
+        );
         return;
       }
-  
+
       if (opts.txJSON.method === SIGN_MESSAGE_METHOD) {
-        await pushMessage(ledgerConnectErr("cannot sign message with watch-only wallet"));
+        await pushMessage(
+          ledgerConnectErr("cannot sign message with watch-only wallet")
+        );
         return;
       }
 
       await pushMessage(ledgerConnectShow());
     } else {
       if (opts.txJSON.method === SIGN_MESSAGE_WITH_NAME_METHOD) {
-        returnValue = await this.signMessageWithName(opts.txJSON.data.name!, opts.txJSON.data.message);
+        returnValue = await this.signMessageWithName(
+          opts.txJSON.data.name!,
+          opts.txJSON.data.message
+        );
       }
-  
+
       if (opts.txJSON.method === SIGN_MESSAGE_METHOD) {
-        returnValue = await this.signMessage(opts.txJSON.data.address!, opts.txJSON.data.message);
+        returnValue = await this.signMessage(
+          opts.txJSON.data.address!,
+          opts.txJSON.data.message
+        );
       }
-  
+
       if (!opts.txJSON.method) {
-        const latestBlockNow = await this.exec('node', 'getLatestBlock');
+        const latestBlockNow = await this.exec("node", "getLatestBlock");
         this.wdb.height = latestBlockNow.height;
         const mtx = MTX.fromJSON(opts.txJSON);
         const tx = await wallet.sendMTX(mtx, this.passphrase);
-        await this.exec('node', 'sendRawTransaction', tx.toHex());
+        await this.exec("node", "sendRawTransaction", tx.toHex());
         returnValue = tx.getJSON(this.network);
       }
 
       await this.removeTxFromQueue(opts.txJSON);
-      this.emit('txAccepted', returnValue);
+      this.emit("txAccepted", returnValue);
       return returnValue;
     }
   };
 
-  async _addOutputPathToTxQueue(queue: Transaction[]|SignMessageRequest[]): Promise<Transaction[]|SignMessageRequest[]> {
+  async _addOutputPathToTxQueue(
+    queue: Transaction[] | SignMessageRequest[]
+  ): Promise<Transaction[] | SignMessageRequest[]> {
     for (let i = 0; i < queue.length; i++) {
       const tx = queue[i];
 
@@ -1204,7 +1312,11 @@ class WalletService extends GenericService {
       }
 
       if (!tx.method) {
-        for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
+        for (
+          let outputIndex = 0;
+          outputIndex < tx.outputs.length;
+          outputIndex++
+        ) {
           const output = tx.outputs[outputIndex];
           output.owned = await this.hasAddress(output.address);
         }
@@ -1352,12 +1464,19 @@ class WalletService extends GenericService {
     }
   };
 
-  createSignMessageRequest = async (message: string, address?: string, name?: string): Promise<SignMessageRequest> => {
+  createSignMessageRequest = async (
+    message: string,
+    address?: string,
+    name?: string
+  ): Promise<SignMessageRequest> => {
     const walletId = this.selectedID;
 
-    if (typeof address === 'string') {
+    if (typeof address === "string") {
       return {
-        hash: crypto.createHash('sha256').update(Buffer.from(address + message + Date.now()).toString('hex')).digest('hex'),
+        hash: crypto
+          .createHash("sha256")
+          .update(Buffer.from(address + message + Date.now()).toString("hex"))
+          .digest("hex"),
         method: SIGN_MESSAGE_METHOD,
         walletId: walletId,
         data: {
@@ -1369,9 +1488,12 @@ class WalletService extends GenericService {
       };
     }
 
-    if (typeof name === 'string') {
+    if (typeof name === "string") {
       return {
-        hash: crypto.createHash('sha256').update(Buffer.from(name + message + Date.now()).toString('hex')).digest('hex'),
+        hash: crypto
+          .createHash("sha256")
+          .update(Buffer.from(name + message + Date.now()).toString("hex"))
+          .digest("hex"),
         method: SIGN_MESSAGE_WITH_NAME_METHOD,
         walletId: walletId,
         data: {
@@ -1380,15 +1502,17 @@ class WalletService extends GenericService {
         },
         bid: undefined,
         height: 0,
-      }
+      };
     }
 
-    throw new Error('name or address must be present');
+    throw new Error("name or address must be present");
   };
 
-  signMessage = async(address: string, msg: string): Promise<string> => {
-    if(!address || !msg) {
-      throw new Error('Requires parameters address of type string and msg of type string.');
+  signMessage = async (address: string, msg: string): Promise<string> => {
+    if (!address || !msg) {
+      throw new Error(
+        "Requires parameters address of type string and msg of type string."
+      );
     }
 
     const walletId = this.selectedID;
@@ -1398,20 +1522,20 @@ class WalletService extends GenericService {
       await wallet.unlock(this.passphrase, 60000);
       const key = await wallet.getKey(Address.from(address));
 
-      if(!key) {
-        throw new Error('Address not found.');
+      if (!key) {
+        throw new Error("Address not found.");
       }
 
-      if(!wallet.master.key) {
-        throw new Error('Wallet is locked');
+      if (!wallet.master.key) {
+        throw new Error("Wallet is locked");
       }
 
-      const _msg = Buffer.from(MAGIC_STRING + msg, 'utf8');
+      const _msg = Buffer.from(MAGIC_STRING + msg, "utf8");
       const hash = blake2b.digest(_msg);
 
       const sig = key.sign(hash);
 
-      return sig.toString('base64');
+      return sig.toString("base64");
     } finally {
       await wallet.lock();
     }
@@ -1419,9 +1543,11 @@ class WalletService extends GenericService {
 
   signMessageWithName = async (name: string, msg: string): Promise<string> => {
     if (!name || !msg) {
-      throw new Error('Requires parameters name of type string and msg of type string.');
+      throw new Error(
+        "Requires parameters name of type string and msg of type string."
+      );
     } else if (!rules.verifyName(name)) {
-      throw new Error('Requires valid name per Handshake protocol rules.');
+      throw new Error("Requires valid name per Handshake protocol rules.");
     }
 
     const walletId = this.selectedID;
@@ -1432,14 +1558,14 @@ class WalletService extends GenericService {
 
       const ns = await wallet.getNameStateByName(name);
 
-      if(!ns || !ns.owner) {
-        throw new Error('Cannot find the name owner.');
+      if (!ns || !ns.owner) {
+        throw new Error("Cannot find the name owner.");
       }
 
       const coin = await wallet.getCoin(ns.owner.hash, ns.owner.index);
 
-      if(!coin) {
-        throw new Error('Cannot find the address of the name owner.');
+      if (!coin) {
+        throw new Error("Cannot find the address of the name owner.");
       }
 
       const address = coin.address.toString(this.network);
@@ -1831,13 +1957,13 @@ class WalletService extends GenericService {
         throw new Error(
           "Ledger public key does not match wallet. (Wrong device?)"
         );
-      
+
       const latestBlockNow = await this.exec("node", "getLatestBlock");
       this.wdb.height = latestBlockNow.height;
-      
+
       const retMtx = await ledger.signTransaction(mtx, options);
       retMtx.check();
-      
+
       await pushMessage(ledgerConfirmed(true));
 
       const tx = retMtx.toTX();
@@ -1845,7 +1971,7 @@ class WalletService extends GenericService {
 
       await this.exec("node", "sendRawTransaction", retMtx.toHex());
       await pushMessage(ledgerConnectHide());
-      
+
       const json = retMtx.getJSON(this.network);
       await this.removeTxFromQueue(txJSON);
       this.emit("txAccepted", json);
