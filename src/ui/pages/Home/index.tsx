@@ -6,15 +6,10 @@ import React, {
   useState,
 } from "react";
 import {
-  fetchWallets,
-  fetchWalletIDs,
-  fetchWalletState,
   fetchWalletBalance,
   useWalletBalance,
   useCurrentWallet,
   useCurrentAccount,
-  useAccountNames,
-  useAccountInfo,
   useReceiveAddress,
 } from "@src/ui/ducks/wallet";
 import postMessage from "@src/util/postMessage";
@@ -52,6 +47,7 @@ import {useLocation} from "react-router";
 import queryString from "querystring";
 import HandshakeSymbol from "@src/ui/components/HandshakeSymbol";
 import AccountMenu from "@src/ui/components/AccountMenu";
+import ReactTooltip from "react-tooltip";
 
 export default function Home(): ReactElement {
   const dispatch = useDispatch();
@@ -59,27 +55,17 @@ export default function Home(): ReactElement {
   const domainOffset = useDomainOffset();
   const currentWallet = useCurrentWallet();
   const currentAddress = useReceiveAddress();
+  const currentAccount = useCurrentAccount();
   const loc = useLocation();
+  const {spendable, lockedUnconfirmed} = useWalletBalance();
   const parsed = queryString.parse(loc.search.slice(1));
   const [tab, setTab] = useState<"domains" | "activity">(
     (parsed.defaultTab as any) || "activity"
   );
-  const {spendable, lockedUnconfirmed} = useWalletBalance();
   const listElement = useRef<HTMLDivElement>(null);
   const pageElement = useRef<HTMLDivElement>(null);
   const [fixHeader, setFixHeader] = useState(false);
-
-  console.log("currentAddress:", currentAddress);
-
-  const currentAccount = useCurrentAccount();
-  console.log("currentAccount:", currentAccount);
-
-  const accountNames = useAccountNames();
-  console.log("accountNames:", accountNames);
-
-  const accountInfo = useAccountInfo();
-  console.log("accountInfo:", accountInfo);
-
+  const [copied, setCopied] = useState(false);
   const isDefault = currentAccount === "default";
 
   useEffect(() => {
@@ -138,87 +124,96 @@ export default function Home(): ReactElement {
   );
 
   return (
-    <div
-      className={classNames("home", {
-        "home--fixed-header": fixHeader,
-      })}
-      ref={pageElement}
-      onScroll={_onScroll}
-    >
-      <div className="home__account">
-        <div className="home__account-info">
-          <span className="home__account-info__label">
-            {currentAccount == "default" || currentAccount == ""
-              ? currentWallet
-              : currentAccount}
-          </span>
-          <span
-            className="home__account-info__address"
-            onClick={() => copy(currentAddress)}
-          >
-            <small>{truncString(currentAddress, 6, 4)}</small>
-            <Icon
-              fontAwesome="fa-copy"
-              solid={false}
-              size={0.65}
-              onClick={() => copy(currentAddress)}
-            />
-          </span>
-        </div>
-        {!isDefault && (
-          <div className="home__account-util">
-            <AccountMenu />
-          </div>
-        )}
-      </div>
-
-      <div className="home__wallet">
-        {/* <Identicon value={currentAddress} /> */}
-        <div className="home__wallet-info">
-          {/* <small className="home__wallet-info__label">{currentWallet}</small> */}
-          <div className="home__wallet-info__spendable">
-            {formatNumber(fromDollaryDoos(spendable))}
-          </div>
-          <div className="hns">
-            <div className="hns__symbol">
-              <HandshakeSymbol fill="black" size={1.25} />
+    <>
+      <div
+        className={classNames("home", {
+          "home--fixed-header": fixHeader,
+        })}
+        ref={pageElement}
+        onScroll={_onScroll}
+      >
+        <div className="home__account">
+          <div className="home__account-info">
+            <div
+              data-for="getContent"
+              data-tip
+              onClick={() => {
+                setCopied(true);
+                copy(currentAddress);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              <span className="home__account-info__label">
+                {currentAccount == "default" || currentAccount == ""
+                  ? currentWallet
+                  : currentAccount}
+              </span>
+              <span className="home__account-info__address">
+                <small>{truncString(currentAddress, 6, 4)}</small>
+                <Icon fontAwesome="fa-copy" solid={false} size={0.65} />
+              </span>
             </div>
-            hns
           </div>
-          {/* <small className="home__wallet-info__locked"> */}
-          {/* {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(lockedUnconfirmed))} HNS locked up`} */}
-          {/* </small> */}
+          {!isDefault && (
+            <div className="home__account-util">
+              <AccountMenu />
+            </div>
+          )}
         </div>
-      </div>
-      <div className="home__actions">
-        <SendButton />
-        <ReceiveButton />
-        <RevealButton />
-      </div>
 
-      <div className="home__list" ref={listElement}>
-        <div className="home__list__header">
-          <div
-            className={classNames("home__list__header__tab", {
-              "home__list__header__tab--selected": tab === "domains",
-            })}
-            onClick={() => setTab("domains")}
-          >
-            Domains
-          </div>
-          <div
-            className={classNames("home__list__header__tab", {
-              "home__list__header__tab--selected": tab === "activity",
-            })}
-            onClick={() => setTab("activity")}
-          >
-            Activity
+        <div className="home__wallet">
+          {/* <Identicon value={currentAddress} /> */}
+          <div className="home__wallet-info">
+            {/* <small className="home__wallet-info__label">{currentWallet}</small> */}
+            <div className="home__wallet-info__spendable">
+              {formatNumber(fromDollaryDoos(spendable))}
+            </div>
+            <div className="hns">
+              <div className="hns__symbol">
+                <HandshakeSymbol fill="black" size={1.25} />
+              </div>
+              hns
+            </div>
+            {/* <small className="home__wallet-info__locked"> */}
+            {/* {!!lockedUnconfirmed && `+${formatNumber(fromDollaryDoos(lockedUnconfirmed))} HNS locked up`} */}
+            {/* </small> */}
           </div>
         </div>
-        <div className="home__list__content">
-          {tab === "activity" ? <Transactions /> : <Domains />}
+        <div className="home__actions">
+          <SendButton />
+          <ReceiveButton />
+          <RevealButton />
+        </div>
+
+        <div className="home__list" ref={listElement}>
+          <div className="home__list__header">
+            <div
+              className={classNames("home__list__header__tab", {
+                "home__list__header__tab--selected": tab === "domains",
+              })}
+              onClick={() => setTab("domains")}
+            >
+              Domains
+            </div>
+            <div
+              className={classNames("home__list__header__tab", {
+                "home__list__header__tab--selected": tab === "activity",
+              })}
+              onClick={() => setTab("activity")}
+            >
+              Activity
+            </div>
+          </div>
+          <div className="home__list__content">
+            {tab === "activity" ? <Transactions /> : <Domains />}
+          </div>
         </div>
       </div>
-    </div>
+      <ReactTooltip
+        place="bottom"
+        id="getContent"
+        getContent={() => copied ? "copied!" : "copy address"}
+      />
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
+import ReactTooltip from "react-tooltip";
 import Identicon from "@src/ui/components/Identicon";
 import {
   lockWallet,
@@ -62,88 +63,97 @@ export default function WalletMenu(): ReactElement {
   }, []);
 
   return (
-    <div className="wallet-menu" onClick={() => setOpen(!isOpen)}>
-      <Identicon value={currentAddress} />
-      {isOpen && (
-        <div className="wallet-menu__overlay" onClick={() => setOpen(false)} />
-      )}
-      {isOpen && (
-        <div className="wallet-menu__menu">
-          {addresses.map((address, i) => {
-            const multiAccount =
-              !locked && currentWallet === walletIDs[i] && !address.watchOnly;
-            return (
-              <>
-                <div
-                  key={i}
-                  className="wallet-menu__menu__row"
-                  onClick={() => onSelectWallet(walletIDs[i])}
-                >
-                  <Identicon value={address.address} />
-                  <div className="wallet-menu__menu__row__name">
-                    {walletIDs[i]}
-                    {address.watchOnly && (
-                      <div className="wallet-menu__menu__pill">Ledger</div>
-                    )}
-                    {multiAccount && (
-                      <div
-                        className="wallet-menu__menu__create-account"
-                        onClick={() => history.push("/create-account")}
-                      >
-                        <Icon fontAwesome="fa-plus" size={0.6} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {multiAccount && (
-                  <div className="wallet-menu__menu__accounts">
-                    {address.accounts.map((account, i) => {
-                      if (account !== "default") {
-                        return (
-                          <div
-                            key={i}
-                            className="wallet-menu__menu__accounts__row"
-                            onClick={() => onSelectAccount(account)}
-                          >
-                            <div className="wallet-menu__menu__accounts__row__name">
-                              {account}
-                            </div>
-                          </div>
-                        );
-                      }
-                    })}
-                  </div>
-                )}
-              </>
-            );
-          })}
-          <div className="wallet-menu__menu__divider" />
+    <>
+      <div className="wallet-menu" onClick={() => setOpen(!isOpen)}>
+        <Identicon value={currentAddress} />
+        {isOpen && (
           <div
-            className="wallet-menu__menu__row"
-            onClick={() => history.push("/onboarding")}
-          >
-            <Icon fontAwesome="fa-plus" size={1} />
-            <div className="wallet-menu__menu__row__name">Add New Wallet</div>
-          </div>
-          {!locked && (
+            className="wallet-menu__overlay"
+            onClick={() => setOpen(false)}
+          />
+        )}
+        {isOpen && (
+          <div className="wallet-menu__menu">
+            {addresses.map((address, i) => {
+              const multiAccount =
+                !locked && currentWallet === walletIDs[i] && !address.watchOnly;
+              return (
+                <>
+                  <div
+                    key={i}
+                    className="wallet-menu__menu__row"
+                    onClick={() => onSelectWallet(walletIDs[i])}
+                  >
+                    <Identicon value={address.address} />
+                    <div className="wallet-menu__menu__row__name">
+                      {walletIDs[i]}
+                      {address.watchOnly && (
+                        <div className="wallet-menu__menu__pill">Ledger</div>
+                      )}
+                      {multiAccount && (
+                        <>
+                          <div
+                            data-tip="Create account"
+                            className="wallet-menu__menu__create-account"
+                            onClick={() => history.push("/create-account")}
+                          >
+                            <Icon fontAwesome="fa-plus" size={0.6} />
+                          </div>
+                          <ReactTooltip place="left" />
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {multiAccount && (
+                    <div className="wallet-menu__menu__accounts">
+                      {address.accounts.map((account, i) => {
+                        if (account !== "default") {
+                          return (
+                            <div
+                              key={i}
+                              className="wallet-menu__menu__accounts__row"
+                              onClick={() => onSelectAccount(account)}
+                            >
+                              <div className="wallet-menu__menu__accounts__row__name">
+                                {account}
+                              </div>
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  )}
+                </>
+              );
+            })}
+            <div className="wallet-menu__menu__divider" />
             <div
               className="wallet-menu__menu__row"
-              onClick={() => dispatch(lockWallet())}
+              onClick={() => history.push("/onboarding")}
             >
-              <Icon fontAwesome="fa-lock" size={1} />
-              <div className="wallet-menu__menu__row__name">Lock Wallet</div>
+              <Icon fontAwesome="fa-plus" size={1} />
+              <div className="wallet-menu__menu__row__name">Add New Wallet</div>
             </div>
-          )}
-          <div
-            className="wallet-menu__menu__row"
-            onClick={() => history.push("/settings")}
-          >
-            <Icon fontAwesome="fa-cog" size={1} />
-            <div className="wallet-menu__menu__row__name">Settings</div>
+            {!locked && (
+              <div
+                className="wallet-menu__menu__row"
+                onClick={() => dispatch(lockWallet())}
+              >
+                <Icon fontAwesome="fa-lock" size={1} />
+                <div className="wallet-menu__menu__row__name">Lock Wallet</div>
+              </div>
+            )}
+            <div
+              className="wallet-menu__menu__row"
+              onClick={() => history.push("/settings")}
+            >
+              <Icon fontAwesome="fa-cog" size={1} />
+              <div className="wallet-menu__menu__row__name">Settings</div>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }

@@ -16,6 +16,7 @@
 
     &-info {
       @extend %col-nowrap;
+      cursor: pointer;
       // padding: .125rem .5rem;
       padding: 0.125rem 0;
 
@@ -33,7 +34,6 @@
         @extend %row-nowrap;
         align-items: center;
         color: $secondary-text;
-        cursor: pointer;
         // height: 1.125rem;
 
         small {
