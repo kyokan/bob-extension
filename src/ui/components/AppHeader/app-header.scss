@@ -79,9 +79,9 @@
       height: 0;
       bottom: 100%;
       left: 1.5em;
-      //offsetshouldmovewithpaddingofparentborder: .375rem solid transparent;
+      border: .375rem solid transparent;
       border-top: none;
-      //looksborder-bottom-color: #fff;
+      border-bottom-color: #fff;
       filter: drop-shadow(0 -0.0625rem 0.0625rem rgba(0, 0, 0, .1));
       -webkit-filter: drop-shadow(0 -0.0625rem 0.0625rem rgba(0, 0, 0, .1));
 }
