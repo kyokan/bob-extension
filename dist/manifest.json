@@ -2,12 +2,9 @@
   "manifest_version": 2,
   "name": "Bob Extension",
   "description": "Chrome Extension for Handshake",
-  "version": "0.4.1",
-  "cross_origin_embedder_policy": {
-    "value": "require-corp"
-  },
-  "cross_origin_opener_policy": {
-    "value": "same-origin"
+  "version": "0.5.0",
+  "omnibox": {
+    "keyword": "bob"
   },
   "browser_action": {
     "default_icon": "icon-16.png",
@@ -43,7 +40,6 @@
     "proxy",
     "storage",
     "unlimitedStorage",
-    "usb",
     "<all_urls>"
   ],
   "web_accessible_resources": ["js/bob3.js", "wasm/sql-wasm.wasm"]

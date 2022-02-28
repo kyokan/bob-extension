@@ -1,11 +1,17 @@
 import MessageTypes from "@src/util/messageTypes";
 import {AppService} from "@src/util/svc";
 import {MessageAction} from "@src/util/postMessage";
-import {browser} from "webextension-polyfill-ts";
+import {browser, Runtime} from "webextension-polyfill-ts";
 import {toDollaryDoos} from "@src/util/number";
+import {
+  consume,
+  torrentSVC,
+} from "@src/util/webtorrent";
+import MessageSender = Runtime.MessageSender;
+import {getMagnetRecord} from "@src/background/resolve";
 
 const controllers: {
-  [type: string]: (app: AppService, message: MessageAction) => Promise<any>;
+  [type: string]: (app: AppService, message: MessageAction, sender: MessageSender) => Promise<any>;
 } = {
   [MessageTypes.CONNECT]: async (app, message) => {
     return new Promise(async (resolve, reject) => {
@@ -537,6 +543,50 @@ const controllers: {
       message.payload.name,
       message.payload.data
     );
+  },
+
+  [MessageTypes.CONSUME_TORRENT]: async (app, message) => {
+    const magnetURI = getMagnetRecord(message.payload);
+
+    if (magnetURI) {
+      setTimeout(() => {
+        consume(magnetURI, message.payload);
+      }, 500);
+      return true;
+    }
+
+    return false;
+  },
+
+  [MessageTypes.CLEAR_TORRENT]: async (app, message) => {
+    torrentSVC.clearTorrent(message.payload);
+  },
+
+  [MessageTypes.CHECK_TORRENT]: async (app, message) => {
+    const torrent = torrentSVC.getTorrent(message.payload).torrent;
+    const magnetURI = torrentSVC.getTorrent(message.payload).uri;
+    const dhtURI = torrentSVC.getTorrent(message.payload).dmt;
+    const error = torrentSVC.getTorrent(message.payload).error;
+    const status = torrentSVC.getTorrent(message.payload).status;
+    return {
+      status: status,
+      downloaded: torrent?.downloaded,
+      downloadSpeed: torrent?.downloadSpeed,
+      progress: torrent?.progress,
+      length: torrent?.length,
+      ready: torrent?.ready,
+      uri: magnetURI,
+      numPeers: torrent?.numPeers || 0,
+      error: error,
+      dht: dhtURI,
+    };
+  },
+
+  [MessageTypes.OPEN_FEDERALIST]: async (app, message, sender) => {
+    browser.tabs.update(sender.tab?.id, {
+      url: `http://${message.payload}/`,
+    });
+    return;
   },
 };
 

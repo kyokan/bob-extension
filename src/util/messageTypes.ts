@@ -75,15 +75,21 @@ enum MessageTypes {
   RESET_DB = "reset_db",
 
   // Bob3
-  CONNECT = "connect",
-  DISCONNECTED = "disconnected",
-  NEW_BLOCK = "new_block",
-  SEND_BID = "send_bid",
-  SEND_OPEN = "send_open",
-  SEND_REDEEM = "send_redeem",
-  SEND_REVEAL = "send_reveal",
-  SEND_TX = "send_tx",
-  SEND_UPDATE = "send_update",
+  CONNECT = 'connect',
+  DISCONNECTED = 'disconnected',
+  NEW_BLOCK = 'new_block',
+  SEND_TX = 'send_tx',
+  SEND_OPEN = 'send_open',
+  SEND_BID = 'send_bid',
+  SEND_REVEAL = 'send_reveal',
+  SEND_REDEEM = 'send_redeem',
+  SEND_UPDATE = 'send_update',
+
+  // Torrent
+  CHECK_TORRENT = 'torrent/check',
+  CLEAR_TORRENT = 'torrent/clear',
+  CONSUME_TORRENT = 'torrent/consume',
+  OPEN_FEDERALIST = 'federalist/open',
 }
 
 export default MessageTypes;

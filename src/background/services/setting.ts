@@ -60,7 +60,7 @@ class SettingService extends GenericService {
 
   setResolveHns = async (resolveHns = false) => {
     await put(this.store, RESOLVE_HNS, resolveHns);
-    this.emit("setResolveHns");
+    this.emit("resolverChanged", resolveHns);
     return true;
   };
 
