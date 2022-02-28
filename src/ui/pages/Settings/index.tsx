@@ -47,7 +47,7 @@ export default function Settings(): ReactElement {
             <Icon
               size={1.25}
               fontAwesome="fa-arrow-left"
-              onClick={() => history.goBack()}
+              onClick={() => history.back()}
             />
             <div className="settings__title">Network</div>
           </RegularViewHeader>
@@ -57,7 +57,7 @@ export default function Settings(): ReactElement {
             <Icon
               size={1.25}
               fontAwesome="fa-arrow-left"
-              onClick={() => history.goBack()}
+              onClick={() => history.back()}
             />
             <div className="settings__title">Wallet</div>
           </RegularViewHeader>
@@ -67,7 +67,7 @@ export default function Settings(): ReactElement {
             <Icon
               size={1.25}
               fontAwesome="fa-arrow-left"
-              onClick={() => history.goBack()}
+              onClick={() => history.back()}
             />
             <div className="settings__title">Security</div>
           </RegularViewHeader>
@@ -77,7 +77,7 @@ export default function Settings(): ReactElement {
             <Icon
               size={1.25}
               fontAwesome="fa-arrow-left"
-              onClick={() => history.goBack()}
+              onClick={() => history.back()}
             />
             <div className="settings__title">About</div>
           </RegularViewHeader>
