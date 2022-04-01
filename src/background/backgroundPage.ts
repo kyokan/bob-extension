@@ -44,6 +44,8 @@ import {consume, torrentSVC} from "../util/webtorrent";
       {urls: ["<all_urls>"]},
       ["blocking"]
     );
+  } else {
+    chrome.proxy.settings.set({value: {mode: 'system'}, scope: 'regular'});
   }
 
   app.on('setting.resolverChanged', (optIn: boolean) => {
@@ -55,6 +57,7 @@ import {consume, torrentSVC} from "../util/webtorrent";
       );
     } else {
       browser.webRequest.onBeforeRequest.removeListener(onBeforeRequest);
+      chrome.proxy.settings.set({value: {mode: 'system'}, scope: 'regular'});
     }
   });
 
