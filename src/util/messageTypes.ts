@@ -59,10 +59,10 @@ enum MessageTypes {
   VERIFY_MESSAGE_WITH_NAME = 'verifyMessageWithName',
 
   // settings
-  GET_ANALYTICS = "getAnalytics",
   GET_API = "get_api",
-  GET_RESOLVE_HNS = "getResolveHns",
+  GET_ANALYTICS = "getAnalytics",
   SET_ANALYTICS = "setAnalytics",
+  GET_RESOLVE_HNS = "getResolveHns",
   SET_RESOLVE_HNS = "setResolveHns",
   SET_RPC_HOST = "set_rpc_host",
   SET_RPC_KEY = "set_rpc_key",
