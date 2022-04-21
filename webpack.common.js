@@ -1,6 +1,6 @@
 const webpack = require("webpack");
 const path = require("path");
-const CopyPlugin = require("copy-webpack-plugin");
+// const CopyPlugin = require("copy-webpack-plugin");
 
 const envPlugin = new webpack.EnvironmentPlugin(["NODE_ENV", "NETWORK_TYPE"]);
 
@@ -20,14 +20,14 @@ module.exports = {
   },
   plugins: [
     envPlugin,
-    new CopyPlugin({
-      patterns: [
-        {
-          from: path.join(__dirname, "node_modules/sql.js/dist/sql-wasm.wasm"),
-          to: path.join(__dirname, "dist/wasm/sql-wasm.wasm"),
-        },
-      ],
-    }),
+    // new CopyPlugin({
+    //   patterns: [
+    //     {
+    //       from: path.join(__dirname, "node_modules/sql.js/dist/sql-wasm.wasm"),
+    //       to: path.join(__dirname, "dist/wasm/sql-wasm.wasm"),
+    //     },
+    //   ],
+    // }),
   ],
   module: {
     rules: [

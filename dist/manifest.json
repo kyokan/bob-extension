@@ -1,50 +1,57 @@
 {
-  "manifest_version": 2,
-  "name": "Bob Extension",
-  "description": "Chrome Extension for Handshake",
-  "version": "0.4.1",
-  "cross_origin_embedder_policy": {
-    "value": "require-corp"
-  },
-  "cross_origin_opener_policy": {
-    "value": "same-origin"
-  },
-  "browser_action": {
-    "default_icon": "icon-16.png",
-    "default_popup": "popup.html"
-  },
-  "background": {
-    "scripts": ["js/backgroundPage.js"],
-    "persistent": true
-  },
-  "content_scripts": [
-    {
-      "matches": ["file://*/*", "http://*/*", "https://*/*"],
-      "js": ["js/content.js"],
-      "run_at": "document_start",
-      "all_frames": true
-    }
-  ],
-  "icons": {
-    "16": "icon-16.png",
-    "48": "icon-48.png",
-    "128": "icon-128.png"
-  },
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-  "permissions": [
-    "tabs",
-    "activeTab",
-    "notifications",
-    "http://*/",
-    "https://*/",
-    "fileSystem",
-    "webRequest",
-    "webRequestBlocking",
-    "proxy",
-    "storage",
-    "unlimitedStorage",
-    "usb",
-    "<all_urls>"
-  ],
-  "web_accessible_resources": ["js/bob3.js", "wasm/sql-wasm.wasm"]
+    "manifest_version": 2,
+    "name": "Bob Extension",
+    "description": "Chrome Extension for Handshake",
+    "version": "0.5.0",
+    "omnibox": {
+        "keyword": "bob"
+    },
+    "browser_action": {
+        "default_icon": "icon-16.png",
+        "default_popup": "popup.html"
+    },
+    "background": {
+        "scripts": [
+            "js/backgroundPage.js"
+        ],
+        "persistent": true
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "file://*/*",
+                "http://*/*",
+                "https://*/*"
+            ],
+            "js": [
+                "js/content.js"
+            ],
+            "run_at": "document_start",
+            "all_frames": true
+        }
+    ],
+    "icons": {
+        "16": "icon-16.png",
+        "48": "icon-48.png",
+        "128": "icon-128.png"
+    },
+    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+    "permissions": [
+        "tabs",
+        "activeTab",
+        "notifications",
+        "http://*/",
+        "https://*/",
+        "fileSystem",
+        "webRequest",
+        "webRequestBlocking",
+        "proxy",
+        "storage",
+        "unlimitedStorage",
+        "<all_urls>"
+    ],
+    "web_accessible_resources": [
+        "js/bob3.js",
+        "wasm/sql-wasm.wasm"
+    ]
 }

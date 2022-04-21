@@ -1,6 +1,8 @@
 # Bob Extension
 
-Handshake wallet in the browser
+Handshake wallet in the browser 
+
+[Chrome Web Store](https://chrome.google.com/webstore/detail/bob-extension/ogcmjchbmdichlfelhmceldndgmgpcem)
 
 ![home](https://user-images.githubusercontent.com/8507735/115999984-2f7e7100-a5a3-11eb-98f3-9a82329c11c2.png)
 
