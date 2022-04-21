@@ -1,0 +1,229 @@
+$black: 	hsl(0, 0%, 0%);
+$white: 	hsl(0, 0%, 100%);
+
+$bg--light: $white;
+$bg--dark: $black;
+
+$primary-text--light: 	hsl(0, 0%, 8%);
+$primary-text--dark: 	hsl(0, 0%, 8%);
+$secondary-text--light: 	hsl(0, 0%, 40%);
+$secondary-text--dark: 	hsl(0, 0%, 40%);
+$label-text--light: $secondary-text--light;
+$label-text--dark: $secondary-text--dark;
+
+$primary-blue--light: hsl(214, 94%, 56%);
+$primary-blue--dark: hsl(214, 94%, 56%);
+
+$lightgray--light: hsl(0, 0%, 95%);
+$lightgray--dark: hsl(0, 0%, 95%);
+$header-gray--light: $lightgray--light;
+$header-gray--dark: $lightgray--dark;
+$border-gray--light: hsl(0, 0%, 87%);
+$border-gray--dark: hsl(0, 0%, 87%);
+
+$error-red--light: hsl(0, 91%, 55%);
+$error-red--dark: hsl(0, 91%, 55%);
+$success-green--light: hsl(145, 65%, 50%);
+$success-green--dark: hsl(145, 65%, 50%);
+$warning-orange--light: 	hsl(36, 100%, 55%);
+$warning-orange--dark: 	hsl(36, 100%, 55%);
+
+$text-base-size: 16px;
+$app-width: 357px;
+$app-height: 600px;
+$gutter: 1.25rem;
+$border-radius: 0.15rem;
+
+%flex {
+  display: flex;
+  box-sizing: border-box;
+}
+
+%col-nowrap {
+  @extend %flex;
+  flex-flow: column nowrap;
+  box-sizing: border-box;
+}
+
+%row-nowrap {
+  @extend %flex;
+  flex-flow: row nowrap;
+  box-sizing: border-box;
+}
+
+%small-font {
+  font-size: .8125rem;
+  line-height: 1.3125;
+}
+
+%lite-font {
+  font-size: .875rem;
+  line-height: 1.3125;
+}
+
+%regular-font {
+  font-size: .9375rem;
+  line-height: 1.3125;
+}
+
+%h1-font {
+  font-size: 2rem;
+  line-height: 1.3125;
+}
+
+%h2-font {
+  font-size: 1.5rem;
+  line-height: 1.3125;
+}
+
+%h3-font {
+  font-size: 1.17rem;
+  line-height: 1.3125;
+}
+
+%h5-font {
+  font-size: .83rem;
+  line-height: 1.3125;
+}
+
+%h4-font {
+  font-size: 1rem;
+  line-height: 1.3125;
+}
+
+%bold {
+  font-weight: 600;
+}
+
+%ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+%clickable {
+  cursor: pointer;
+  transition: 200ms ease-in-out;
+
+  &:hover {
+    opacity: .8;
+  }
+
+  &:active {
+    opacity: 1;
+  }
+}
+
+$breakpoint-tablet: 768px;
+
+table {
+  @extend %col-nowrap;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  @extend %bold;
+  @extend %lite-font;
+  flex: 0 0 auto;
+  background-color: $black;
+  color: rgba($white, .5);
+  text-transform: uppercase;
+}
+
+tr {
+  @extend %row-nowrap;
+
+  &:nth-of-type(odd) {
+    background-color: rgba($black, .1);
+  }
+}
+
+td {
+  align-items: flex-start;
+  flex: 1 1 auto;
+  padding: .75rem 1.5rem;
+}
+
+tbody {
+  flex: 1 1 auto;
+  td {
+    @extend %lite-font;
+  }
+}
+
+small {
+  color: $secondary-text--light;
+}
+
+//
+
+//shortcuts
+$primary-text: "primary-text";
+$secondary-text: "secondary-text";
+$label-text: "label-text";
+
+$bg: "bg";
+$header-gray: "header-gray";
+$border-gray: "border-gray";
+
+$primary-blue: "primary-blue";
+
+$lightgray: "lightgray";
+
+$error-red: "error-red";
+$success-green: "success-green";
+$warning-orange: "warning-orange";
+
+//themes
+$themes: (
+  default: (
+    primary-text: $primary-text--light,
+    secondary-text: $secondary-text--light,
+    label-text: $label-text--light,
+    bg: $bg--light,
+    header-gray: $header-gray--light,
+    border-gray: $border-gray--light,
+    primary-blue: $primary-blue--light,
+    lightgray: $lightgray--light,
+    error-red: $error-red--light,
+    success-green: $success-green--light,
+    warning-orange: $warning-orange--light,
+  ),
+  dark: (
+    primary-text: $primary-text--dark,
+    secondary-text: $secondary-text--dark,
+    label-text: $label-text--dark,
+    bg: $bg--dark,
+    header-gray: $header-gray--dark,
+    border-gray: $border-gray--dark,
+    primary-blue: $primary-blue--dark,
+    lightgray: $lightgray--dark,
+    error-red: $error-red--dark,
+    success-green: $success-green--dark,
+    warning-orange: $warning-orange--dark,
+  ),
+);
+
+@mixin themed() {
+  @each $theme, $map in $themes {
+    .theme--#{$theme} & {
+      $theme-map: () !global;
+      @each $key, $submap in $map {
+        $value: map-get(map-get($themes, $theme), "#{$key}");
+        $theme-map: map-merge(
+          $theme-map,
+          (
+            $key: $value,
+          )
+        ) !global;
+      }
+      @content;
+      $theme-map: null !global;
+    }
+  }
+}
+
+@function t($key) {
+  @return map-get($theme-map, $key);
+}

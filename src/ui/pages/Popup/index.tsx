@@ -38,9 +38,12 @@ export default function Popup(): ReactElement {
   const initialized = useInitialized();
   const currentAccount = useCurrentAccount();
   const {locked, currentWallet} = useWalletState();
-  const [loading, setLoading] = useState(true);
   const queuedTXHashes = useTXQueue();
   const ledgerConnect = useLedgerConnect();
+  const [loading, setLoading] = useState(true);
+  const [darkTheme, setDarkTheme] = useState(true);
+
+  const theme = darkTheme ? "theme--dark" : "theme--default";
 
   useEffect(() => {
     (async () => {
@@ -76,7 +79,7 @@ export default function Popup(): ReactElement {
 
   if (loading) {
     return (
-      <div className="popup__loading">
+      <div className={`popup__loading ${theme}`}>
         <Icon url={BobMoveIcon} size={4} />
         <small>Initializing...</small>
       </div>
@@ -85,7 +88,7 @@ export default function Popup(): ReactElement {
 
   if (initialized && !locked && !ledgerConnect && queuedTXHashes.length) {
     return (
-      <div className="popup">
+      <div className={`popup ${theme}`}>
         <AppHeader />
         <ConfirmTx />
       </div>
@@ -94,7 +97,7 @@ export default function Popup(): ReactElement {
 
   if (initialized && !locked && ledgerConnect) {
     return (
-      <div className="popup">
+      <div className={`popup ${theme}`}>
         <AppHeader />
         <ConfirmLedger />
       </div>
@@ -103,7 +106,7 @@ export default function Popup(): ReactElement {
 
   if (!initialized) {
     return (
-      <div className="popup">
+      <div className={`popup ${theme}`}>
         <AppHeader />
         <Onboarding />
       </div>
@@ -112,7 +115,7 @@ export default function Popup(): ReactElement {
 
   if (locked) {
     return (
-      <div className="popup">
+      <div className={`popup ${theme}`}>
         <AppHeader />
         <Switch>
           <Route path="/onboarding">
@@ -133,7 +136,7 @@ export default function Popup(): ReactElement {
   }
 
   return (
-    <div className="popup">
+    <div className={`popup ${theme}`}>
       <AppHeader />
       <Switch>
         <Route path="/onboarding">
