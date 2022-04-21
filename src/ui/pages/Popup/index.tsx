@@ -2,7 +2,15 @@ import React, {ReactElement, useEffect, useState} from "react";
 import "./popup.scss";
 import Onboarding from "@src/ui/pages/Onboarding";
 import {useDispatch} from "react-redux";
-import {fetchWallets, fetchWalletState, useInitialized, useWalletState} from "@src/ui/ducks/wallet";
+import {
+  fetchWallets,
+  fetchWalletIDs,
+  fetchWalletState,
+  useInitialized,
+  useWalletState,
+  fetchWalletAccounts,
+} from "@src/ui/ducks/wallet";
+import {useLedgerConnect} from "@src/ui/ducks/ledger";
 import AppHeader from "@src/ui/components/AppHeader";
 import Login from "@src/ui/pages/Login";
 import {Redirect, Route, Switch} from "react-router";
@@ -18,13 +26,15 @@ import postMessage from "@src/util/postMessage";
 import {useTXQueue} from "@src/ui/ducks/queue";
 import Settings from "@src/ui/pages/Settings";
 import DomainPage from "@src/ui/pages/Domain";
+import ConfirmLedger from "@src/ui/pages/ConfirmLedger";
 
-export default function Popup (): ReactElement {
+export default function Popup(): ReactElement {
   const dispatch = useDispatch();
   const initialized = useInitialized();
-  const { locked, currentWallet } = useWalletState();
+  const {locked, currentWallet} = useWalletState();
   const [loading, setLoading] = useState(true);
   const queuedTXHashes = useTXQueue();
+  const ledgerConnect = useLedgerConnect();
 
   useEffect(() => {
     (async () => {
@@ -32,17 +42,19 @@ export default function Popup (): ReactElement {
         postMessage({
           type: MessageTypes.MP_TRACK,
           payload: {
-            name: 'Screen View',
+            name: "Screen View",
             data: {
-              view: 'Home',
+              view: "Home",
             },
           },
         });
         await dispatch(fetchWallets());
+        await dispatch(fetchWalletIDs());
         await dispatch(fetchWalletState());
+        await dispatch(fetchWalletAccounts(currentWallet));
         await dispatch(fetchLatestBlock());
       } catch (e) {
-        console.error(e)
+        console.error(e);
       }
       setLoading(false);
     })();
@@ -50,7 +62,7 @@ export default function Popup (): ReactElement {
 
   useEffect(() => {
     if (!locked && currentWallet) {
-      postMessage({ type: MessageTypes.CHECK_FOR_RESCAN });
+      postMessage({type: MessageTypes.CHECK_FOR_RESCAN});
     }
   }, [currentWallet, locked]);
 
@@ -63,11 +75,20 @@ export default function Popup (): ReactElement {
     );
   }
 
-  if (initialized && !locked && queuedTXHashes.length) {
+  if (initialized && !locked && !ledgerConnect && queuedTXHashes.length) {
     return (
       <div className="popup">
-        <AppHeader/>
+        <AppHeader />
         <ConfirmTx />
+      </div>
+    );
+  }
+
+  if (initialized && !locked && ledgerConnect) {
+    return (
+      <div className="popup">
+        <AppHeader />
+        <ConfirmLedger />
       </div>
     );
   }
@@ -75,7 +96,7 @@ export default function Popup (): ReactElement {
   if (!initialized) {
     return (
       <div className="popup">
-        <AppHeader/>
+        <AppHeader />
         <Onboarding />
       </div>
     );
@@ -100,7 +121,7 @@ export default function Popup (): ReactElement {
           </Route>
         </Switch>
       </div>
-    )
+    );
   }
 
   return (
@@ -130,5 +151,5 @@ export default function Popup (): ReactElement {
         </Route>
       </Switch>
     </div>
-  )
-};
+  );
+}

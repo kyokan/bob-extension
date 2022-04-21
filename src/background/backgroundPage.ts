@@ -36,7 +36,7 @@ import {consume, torrentSVC} from "../util/webtorrent";
   // @ts-ignore
   const onBeforeRequest = resolve.bind(this);
 
-  const optIn = await app.exec('setting', 'getResolver');
+  const optIn = await app.exec('setting', 'getResolveHns');
 
   if (optIn) {
     browser.webRequest.onBeforeRequest.addListener(

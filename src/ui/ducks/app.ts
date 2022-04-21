@@ -3,8 +3,8 @@ import deepEqual from "fast-deep-equal";
 import {AppRootState} from "@src/ui/store/configureAppStore";
 
 export enum ActionType {
-  SET_BOB_MOVING = 'app/setBobMoving',
-  SET_BOB_MESSAGE = 'app/setBobMessage',
+  SET_BOB_MOVING = "app/setBobMoving",
+  SET_BOB_MESSAGE = "app/setBobMessage",
 }
 
 type Action = {
@@ -21,7 +21,7 @@ type State = {
 
 const initialState: State = {
   isBobMoving: false,
-  bobMessage: '',
+  bobMessage: "",
 };
 
 export const setBobMoving = (moving: boolean) => {
@@ -51,11 +51,11 @@ export default function app(state = initialState, action: Action): State {
 export const useBobMoving = () => {
   return useSelector((state: AppRootState) => {
     return state.app.isBobMoving;
-  }, deepEqual)
+  }, deepEqual);
 };
 
 export const useBobMessage = () => {
   return useSelector((state: AppRootState) => {
     return state.app.bobMessage;
-  }, deepEqual)
+  }, deepEqual);
 };

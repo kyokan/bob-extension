@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect, useState } from "react";
+import React, { ReactElement, useState } from "react";
 import BobIcon from "../../../static/icons/bob-black.png";
 import BobMoveIcon from "../../../static/icons/bob-moves.gif";
 import "./app-header.scss";
@@ -6,7 +6,7 @@ import Icon from "@src/ui/components/Icon";
 import WalletMenu from "@src/ui/components/WalletMenu";
 import { useBobMessage, useBobMoving } from "@src/ui/ducks/app";
 import classNames from "classnames";
-import { useInitialized, useWalletState } from "@src/ui/ducks/wallet";
+import { useWalletState } from "@src/ui/ducks/wallet";
 import { useCurrentBlockHeight } from "@src/ui/ducks/node";
 
 export default function AppHeader(): ReactElement {

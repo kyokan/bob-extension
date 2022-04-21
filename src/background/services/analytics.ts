@@ -1,24 +1,26 @@
-import mixpanel, {Mixpanel} from 'mixpanel-browser';
+import mixpanel, {Mixpanel} from "mixpanel-browser";
 import {GenericService} from "@src/util/svc";
-const bdb = require('bdb');
-const DB = require('bdb/lib/db');
-import {get, put} from '@src/util/db';
+import {get, put} from "@src/util/db";
 import crypto from "crypto";
 import * as os from "os";
-const pkg = require('../../../package.json');
+const bdb = require("bdb");
+const DB = require("bdb/lib/DB");
+const pkg = require("../../../package.json");
 
-const UUID_KEY = 'uuid_key';
+const UUID_KEY = "uuid_key";
 
-export default class AnalyticsService extends GenericService {
-  store: typeof DB;
-
+declare interface AnalyticsService {
   mp?: Mixpanel;
+}
+
+class AnalyticsService extends GenericService {
+  store: typeof DB;
 
   async getUser() {
     const u = await get(this.store, UUID_KEY);
 
     if (!u) {
-      const newUUID = crypto.randomBytes(20).toString('hex');
+      const newUUID = crypto.randomBytes(20).toString("hex");
       await put(this.store, UUID_KEY, newUUID);
     }
 
@@ -26,17 +28,17 @@ export default class AnalyticsService extends GenericService {
   }
 
   async initTracking() {
-    const optIn = await this.exec('setting', 'getAnalytics');
+    const optIn = await this.exec("setting", "getAnalytics");
 
     if (optIn && !this.mp) {
       const u = await this.getUser();
-      mixpanel.init('d4447597e84efbaa046917fb6496f92e');
+      mixpanel.init("d4447597e84efbaa046917fb6496f92e");
       mixpanel.people.set(u, {
         platform: os.platform(),
         arch: os.arch(),
         appVersion: pkg.version,
       });
-      mixpanel.track('Init App');
+      mixpanel.track("Init App");
       this.mp = mixpanel;
       return;
     }
@@ -52,19 +54,16 @@ export default class AnalyticsService extends GenericService {
       return;
     }
 
-    this.mp.track(
-      name,
-      data,
-    );
+    this.mp.track(name, data);
   }
 
   async start() {
-    this.store = bdb.create('/wallet-store');
+    this.store = bdb.create("/wallet-store");
     await this.store.open();
     await this.initTracking();
   }
 
-  async stop() {
-
-  }
+  async stop() {}
 }
+
+export default AnalyticsService;

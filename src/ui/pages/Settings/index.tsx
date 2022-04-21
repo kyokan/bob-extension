@@ -47,7 +47,7 @@ export default function Settings(): ReactElement {
             <Icon
               size={1.25}
               fontAwesome="fa-arrow-left"
-              onClick={() => history.goBack()}
+              onClick={() => history.back()}
             />
             <div className="settings__title">Network</div>
           </RegularViewHeader>
@@ -57,7 +57,7 @@ export default function Settings(): ReactElement {
             <Icon
               size={1.25}
               fontAwesome="fa-arrow-left"
-              onClick={() => history.goBack()}
+              onClick={() => history.back()}
             />
             <div className="settings__title">Wallet</div>
           </RegularViewHeader>
@@ -67,7 +67,7 @@ export default function Settings(): ReactElement {
             <Icon
               size={1.25}
               fontAwesome="fa-arrow-left"
-              onClick={() => history.goBack()}
+              onClick={() => history.back()}
             />
             <div className="settings__title">Security</div>
           </RegularViewHeader>
@@ -77,7 +77,7 @@ export default function Settings(): ReactElement {
             <Icon
               size={1.25}
               fontAwesome="fa-arrow-left"
-              onClick={() => history.goBack()}
+              onClick={() => history.back()}
             />
             <div className="settings__title">About</div>
           </RegularViewHeader>
@@ -137,7 +137,7 @@ function NetworkContent(): ReactElement {
   useEffect(() => {
     (async function () {
       const optIn = await postMessage({
-        type: MessageTypes.GET_RESOLVER,
+        type: MessageTypes.GET_RESOLVE_HNS,
       });
       setActiveResolver(optIn);
     })();
@@ -174,11 +174,11 @@ function NetworkContent(): ReactElement {
   const updateResolver = useCallback(
     async (e) => {
       await postMessage({
-        type: MessageTypes.SET_RESOLVER,
+        type: MessageTypes.SET_RESOLVE_HNS,
         payload: e.target.checked,
       });
       const optIn = await postMessage({
-        type: MessageTypes.GET_RESOLVER,
+        type: MessageTypes.GET_RESOLVE_HNS,
       });
       setActiveResolver(optIn);
     },

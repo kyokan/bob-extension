@@ -13,13 +13,9 @@ import {
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
 const Network = require("hsd/lib/protocol/network");
-const networkType = process.env.NETWORK_TYPE || 'main';
+const networkType = process.env.NETWORK_TYPE || "main";
 
-type Props = {
-
-};
-
-export default function DomainPage(props: Props): ReactElement {
+export default function DomainPage(): ReactElement {
   const {name} = useParams<{name: string}>();
   const history = useHistory();
   const domain = useDomainByName(name);
@@ -34,25 +30,26 @@ export default function DomainPage(props: Props): ReactElement {
         type: MessageTypes.GET_NAME_RESOURCE,
         payload: name,
       });
-      const { result } = payload || {};
-      const { records } = result || {};
+      const {result} = payload || {};
+      const {records} = result || {};
       setRecords(records || []);
-    })()
+    })();
   }, [name]);
 
   useEffect(() => {
     if (!domain) return;
-    const { ownerCovenantType } = domain;
+    const {ownerCovenantType} = domain;
 
     console.log({ownerCovenantType});
-
   }, [domain]);
 
   if (!domain) {
     return <></>;
   }
 
-  const expiry = heightToMoment(domain.renewal + network.names.renewalWindow).format('YYYY-MM-DD');
+  const expiry = heightToMoment(
+    domain.renewal + network.names.renewalWindow
+  ).format("YYYY-MM-DD");
 
   return (
     <div className="domain-page">
@@ -63,18 +60,22 @@ export default function DomainPage(props: Props): ReactElement {
             size={1.25}
             onClick={() => history.push(`/?defaultTab=domains`)}
           />
-          <span onClick={() => () => history.push(`/?defaultTab=domains`)}>Back</span>
+          <span onClick={() => () => history.push(`/?defaultTab=domains`)}>
+            Back
+          </span>
         </div>
         <div className="domain-page__header__content">
           <div className="domain-page__header__content__name">
             <Name name={name} slash />
           </div>
           <div className="domain-page__header__content__expiry">
-            {`Expired on ${expiry}`}
+            {`Expires on ${expiry}`}
           </div>
           <div className="domain-page__header__content__buttons">
-            { !domain?.ownerCovenantType && <RedeemButton name={name}/> }
-            { domain?.ownerCovenantType === 'REVEAL' && <RegisterButton name={name}/> }
+            {!domain?.ownerCovenantType && <RedeemButton name={name} />}
+            {domain?.ownerCovenantType === "REVEAL" && (
+              <RegisterButton name={name} />
+            )}
           </div>
         </div>
       </div>
@@ -85,41 +86,34 @@ export default function DomainPage(props: Props): ReactElement {
               Root Zone DNS
             </div>
           </div>
-            { !records.length && (
+          {!records.length && (
+            <div className="domain-page__record">
+              <div className="domain-page__record__empty">No Records Found</div>
+            </div>
+          )}
+          {records.map((record: any) => {
+            const {type} = record;
+            return (
               <div className="domain-page__record">
-                <div className="domain-page__record__empty">
-                  No Records Found
+                <div className="domain-page__record__type">{type} Record</div>
+                <div className="domain-page__record__kvs">
+                  {Object.keys(record).map(
+                    (key) =>
+                      key !== "type" && (
+                        <div className="domain-page__record__kv">
+                          <div className="domain-page__record__key">{key}</div>
+                          <div className="domain-page__record__value">
+                            {record[key]}
+                          </div>
+                        </div>
+                      )
+                  )}
                 </div>
               </div>
-            )}
-            {
-              records.map((record: any) => {
-                const { type } = record;
-                return (
-                  <div className="domain-page__record">
-                    <div className="domain-page__record__type">
-                      {type} Record
-                    </div>
-                    <div className="domain-page__record__kvs">
-                      {
-                        Object.keys(record).map((key) => key !== 'type' && (
-                          <div className="domain-page__record__kv">
-                            <div className="domain-page__record__key">
-                              {key}
-                            </div>
-                            <div className="domain-page__record__value">
-                              {record[key]}
-                            </div>
-                          </div>
-                        ))
-                      }
-                    </div>
-                  </div>
-                );
-              })
-            }
+            );
+          })}
         </div>
       </div>
     </div>
-  )
+  );
 }
