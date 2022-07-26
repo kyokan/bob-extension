@@ -42,7 +42,6 @@
         "notifications",
         "http://*/",
         "https://*/",
-        "fileSystem",
         "webRequest",
         "webRequestBlocking",
         "proxy",
