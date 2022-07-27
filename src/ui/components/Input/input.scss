@@ -39,7 +39,7 @@
   &__group {
     @extend %row-nowrap;
     background-color: $lightgray;
-    border-bottom: 1px solid transparent;
+    border-bottom: 1px solid $border-gray;
     border-radius: .125rem;
 
     &:focus-within {

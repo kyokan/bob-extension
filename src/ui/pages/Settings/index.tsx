@@ -137,7 +137,7 @@ function NetworkContent(): ReactElement {
   useEffect(() => {
     (async function () {
       const optIn = await postMessage({
-        type: MessageTypes.GET_RESOLVER,
+        type: MessageTypes.GET_RESOLVE_HNS,
       });
       setActiveResolver(optIn);
     })();
@@ -174,11 +174,11 @@ function NetworkContent(): ReactElement {
   const updateResolver = useCallback(
     async (e) => {
       await postMessage({
-        type: MessageTypes.SET_RESOLVER,
+        type: MessageTypes.SET_RESOLVE_HNS,
         payload: e.target.checked,
       });
       const optIn = await postMessage({
-        type: MessageTypes.GET_RESOLVER,
+        type: MessageTypes.GET_RESOLVE_HNS,
       });
       setActiveResolver(optIn);
     },

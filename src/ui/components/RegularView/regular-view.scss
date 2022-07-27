@@ -8,7 +8,9 @@
   &__header {
     @extend %row-nowrap;
     align-items: center;
+    background-color: $lightgray;
     padding: 1rem 1.25rem;
+    border-bottom: 1px solid $border-gray;
 
     &__l {
       @extend %h3-font;

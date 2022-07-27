@@ -2,7 +2,18 @@ import React, {ReactElement, useEffect, useState} from "react";
 import "./popup.scss";
 import Onboarding from "@src/ui/pages/Onboarding";
 import {useDispatch} from "react-redux";
-import {fetchWallets, fetchWalletState, useInitialized, useWalletState} from "@src/ui/ducks/wallet";
+import {
+  fetchWallets,
+  fetchWalletIDs,
+  fetchWalletState,
+  useInitialized,
+  useWalletState,
+  useCurrentAccount,
+  fetchAccountNames,
+  fetchAccountsInfo,
+  fetchReceiveAddress,
+} from "@src/ui/ducks/wallet";
+import {useLedgerConnect} from "@src/ui/ducks/ledger";
 import AppHeader from "@src/ui/components/AppHeader";
 import Login from "@src/ui/pages/Login";
 import {Redirect, Route, Switch} from "react-router";
@@ -18,13 +29,21 @@ import postMessage from "@src/util/postMessage";
 import {useTXQueue} from "@src/ui/ducks/queue";
 import Settings from "@src/ui/pages/Settings";
 import DomainPage from "@src/ui/pages/Domain";
+import ConfirmLedger from "@src/ui/pages/ConfirmLedger";
+import CreateAccount from "@src/ui/pages/CreateAccount";
+import AccountInfo from "@src/ui/pages/AccountInfo";
 
-export default function Popup (): ReactElement {
+export default function Popup(): ReactElement {
   const dispatch = useDispatch();
   const initialized = useInitialized();
-  const { locked, currentWallet } = useWalletState();
-  const [loading, setLoading] = useState(true);
+  const currentAccount = useCurrentAccount();
+  const {locked, currentWallet} = useWalletState();
   const queuedTXHashes = useTXQueue();
+  const ledgerConnect = useLedgerConnect();
+  const [loading, setLoading] = useState(true);
+  const [darkTheme, setDarkTheme] = useState(true);
+
+  const theme = darkTheme ? "theme--dark" : "theme--default";
 
   useEffect(() => {
     (async () => {
@@ -32,17 +51,21 @@ export default function Popup (): ReactElement {
         postMessage({
           type: MessageTypes.MP_TRACK,
           payload: {
-            name: 'Screen View',
+            name: "Screen View",
             data: {
-              view: 'Home',
+              view: "Home",
             },
           },
         });
         await dispatch(fetchWallets());
+        await dispatch(fetchWalletIDs());
         await dispatch(fetchWalletState());
+        await dispatch(fetchAccountNames(currentWallet));
+        await dispatch(fetchAccountsInfo(currentWallet));
+        await dispatch(fetchReceiveAddress(currentWallet, currentAccount));
         await dispatch(fetchLatestBlock());
       } catch (e) {
-        console.error(e)
+        console.error(e);
       }
       setLoading(false);
     })();
@@ -50,32 +73,41 @@ export default function Popup (): ReactElement {
 
   useEffect(() => {
     if (!locked && currentWallet) {
-      postMessage({ type: MessageTypes.CHECK_FOR_RESCAN });
+      postMessage({type: MessageTypes.CHECK_FOR_RESCAN});
     }
   }, [currentWallet, locked]);
 
   if (loading) {
     return (
-      <div className="popup__loading">
+      <div className={`popup__loading ${theme}`}>
         <Icon url={BobMoveIcon} size={4} />
         <small>Initializing...</small>
       </div>
     );
   }
 
-  if (initialized && !locked && queuedTXHashes.length) {
+  if (initialized && !locked && !ledgerConnect && queuedTXHashes.length) {
     return (
-      <div className="popup">
-        <AppHeader/>
+      <div className={`popup ${theme}`}>
+        <AppHeader />
         <ConfirmTx />
+      </div>
+    );
+  }
+
+  if (initialized && !locked && ledgerConnect) {
+    return (
+      <div className={`popup ${theme}`}>
+        <AppHeader />
+        <ConfirmLedger />
       </div>
     );
   }
 
   if (!initialized) {
     return (
-      <div className="popup">
-        <AppHeader/>
+      <div className={`popup ${theme}`}>
+        <AppHeader />
         <Onboarding />
       </div>
     );
@@ -83,7 +115,7 @@ export default function Popup (): ReactElement {
 
   if (locked) {
     return (
-      <div className="popup">
+      <div className={`popup ${theme}`}>
         <AppHeader />
         <Switch>
           <Route path="/onboarding">
@@ -100,11 +132,11 @@ export default function Popup (): ReactElement {
           </Route>
         </Switch>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="popup">
+    <div className={`popup ${theme}`}>
       <AppHeader />
       <Switch>
         <Route path="/onboarding">
@@ -115,6 +147,12 @@ export default function Popup (): ReactElement {
         </Route>
         <Route path="/send">
           <SendTx />
+        </Route>
+        <Route path="/create-account">
+          <CreateAccount />
+        </Route>
+        <Route path="/account-info">
+          <AccountInfo />
         </Route>
         <Route path="/settings">
           <Settings />
@@ -130,5 +168,5 @@ export default function Popup (): ReactElement {
         </Route>
       </Switch>
     </div>
-  )
-};
+  );
+}

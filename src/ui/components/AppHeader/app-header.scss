@@ -2,18 +2,16 @@
 
 .app-header {
   @extend %row-nowrap;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  height: 4rem;
-  width: 100%;
-  background-color: $header-gray;
+  background-color: $lightgray;
   border-bottom: 1px solid $border-gray;
+  box-sizing: content-box;
+  padding: 0.5rem $gutter;
   position: relative;
 
   &__bob-icon,
   &__bob-move-icon {
-    cursor: pointer;
     &:hover,
     &:active {
       opacity: 1;
@@ -79,35 +77,32 @@
       width: 0;
       height: 0;
       bottom: 100%;
-      left: 1.5em; // offset should move with padding of parent
-      border: .375rem solid transparent;
+      left: 1.5em;
+      //offsetshouldmovewithpaddingofparentborder: .375rem solid transparent;
       border-top: none;
-
-      // looks
-      border-bottom-color: #fff;
+      //looksborder-bottom-color: #fff;
       filter: drop-shadow(0 -0.0625rem 0.0625rem rgba(0, 0, 0, .1));
-    }
+      -webkit-filter: drop-shadow(0 -0.0625rem 0.0625rem rgba(0, 0, 0, .1));
+}
   }
 
   &__l {
     @extend %row-nowrap;
-    flex: 1 0 auto;
+    flex: 1;
     align-items: center;
-    padding-left: $gutter;
   }
 
   &__m {
     @extend %row-nowrap;
-    flex: 1 0 auto;
+    flex: auto;
     align-items: center;
     justify-content: center;
   }
 
   &__r {
     @extend %row-nowrap;
-    justify-content: flex-end;
-    flex: 1 1 auto;
+    flex: 1;
     align-items: center;
-    padding-right: $gutter;
+    justify-content: flex-end;
   }
 }
