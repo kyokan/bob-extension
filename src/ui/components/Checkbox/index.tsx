@@ -4,14 +4,15 @@ import './index.scss';
 import Icon from "@src/ui/components/Icon";
 
 type Props = {
-  checked: boolean;
-  onChange: ChangeEventHandler;
   className?: string;
+  checked: boolean;
   disabled?: boolean;
+  id?: string;
+  onChange: ChangeEventHandler;
 }
 
 export default function Checkbox(props: Props): ReactElement {
-  const { className, checked, onChange, disabled } = props;
+  const { className, checked, disabled, id, onChange } = props;
 
   return (
     <div className={c('checkbox', className, {
@@ -22,6 +23,7 @@ export default function Checkbox(props: Props): ReactElement {
         checked={checked}
         onChange={onChange}
         disabled={disabled}
+        id={id}
       />
       <Icon fontAwesome="fa-check" />
     </div>

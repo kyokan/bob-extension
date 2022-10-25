@@ -62,7 +62,7 @@ export function DomainRow(props: {name: string}): ReactElement {
           }
         </div>
         <div className="domain__info__expiry">
-          {`Expired on ${expiry}`}
+          {`Expires on ${expiry}`}
         </div>
       </div>
       <div className="domain__actions">

@@ -1,31 +1,34 @@
 import {GenericService} from "@src/util/svc";
-const bdb = require('bdb');
-const DB = require('bdb/lib/db');
-import {get, put} from '@src/util/db';
+const bdb = require("bdb");
+const DB = require("bdb/lib/DB");
+import {get, put} from "@src/util/db";
 
-const RPC_HOST_DB_KEY = 'rpc_host';
-const RPC_API_KEY_DB_KEY = 'rpc_api_key';
-const ANALYTICS_OPT_IN_KEY = 'analytics_opt_in_key';
-const RESOLVER_OPT_IN_KEY = 'resolver_opt_in_key';
+const RPC_HOST_DB_KEY = "rpc_host";
+const RPC_API_KEY_DB_KEY = "rpc_api_key";
+const ANALYTICS_OPT_IN_KEY = "analytics_opt_in_key";
+const RESOLVE_HNS = "resolve_hns";
 
-const DEFAULT_HOST = process.env.DEFAULT_HOST || 'https://api.handshakeapi.com/hsd';
-const DEFAULT_API_KEY = process.env.DEFAULT_API_KEY || '';
+const DEFAULT_HOST =
+  process.env.DEFAULT_HOST || "https://api.handshakeapi.com/hsd";
+const DEFAULT_API_KEY = process.env.DEFAULT_API_KEY || "";
 
-export default class SettingService extends GenericService {
-  store: typeof DB;
-
+declare interface SettingService {
   apiHost: string;
   apiKey: string;
+}
+
+class SettingService extends GenericService {
+  store: typeof DB;
 
   constructor() {
     super();
-    this.apiHost = '';
-    this.apiKey = '';
+    this.apiHost = "";
+    this.apiKey = "";
   }
 
   getAPI = async () => {
-    const apiHost = this.apiHost || await get(this.store, RPC_HOST_DB_KEY);
-    const apiKey = this.apiKey || await get(this.store, RPC_API_KEY_DB_KEY);
+    const apiHost = this.apiHost || (await get(this.store, RPC_HOST_DB_KEY));
+    const apiKey = this.apiKey || (await get(this.store, RPC_API_KEY_DB_KEY));
 
     return {
       apiHost: apiHost || DEFAULT_HOST,
@@ -55,26 +58,27 @@ export default class SettingService extends GenericService {
     return !!optIn;
   };
 
-  setResolver = async (optIn = false) => {
-    await put(this.store, RESOLVER_OPT_IN_KEY, optIn);
-    this.emit('resolverChanged', optIn);
+  setResolveHns = async (resolveHns = false) => {
+    await put(this.store, RESOLVE_HNS, resolveHns);
+    this.emit("resolverChanged");
     return true;
   };
 
-  getResolver = async () => {
-    const optIn = await get(this.store, RESOLVER_OPT_IN_KEY);
-    return !!optIn;
+  getResolveHns = async () => {
+    const resolveHns = await get(this.store, RESOLVE_HNS);
+    return !!resolveHns;
   };
 
   async start() {
-    this.store = bdb.create('/setting-store');
+    this.store = bdb.create("/setting-store");
     await this.store.open();
     const {apiKey, apiHost} = await this.getAPI();
     this.apiKey = apiKey;
     this.apiHost = apiHost;
   }
 
-  async stop() {
-
-  }
+  
+  async stop() {}
 }
+
+export default SettingService

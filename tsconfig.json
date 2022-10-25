@@ -1,21 +1,21 @@
 {
-    "compilerOptions": {
-        "baseUrl": "./",
-        "paths": {
-            "@src/*": ["src/*"]
-        },
-        "target": "ES2017",
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "rootDir": "./src",
-        "outDir": "dist/js",
-        "strict": true,
-        "sourceMap": true,
-        "jsx": "react",
-        "esModuleInterop": true,
-        "lib": ["es2015", "dom"],
-        "experimentalDecorators": true,
-        "allowSyntheticDefaultImports": true,
-        "resolveJsonModule": true
-    }
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@src/*": ["src/*"]
+    },
+    "target": "ES2017",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "./src",
+    "outDir": "dist/js",
+    "strict": true,
+    "sourceMap": true,
+    "jsx": "react",
+    "esModuleInterop": true,
+    "lib": ["es2015", "es5", "es6", "dom", "dom.iterable"],
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
+  }
 }

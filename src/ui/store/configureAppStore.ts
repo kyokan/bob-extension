@@ -3,6 +3,7 @@ import {createLogger} from "redux-logger";
 import thunk from "redux-thunk";
 import app from "@src/ui/ducks/app";
 import wallet from "@src/ui/ducks/wallet";
+import ledger from "@src/ui/ducks/ledger";
 import node from "@src/ui/ducks/node";
 import transactions from "@src/ui/ducks/transactions";
 import domains from "@src/ui/ducks/domains";
@@ -11,6 +12,7 @@ import queue from "@src/ui/ducks/queue";
 const rootReducer = combineReducers({
   app,
   wallet,
+  ledger,
   node,
   transactions,
   domains,

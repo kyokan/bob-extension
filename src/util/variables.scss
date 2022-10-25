@@ -6,7 +6,7 @@ $primary-blue: hsl(214, 94%, 56%);
 
 $white: 	hsl(0, 0%, 100%);
 $black: 	hsl(0, 0%, 0%);
-$lightgray: hsl(0, 0%, 94%);
+$lightgray: hsl(0, 0%, 95%);
 $header-gray: $lightgray;
 $border-gray: hsl(0, 0%, 87%);
 
@@ -22,16 +22,19 @@ $border-radius: 0.15rem;
 
 %flex {
   display: flex;
+  box-sizing: border-box;
 }
 
 %col-nowrap {
   @extend %flex;
   flex-flow: column nowrap;
+  box-sizing: border-box;
 }
 
 %row-nowrap {
   @extend %flex;
   flex-flow: row nowrap;
+  box-sizing: border-box;
 }
 
 %small-font {

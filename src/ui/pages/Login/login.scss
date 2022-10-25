@@ -28,7 +28,7 @@
   &__footer {
     @extend %col-nowrap;
     width: 100%;
-    padding: 0 $gutter $gutter;
+    padding: 0 0 $gutter;
 
     .error-message {
       text-align: center;
