@@ -1,4 +1,4 @@
-@import "../../../util/variables";
+@use "../../../util/variables";
 
 div#modal {
   position: relative;
@@ -12,7 +12,7 @@ div#modal {
     height: 100%;
     top: 0;
     left: 0;
-    background-color: rgba($black, .7);
+    background-color: rgba(variables.$black, .7);
     z-index: 100;
     overflow: auto;
   }
@@ -20,9 +20,9 @@ div#modal {
   &__wrapper {
     width: 24rem;
     margin: 3rem auto;
-    background-color: $white;
+    background-color: variables.$white;
     border-radius: .5rem;
-    box-shadow: 0 2px 8px 4px rgba($black, .2);
+    box-shadow: 0 2px 8px 4px rgba(variables.$black, .2);
     z-index: 200;
   }
 }

@@ -1,6 +1,6 @@
 import React, {ReactElement} from "react";
 import Modal, {ModalProps} from "@src/ui/components/Modal";
-import "./samll-modal.scss";
+import "./small-modal.scss";
 
 export default function SmallModal(props: ModalProps): ReactElement {
   return (

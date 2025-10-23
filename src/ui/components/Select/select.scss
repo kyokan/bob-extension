@@ -1,18 +1,18 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .select-group {
   @extend %col-nowrap;
 
   &__label {
     @extend %small-font;
-    color: $label-text;
+    color: variables.$label-text;
     padding: 0 .5rem .25rem;
     cursor: default;
   }
 
   &__error-message {
     @extend %small-font;
-    color: $error-red;
+    color: variables.$error-red;
     padding: .25rem .5rem 0;
   }
 }
@@ -22,14 +22,14 @@ select {
   padding: .375rem .5rem;
   cursor: pointer;
   outline: none;
-  background-color: $lightgray;
-  color: $primary-text;
+  background-color: variables.$lightgray;
+  color: variables.$primary-text;
   font-family: "Work Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
   border: 1px solid transparent;
-  border-radius: $border-radius;
+  border-radius: variables.$border-radius;
 
   &:focus-within {
-    background-color: rgba($black, .035);
-    border: 1px solid $primary-blue;
+    background-color: rgba(variables.$black, .035);
+    border: 1px solid variables.$primary-blue;
   }
 }

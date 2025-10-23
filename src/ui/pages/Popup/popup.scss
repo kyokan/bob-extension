@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 body {
   font-family: "Work Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
@@ -12,13 +12,14 @@ body {
 }
 
 html, body {
-  font-size: $text-base-size;
-  width: $app-width;
-  height: $app-height;
+  font-size: variables.$text-base-size;
+  width: 100%;
+  min-width: variables.$app-width;;
+  height: variables.$app-height;
 }
 
 a {
-  color: $primary-blue;
+  color: variables.$primary-blue;
 }
 
 .popup {
@@ -29,7 +30,7 @@ a {
 
   &__loading {
     @extend %col-nowrap;
-    background-color: $header-gray;
+    background-color: variables.$header-gray;
     width: 100vw;
     height: 100vh;
     align-items: center;
@@ -44,12 +45,12 @@ a {
   }
 
   .popup {
-    width: 36rem;
+    width: 100%;
     height: 40rem;
-    border: 1px solid $border-gray;
+    border: 1px solid variables.$border-gray;
     margin: 3rem auto;
-    background-color: $white;
-    box-shadow: 0 2px 4px 0px $header-gray;
+    background-color: variables.$white;
+    box-shadow: 0 2px 4px 0px variables.$header-gray;
   }
 }
 

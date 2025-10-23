@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .home {
   @extend %col-nowrap;
@@ -7,7 +7,7 @@
 
   &__account {
     @extend %row-nowrap;
-    background-color: $lightgray;
+    background-color: variables.$lightgray;
     cursor: default;
     flex: 0 0 auto;
     align-items: center;
@@ -21,7 +21,7 @@
       padding: 0.125rem 0;
 
       &__label {
-        color: $primary-text;
+        color: variables.$primary-text;
         font-weight: 600;
       }
 
@@ -33,7 +33,7 @@
       &__address {
         @extend %row-nowrap;
         align-items: center;
-        color: $secondary-text;
+        color: variables.$secondary-text;
         // height: 1.125rem;
 
         small {
@@ -49,8 +49,8 @@
 
   &__wallet {
     @extend %row-nowrap;
-    background-color: $lightgray;
-    border-bottom: 1px solid $border-gray;
+    background-color: variables.$lightgray;
+    border-bottom: 1px solid variables.$border-gray;
     cursor: default;
     flex: 0 0 auto;
     padding: 1.25rem;
@@ -64,7 +64,7 @@
       width: 100%;
 
       &__label {
-        color: $label-text;
+        color: variables.$label-text;
         font-weight: 500;
         text-transform: uppercase;
       }
@@ -76,7 +76,7 @@
       }
 
       &__locked {
-        color: $success-green;
+        color: variables.$success-green;
         height: 1.125rem;
       }
     }
@@ -93,8 +93,8 @@
       @extend %flex;
       align-items: center;
       justify-content: center;
-      background: $white;
-      border: 1px solid $black;
+      background: variables.$white;
+      border: 1px solid variables.$black;
       border-radius: 50%;
       margin-right: 0.25rem;
       padding: 0.3rem;
@@ -104,7 +104,7 @@
   .identicon {
     height: 4.125rem;
     width: 4.125rem;
-    border: 1px solid $border-gray;
+    border: 1px solid variables.$border-gray;
     border-radius: 50%;
   }
 
@@ -139,14 +139,14 @@
         flex: 1 1 auto;
         align-items: center;
         justify-content: center;
-        border-bottom: 1px solid $border-gray;
-        color: $label-text;
+        border-bottom: 1px solid variables.$border-gray;
+        color: variables.$label-text;
         font-weight: 600;
         padding: 1rem 1.5rem;
 
         &--selected {
-          color: $black;
-          border-color: $primary-blue;
+          color: variables.$black;
+          border-color: variables.$primary-blue;
         }
       }
     }
@@ -163,7 +163,7 @@
       top: 66px;
       left: 0;
       width: 100%;
-      background-color: $white;
+      background-color: variables.$white;
       z-index: 200;
     }
 
@@ -182,7 +182,7 @@
         right: 0;
         width: 36rem;
         margin: 0 auto;
-        background-color: $white;
+        background-color: variables.$white;
       }
     }
   }

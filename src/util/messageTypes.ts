@@ -65,18 +65,12 @@ enum MessageTypes {
   // settings
   GET_ANALYTICS = "getAnalytics",
   GET_API = "get_api",
-  GET_RESOLVE_HNS = "getResolveHns",
   SET_ANALYTICS = "setAnalytics",
-  SET_RESOLVE_HNS = "setResolveHns",
   SET_RPC_HOST = "set_rpc_host",
   SET_RPC_KEY = "set_rpc_key",
 
   // analytics
   MP_TRACK = "mp_track",
-
-  // SQL
-  READ_DB_AS_BUFFER = "read_db_as_buffer",
-  RESET_DB = "reset_db",
 
   // Bob3
   CONNECT = "connect",
@@ -87,7 +81,10 @@ enum MessageTypes {
   SEND_REDEEM = "send_redeem",
   SEND_REVEAL = "send_reveal",
   SEND_TX = "send_tx",
+  SEND_CUSTOM_TX = "send_custom_tx",
   SEND_UPDATE = "send_update",
+
+  POPUP_LOADED = "popup_loaded",
 
   // Torrent
   CHECK_TORRENT = 'torrent/check',

@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .account-menu {
   cursor: pointer;
@@ -21,8 +21,8 @@
     border-radius: 0.1875rem;
     top: 100%;
     right: 0;
-    background-color: $white;
-    box-shadow: 0 2px 2px 1px rgba($black, 0.1);
+    background-color: variables.$white;
+    box-shadow: 0 2px 2px 1px rgba(variables.$black, 0.1);
     width: 12rem;
 
     &__row {
@@ -33,11 +33,11 @@
       transition: background-color 200ms ease-in-out;
 
       &:hover {
-        background-color: rgba($black, 0.035);
+        background-color: rgba(variables.$black, 0.035);
       }
 
       &:active {
-        background-color: $lightgray;
+        background-color: variables.$lightgray;
       }
 
       .icon {

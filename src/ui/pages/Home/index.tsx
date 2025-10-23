@@ -12,16 +12,12 @@ import {
   useCurrentAccount,
   useReceiveAddress,
 } from "@src/ui/ducks/wallet";
-import postMessage from "@src/util/postMessage";
-import MessageTypes from "@src/util/messageTypes";
-import Identicon from "@src/ui/components/Identicon";
 import {useDispatch} from "react-redux";
 import {formatNumber, fromDollaryDoos} from "@src/util/number";
 import truncString from "@src/util/truncString";
 import "./home.scss";
 import {
   ReceiveButton,
-  RedeemButton,
   RevealButton,
   SendButton,
 } from "@src/ui/components/HomeActionButton";
@@ -81,16 +77,6 @@ export default function Home(): ReactElement {
     (async function onHomeMount() {
       try {
         await dispatch(fetchWalletBalance());
-
-        // const address = await postMessage({
-        //   type: MessageTypes.GET_WALLET_RECEIVE_ADDRESS,
-        //   payload: {
-        //     id: currentWallet,
-        //     accountName: currentAccount,
-        //   },
-        // });
-        // setCurrentAddress(address);
-
         await dispatch(fetchTXQueue());
         dispatch(fetchTransactions());
         dispatch(fetchDomainNames());

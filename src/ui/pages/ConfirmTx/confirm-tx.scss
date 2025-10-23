@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .confirm-tx {
   .input-group {
@@ -9,7 +9,7 @@
     @extend %row-nowrap;
     margin-top: 1.5rem;
     padding: 1rem;
-    background-color: rgba($primary-blue, .1);
+    background-color: rgba(variables.$primary-blue, .1);
     border-radius: 3px;
     align-items: center;
 
@@ -27,7 +27,7 @@
 
   &__detail-group {
     border-radius: 4px;
-    border: 1px solid $border-gray;
+    border: 1px solid variables.$border-gray;
     margin-bottom: .5rem;
     background-color: rgba(0, 0, 0, .025);
   }
@@ -40,7 +40,7 @@
 
     &__title {
       @extend %small-font;
-      color: $label-text;
+      color: variables.$label-text;
       margin-bottom: .25rem;
       cursor: default;
     }
@@ -50,7 +50,7 @@
   &__output-group {
     @extend %col-nowrap;
     margin-bottom: .25rem;
-    color: $secondary-text;
+    color: variables.$secondary-text;
 
     &__top {
       @extend %row-nowrap;
@@ -61,8 +61,8 @@
     &__action {
       font-size: 0.6125rem;
       padding: .25rem;
-      background-color: $primary-text;
-      color: $white;
+      background-color: variables.$primary-text;
+      color: variables.$white;
       font-weight: 700;
       margin-right: .25rem;
     }
@@ -78,7 +78,7 @@
 
   .textarea-group {
     margin-bottom: 1rem;
-    color: $secondary-text;
+    color: variables.$secondary-text;
 
     .textarea {
       @extend %h5-font;

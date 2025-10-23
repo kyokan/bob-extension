@@ -1,13 +1,13 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .app-header {
   @extend %row-nowrap;
   align-items: center;
   justify-content: space-between;
-  background-color: $lightgray;
-  border-bottom: 1px solid $border-gray;
+  background-color: variables.$lightgray;
+  border-bottom: 1px solid variables.$border-gray;
   box-sizing: content-box;
-  padding: 0.5rem $gutter;
+  padding: 0.5rem variables.$gutter;
   position: relative;
 
   &__bob-icon,
@@ -38,8 +38,8 @@
     @extend %clickable;
     font-size: .6875rem;
     padding: .25rem .5rem;
-    background-color: rgba($primary-blue, .15);
-    color: $primary-blue;
+    background-color: rgba(variables.$primary-blue, .15);
+    color: variables.$primary-blue;
     border-radius: .5rem;
 
     &__label {
@@ -58,14 +58,14 @@
     font-family: "Roboto Mono", monospace;
     font-weight: 500;
     cursor: default;
-    color: $primary-text;
+    color: variables.$primary-text;
     position: absolute;
     top: 54px;
     left: 12px;
-    background-color: $white;
+    background-color: variables.$white;
     opacity: .9;
     padding: .75rem 1.25rem;
-    border-radius: $border-radius;
+    border-radius: variables.$border-radius;
     width: 12rem;
     box-shadow:
             0 0.125rem 0.5rem rgba(0, 0, 0, .1),

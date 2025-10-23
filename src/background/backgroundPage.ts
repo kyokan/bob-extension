@@ -1,4 +1,3 @@
-import {browser, Runtime} from "webextension-polyfill-ts";
 import WalletService from "@src/background/services/wallet";
 import {MessageAction} from "@src/util/postMessage";
 import {AppService} from "@src/util/svc";
@@ -7,22 +6,25 @@ import NodeService from "@src/background/services/node";
 import controllers from "@src/background/controllers";
 import MessageTypes from "@src/util/messageTypes";
 import AnalyticsService from "@src/background/services/analytics";
-import resolve, {getMagnetRecord} from "@src/background/resolve";
-import MessageSender = Runtime.MessageSender;
+import {getMagnetRecord} from "@src/background/resolve";
 import {consume, torrentSVC} from "../util/webtorrent";
 
 (async function () {
   let app: AppService;
 
-  browser.runtime.onMessage.addListener(async (request: any, sender: any) => {
-    await waitForStartApp();
+  // MV3: Use native Chrome API instead of webextension-polyfill
+  chrome.runtime.onMessage.addListener((request: any, sender: any, sendResponse: any) => {
+    (async () => {
+      await waitForStartApp();
 
-    try {
-      const res = await handleMessage(app, request, sender);
-      return [null, res];
-    } catch (e: any) {
-      return [e.message, null];
-    }
+      try {
+        const res = await handleMessage(app, request, sender);
+        sendResponse([null, res]);
+      } catch (e: any) {
+        sendResponse([e.message, null]);
+      }
+    })();
+    return true; // Required for async sendResponse
   });
 
   const startedApp = new AppService();
@@ -33,67 +35,49 @@ import {consume, torrentSVC} from "../util/webtorrent";
   await startedApp.start();
   app = startedApp;
 
-  // @ts-ignore
-  const onBeforeRequest = resolve.bind(this);
-
-  const optIn = await app.exec('setting', 'getResolveHns');
-
-  if (optIn) {
-    browser.webRequest.onBeforeRequest.addListener(
-      onBeforeRequest,
-      {urls: ["<all_urls>"]},
-      ["blocking"]
-    );
-  } else {
-    chrome.proxy.settings.set({value: {mode: 'system'}, scope: 'regular'});
-  }
-
-  app.on('setting.resolverChanged', (optIn: boolean) => {
-    if (optIn) {
-      browser.webRequest.onBeforeRequest.addListener(
-        onBeforeRequest,
-        {urls: ["<all_urls>"]},
-        ["blocking"]
-      );
-    } else {
-      browser.webRequest.onBeforeRequest.removeListener(onBeforeRequest);
-      chrome.proxy.settings.set({value: {mode: 'system'}, scope: 'regular'});
-    }
-  });
-
   app.on("wallet.locked", async () => {
-    const tabs = await browser.tabs.query({active: true});
+    const tabs = await chrome.tabs.query({active: true});
     for (let tab of tabs) {
-      await browser.tabs.sendMessage(tab.id as number, {
+      await chrome.tabs.sendMessage(tab.id as number, {
         type: MessageTypes.DISCONNECTED,
       });
     }
   });
 
-  browser.omnibox.onInputEntered.addListener(async (hostname, disposition) => {
+  chrome.omnibox.onInputEntered.addListener(async (hostname, disposition) => {
     await waitForStartApp();
-    const optIn = await app.exec('setting', 'getResolver');
 
-    if (!optIn) return;
-
-    const magnetURI = getMagnetRecord(hostname);
-
+    const magnetURI = await getMagnetRecord(hostname);
     if (magnetURI) {
       torrentSVC.addTorrentError(hostname, '');
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      browser.tabs.update(tab.id, {
-        url: browser.extension.getURL('federalist.html') + '?h=' + hostname,
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      chrome.tabs.update(tab.id, {
+        url: chrome.runtime.getURL('federalist.html') + '?h=' + hostname,
       });
       setTimeout(() => {
         consume(magnetURI, hostname);
       }, 1000);
     } else {
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      await browser.tabs.update(tab.id, {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      await chrome.tabs.update(tab.id, {
         url: 'http://' + hostname + '/',
       });
     }
+  });
 
+  // MV3: Handle chrome.alarms for persistent polling
+  chrome.alarms.onAlarm.addListener(async (alarm) => {
+    await waitForStartApp();
+
+    if (alarm.name === 'walletPoller') {
+      await app.exec('wallet', 'runPollerTick');
+    }
+  });
+
+  // MV3: Service worker lifecycle - restore state on startup
+  chrome.runtime.onStartup.addListener(async () => {
+    console.log('Service worker starting up...');
+    // App initialization happens in the main IIFE above
   });
 
   async function waitForStartApp() {

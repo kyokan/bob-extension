@@ -46,6 +46,10 @@ export default function Popup(): ReactElement {
   const theme = darkTheme ? "theme--dark" : "theme--default";
 
   useEffect(() => {
+    postMessage({type: MessageTypes.POPUP_LOADED});
+  }, []);
+
+  useEffect(() => {
     (async () => {
       try {
         postMessage({
@@ -60,9 +64,6 @@ export default function Popup(): ReactElement {
         await dispatch(fetchWallets());
         await dispatch(fetchWalletIDs());
         await dispatch(fetchWalletState());
-        await dispatch(fetchAccountNames(currentWallet));
-        await dispatch(fetchAccountsInfo(currentWallet));
-        await dispatch(fetchReceiveAddress(currentWallet, currentAccount));
         await dispatch(fetchLatestBlock());
       } catch (e) {
         console.error(e);
@@ -70,6 +71,16 @@ export default function Popup(): ReactElement {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!locked && currentWallet && currentAccount) {
+      (async () => {
+        await dispatch(fetchAccountNames(currentWallet));
+        await dispatch(fetchAccountsInfo(currentWallet));
+        await dispatch(fetchReceiveAddress(currentWallet, currentAccount));
+      })();
+    }
+  }, [currentWallet, currentAccount, locked]);
 
   useEffect(() => {
     if (!locked && currentWallet) {

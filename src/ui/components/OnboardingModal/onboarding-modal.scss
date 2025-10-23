@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .onboarding-modal {
   @extend %col-nowrap;
@@ -13,7 +13,7 @@
     width: 36rem;
     height: 38rem;
     margin: 3rem auto 9rem;
-    border: 1px solid $border-gray;
+    border: 1px solid variables.$border-gray;
     padding: 1rem 1.5rem;
     border-radius: 3px;
   }
@@ -28,12 +28,12 @@
     &__back {
       @extend %lite-font;
       @extend %clickable;
-      color: $primary-blue;
+      color: variables.$primary-blue;
     }
 
     &__steps {
       @extend %lite-font;
-      color: $primary-blue;
+      color: variables.$primary-blue;
     }
 
     &__actions {

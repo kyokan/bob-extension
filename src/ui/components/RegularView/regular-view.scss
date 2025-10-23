@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .regular-view {
   @extend %col-nowrap;
@@ -8,9 +8,9 @@
   &__header {
     @extend %row-nowrap;
     align-items: center;
-    background-color: $lightgray;
+    background-color: variables.$lightgray;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid $border-gray;
+    border-bottom: 1px solid variables.$border-gray;
 
     &__l {
       @extend %h3-font;
@@ -28,7 +28,7 @@
   &__action {
     @extend %lite-font;
     @extend %clickable;
-    color: $primary-blue;
+    color: variables.$primary-blue;
     font-weight: 600;
   }
 
@@ -45,7 +45,7 @@
     grid-template-columns: 1fr 1fr;
     grid-gap: 1rem;
     padding: 1rem 1.25rem;
-    border-top: 1px solid $border-gray;
+    border-top: 1px solid variables.$border-gray;
 
     .button {
       @extend %row-nowrap;

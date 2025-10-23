@@ -1,18 +1,117 @@
 import MessageTypes from "@src/util/messageTypes";
 import {AppService} from "@src/util/svc";
 import {MessageAction} from "@src/util/postMessage";
-import {browser, Runtime} from "webextension-polyfill-ts";
+import {Runtime} from "webextension-polyfill-ts";
 import {toDollaryDoos} from "@src/util/number";
-import {
-  consume,
-  torrentSVC,
-} from "@src/util/webtorrent";
-import MessageSender = Runtime.MessageSender;
 import {getMagnetRecord} from "@src/background/resolve";
+import {consume, torrentSVC} from "@src/util/webtorrent";
+import MessageSender = Runtime.MessageSender;
+
+let popupId: number | null = null;
+let pendingPopupRequest: { type: string, payload: any, resolve: (data: any) => void, reject: (err: Error) => void } | null = null;
 
 const controllers: {
   [type: string]: (app: AppService, message: MessageAction, sender: MessageSender) => Promise<any>;
 } = {
+  [MessageTypes.POPUP_LOADED]: async (app, message, sender) => {
+    if (!pendingPopupRequest) {
+      return;
+    }
+
+    const { type, payload, resolve, reject } = pendingPopupRequest;
+    pendingPopupRequest = null; // Clear the pending request
+
+    let tx = null;
+    switch (type) {
+      case 'send':
+        app.exec("analytics", "track", {
+          name: "Bob3 Send",
+        });
+
+        const {amount, address} = payload;
+        tx = await app.exec("wallet", "createSend", {
+          rate: +toDollaryDoos(0.01),
+          outputs: [
+            {
+              value: +toDollaryDoos(amount || 0),
+              address: address,
+            },
+          ],
+        });
+
+        await app.exec("wallet", "addTxToQueue", tx);
+        break;
+      case 'open':
+        app.exec("analytics", "track", {
+          name: "Bob3 Open",
+        });
+
+        tx = await app.exec("wallet", "createOpen", payload);
+        await app.exec("wallet", "addTxToQueue", tx);
+        break;
+      case 'bid':
+        app.exec("analytics", "track", {
+          name: "Bob3 Bid",
+        });
+
+        tx = await app.exec("wallet", "createBid", payload);
+        await app.exec("wallet", "addTxToQueue", {
+          ...tx,
+          bid: payload.amount,
+        });
+        break;
+      case 'reveal':
+        app.exec("analytics", "track", {
+          name: "Bob3 Reveal",
+        });
+
+        tx = await app.exec("wallet", "createReveal", {
+          name: payload,
+        });
+
+        await app.exec("wallet", "addTxToQueue", tx);
+        break;
+      case 'update':
+        app.exec("analytics", "track", {
+          name: "Bob3 Update",
+        });
+
+        tx = await app.exec("wallet", "createUpdate", payload);
+
+        await app.exec("wallet", "addTxToQueue", tx);
+        break;
+      case 'redeem':
+        app.exec("analytics", "track", {
+          name: "Bob3 Redeem",
+        });
+
+        tx = await app.exec("wallet", "createRedeem", {
+          name: payload,
+        });
+
+        await app.exec("wallet", "addTxToQueue", tx);
+        break;
+      case 'custom':
+        app.exec("analytics", "track", {
+          name: "Bob3 Create Tx",
+        });
+
+        tx = await app.exec("wallet", "createCustomTx", payload);
+
+        await app.exec("wallet", "addTxToQueue", tx);
+        break;
+    }
+
+    if (tx) {
+      chrome.windows.getAll({}, (windows) => {
+        const popup = windows.find(w => w.type === 'popup');
+        if (popup) {
+          closePopupOnAcceptOrReject(app, resolve, reject, popup, tx);
+        }
+      });
+    }
+  },
+
   [MessageTypes.CONNECT]: async (app, message) => {
     return new Promise(async (resolve, reject) => {
       const {locked} = await app.exec("wallet", "getState");
@@ -27,17 +126,17 @@ const controllers: {
         const onPopUpClose = (windowId: number) => {
           if (windowId === popup.id) {
             reject(new Error("user rejected."));
-            browser.windows.onRemoved.removeListener(onPopUpClose);
+            chrome.windows.onRemoved.removeListener(onPopUpClose);
           }
         };
 
         app.on("wallet.unlocked", async () => {
           resolve(true);
-          await browser.windows.remove(popup.id as number);
-          browser.windows.onRemoved.removeListener(onPopUpClose);
+          await chrome.windows.remove(popup.id as number);
+          chrome.windows.onRemoved.removeListener(onPopUpClose);
         });
 
-        browser.windows.onRemoved.addListener(onPopUpClose);
+        chrome.windows.onRemoved.addListener(onPopUpClose);
         return;
       }
 
@@ -49,19 +148,17 @@ const controllers: {
     const {payload} = message;
     const {address, msg} = payload;
     return new Promise(async (resolve, reject) => {
-      const queue = await app.exec('wallet', 'getTxQueue');
-
-      if (queue.length) {
-        return reject(new Error('user has unconfirmed tx.'));
+      if (pendingPopupRequest !== null) {
+        return reject(new Error("Another transaction is already pending confirmation."));
       }
 
       app.exec('analytics', 'track', {
         name: 'Bob3 Sign',
       });
 
-      const requestJson = await app.exec('wallet', 'createSignMessageRequest', msg, address);
+      await app.exec('wallet', 'createSignMessageRequest', msg, address);
 
-      await app.exec('wallet', 'addTxToQueue', requestJson);
+      await app.exec('wallet', 'addTxToQueue');
 
       const popup = await openPopup();
       closePopupOnAcceptOrReject(app, resolve, reject, popup);
@@ -72,19 +169,17 @@ const controllers: {
     const {payload} = message;
     const {name, msg} = payload;
     return new Promise(async (resolve, reject) => {
-      const queue = await app.exec('wallet', 'getTxQueue');
-
-      if (queue.length) {
-        return reject(new Error('user has unconfirmed tx.'));
+      if (pendingPopupRequest !== null) {
+        return reject(new Error("Another transaction is already pending confirmation."));
       }
 
       app.exec('analytics', 'track', {
         name: 'Bob3 Sign with Name',
       });
 
-      const requestJson = await app.exec('wallet', 'createSignMessageRequest', msg, undefined, name);
+      await app.exec('wallet', 'createSignMessageRequest', msg, undefined, name);
 
-      await app.exec('wallet', 'addTxToQueue', requestJson);
+      await app.exec('wallet', 'addTxToQueue');
 
       const popup = await openPopup();
       closePopupOnAcceptOrReject(app, resolve, reject, popup);
@@ -92,38 +187,6 @@ const controllers: {
   },
 
   [MessageTypes.SEND_TX]: async (app, message) => {
-    const {payload} = message;
-    const {amount, address} = payload;
-    return new Promise(async (resolve, reject) => {
-      const queue = await app.exec("wallet", "getTxQueue");
-
-      if (queue.length) {
-        return reject(new Error("user has unconfirmed tx."));
-      }
-
-      app.exec("analytics", "track", {
-        name: "Bob3 Send",
-      });
-
-      const tx = await app.exec("wallet", "createSend", {
-        rate: +toDollaryDoos(0.01),
-        outputs: [
-          {
-            value: +toDollaryDoos(amount || 0),
-            address: address,
-          },
-        ],
-      });
-
-      await app.exec("wallet", "addTxToQueue", tx);
-
-      const popup = await openPopup();
-      closePopupOnAcceptOrReject(app, resolve, reject, popup);
-    });
-  },
-
-  [MessageTypes.SEND_OPEN]: async (app, message) => {
-    const {payload} = message;
     return new Promise(async (resolve, reject) => {
       try {
         const queue = await app.exec("wallet", "getTxQueue");
@@ -132,16 +195,33 @@ const controllers: {
           return reject(new Error("user has unconfirmed tx."));
         }
 
-        app.exec("analytics", "track", {
-          name: "Bob3 Open",
-        });
+        if (pendingPopupRequest !== null) {
+          return reject(new Error("Another transaction is already pending confirmation."));
+        }
 
-        const tx = await app.exec("wallet", "createOpen", payload);
+        pendingPopupRequest = { type: 'send', payload: message.payload, resolve, reject };
+        await openPopup();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  },
 
-        await app.exec("wallet", "addTxToQueue", tx);
+  [MessageTypes.SEND_OPEN]: async (app, message) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const queue = await app.exec("wallet", "getTxQueue");
 
-        const popup = await openPopup();
-        closePopupOnAcceptOrReject(app, resolve, reject, popup);
+        if (queue.length) {
+          return reject(new Error("user has unconfirmed tx."));
+        }
+
+        if (pendingPopupRequest !== null) {
+          return reject(new Error("Another transaction is already pending confirmation."));
+        }
+
+        pendingPopupRequest = { type: 'open', payload: message.payload, resolve, reject };
+        await openPopup();
       } catch (e) {
         reject(e);
       }
@@ -149,8 +229,6 @@ const controllers: {
   },
 
   [MessageTypes.SEND_BID]: async (app, message) => {
-    const {payload} = message;
-    const {amount, lockup} = payload;
     return new Promise(async (resolve, reject) => {
       try {
         const queue = await app.exec("wallet", "getTxQueue");
@@ -159,19 +237,12 @@ const controllers: {
           return reject(new Error("user has unconfirmed tx."));
         }
 
-        app.exec("analytics", "track", {
-          name: "Bob3 Bid",
-        });
+        if (pendingPopupRequest !== null) {
+          return reject(new Error("Another transaction is already pending confirmation."));
+        }
 
-        const tx = await app.exec("wallet", "createBid", payload);
-
-        await app.exec("wallet", "addTxToQueue", {
-          ...tx,
-          bid: amount,
-        });
-
-        const popup = await openPopup();
-        closePopupOnAcceptOrReject(app, resolve, reject, popup);
+        pendingPopupRequest = { type: 'bid', payload: message.payload, resolve, reject };
+        await openPopup();
       } catch (e) {
         reject(e);
       }
@@ -179,7 +250,6 @@ const controllers: {
   },
 
   [MessageTypes.SEND_REVEAL]: async (app, message) => {
-    const {payload} = message;
     return new Promise(async (resolve, reject) => {
       try {
         const queue = await app.exec("wallet", "getTxQueue");
@@ -188,18 +258,12 @@ const controllers: {
           return reject(new Error("user has unconfirmed tx."));
         }
 
-        app.exec("analytics", "track", {
-          name: "Bob3 Reveal",
-        });
+        if (pendingPopupRequest !== null) {
+          return reject(new Error("Another transaction is already pending confirmation."));
+        }
 
-        const tx = await app.exec("wallet", "createReveal", {
-          name: payload,
-        });
-
-        await app.exec("wallet", "addTxToQueue", tx);
-
-        const popup = await openPopup();
-        closePopupOnAcceptOrReject(app, resolve, reject, popup);
+        pendingPopupRequest = { type: 'reveal', payload: message.payload, resolve, reject };
+        await openPopup();
       } catch (e) {
         reject(e);
       }
@@ -207,7 +271,6 @@ const controllers: {
   },
 
   [MessageTypes.SEND_UPDATE]: async (app, message) => {
-    const {payload} = message;
     return new Promise(async (resolve, reject) => {
       try {
         const queue = await app.exec("wallet", "getTxQueue");
@@ -216,16 +279,12 @@ const controllers: {
           return reject(new Error("user has unconfirmed tx."));
         }
 
-        app.exec("analytics", "track", {
-          name: "Bob3 Update",
-        });
+        if (pendingPopupRequest !== null) {
+          return reject(new Error("Another transaction is already pending confirmation."));
+        }
 
-        const tx = await app.exec("wallet", "createUpdate", payload);
-
-        await app.exec("wallet", "addTxToQueue", tx);
-
-        const popup = await openPopup();
-        closePopupOnAcceptOrReject(app, resolve, reject, popup);
+        pendingPopupRequest = { type: 'update', payload: message.payload, resolve, reject };
+        await openPopup();
       } catch (e) {
         reject(e);
       }
@@ -233,7 +292,6 @@ const controllers: {
   },
 
   [MessageTypes.SEND_REDEEM]: async (app, message) => {
-    const {payload} = message;
     return new Promise(async (resolve, reject) => {
       try {
         const queue = await app.exec("wallet", "getTxQueue");
@@ -242,16 +300,32 @@ const controllers: {
           return reject(new Error("user has unconfirmed tx."));
         }
 
-        app.exec("analytics", "track", {
-          name: "Bob3 Redeem",
-        });
+        if (pendingPopupRequest !== null) {
+          return reject(new Error("Another transaction is already pending confirmation."));
+        }
 
-        const tx = await app.exec("wallet", "createRedeem", {
-          name: payload,
-        });
+        pendingPopupRequest = { type: 'redeem', payload: message.payload, resolve, reject };
+        await openPopup();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  },
 
-        await app.exec("wallet", "addTxToQueue", tx);
+  [MessageTypes.SEND_CUSTOM_TX]: async (app, message) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const queue = await app.exec("wallet", "getTxQueue");
+        
+        if (queue.length) {
+          return reject(new Error("user has unconfirmed tx."));
+        }
 
+        if (pendingPopupRequest !== null) {
+          return reject(new Error("Another transaction is already pending confirmation."));
+        }
+
+        pendingPopupRequest = { type: 'custom', payload: message.payload, resolve, reject };
         const popup = await openPopup();
         closePopupOnAcceptOrReject(app, resolve, reject, popup);
       } catch (e) {
@@ -545,22 +619,6 @@ const controllers: {
     return app.exec("setting", "setAnalytics", message.payload);
   },
 
-  [MessageTypes.GET_RESOLVE_HNS]: async (app, message) => {
-    return app.exec("setting", "getResolveHns");
-  },
-
-  [MessageTypes.SET_RESOLVE_HNS]: async (app, message) => {
-    return app.exec("setting", "setResolveHns", message.payload);
-  },
-
-  [MessageTypes.RESET_DB]: async (app, message) => {
-    return app.exec("db", "resetDB", message.payload);
-  },
-
-  [MessageTypes.READ_DB_AS_BUFFER]: async (app, message) => {
-    return app.exec("db", "readDBAsBuffer", message.payload);
-  },
-
   [MessageTypes.MP_TRACK]: async (app, message) => {
     return app.exec(
       "analytics",
@@ -571,16 +629,15 @@ const controllers: {
   },
 
   [MessageTypes.CONSUME_TORRENT]: async (app, message) => {
-    const magnetURI = getMagnetRecord(message.payload);
+    const magnetURI = await getMagnetRecord(message.payload);
 
     if (magnetURI) {
       setTimeout(() => {
         consume(magnetURI, message.payload);
-      }, 500);
-      return true;
+      }, 1000);
     }
 
-    return false;
+    return;
   },
 
   [MessageTypes.CLEAR_TORRENT]: async (app, message) => {
@@ -593,42 +650,51 @@ const controllers: {
     const dhtURI = torrentSVC.getTorrent(message.payload).dmt;
     const error = torrentSVC.getTorrent(message.payload).error;
     const status = torrentSVC.getTorrent(message.payload).status;
+
     return {
-      status: status,
-      downloaded: torrent?.downloaded,
-      downloadSpeed: torrent?.downloadSpeed,
-      progress: torrent?.progress,
-      length: torrent?.length,
-      ready: torrent?.ready,
-      uri: magnetURI,
-      numPeers: torrent?.numPeers || 0,
-      error: error,
-      dht: dhtURI,
+      torrent,
+      magnetURI,
+      dhtURI,
+      error,
+      status,
     };
   },
 
   [MessageTypes.OPEN_FEDERALIST]: async (app, message, sender) => {
-    browser.tabs.update(sender.tab?.id, {
+    chrome.tabs.update(sender.tab?.id, {
       url: `http://${message.payload}/`,
     });
     return;
   },
 };
 
-export default controllers;
-
 async function openPopup() {
-  const tab = await browser.tabs.create({
-    url: browser.extension.getURL("popup.html"),
-    active: false,
-  });
+  if (popupId) {
+    try {
+      const w = await chrome.windows.get(popupId);
+      await chrome.windows.update(popupId, { focused: true });
+      return w;
+    } catch (e) {
+      // Window was closed by the user.
+      popupId = null;
+    }
+  }
 
-  const popup = await browser.windows.create({
-    tabId: tab.id,
+  const popup = await chrome.windows.create({
+    url: chrome.runtime.getURL("popup.html"),
     type: "popup",
     focused: true,
     width: 357,
     height: 600,
+  });
+
+  popupId = popup.id as number;
+
+  chrome.windows.onRemoved.addListener(function listener(windowId) {
+    if (windowId === popupId) {
+      popupId = null;
+      chrome.windows.onRemoved.removeListener(listener);
+    }
   });
 
   return popup;
@@ -638,15 +704,43 @@ function closePopupOnAcceptOrReject(
   app: AppService,
   resolve: (data: any) => void,
   reject: (err: Error) => void,
-  popup: any
+  popup: any,
+  tx?: any
 ) {
   app.on("wallet.txAccepted", (returnTx) => {
+    pendingPopupRequest = null;
     resolve(returnTx);
-    browser.windows.remove(popup.id as number);
+    chrome.windows.remove(popup.id as number);
+    chrome.windows.onRemoved.removeListener(onPopUpClose);
   });
 
   app.on("wallet.txRejected", () => {
+    pendingPopupRequest = null;
+
+    if (tx) {
+      app.exec("wallet", "removeTxFromQueue", tx).catch(console.error);
+    }
+
     reject(new Error("user rejected."));
-    browser.windows.remove(popup.id as number);
+    chrome.windows.remove(popup.id as number);
+    chrome.windows.onRemoved.removeListener(onPopUpClose);
   });
+
+  const onPopUpClose = (windowId: number) => {
+    if (windowId === popup.id) {
+      pendingPopupRequest = null;
+
+      if (tx) {
+        app.exec("wallet", "removeTxFromQueue", tx).catch(console.error);
+      }
+
+      reject(new Error("user rejected."));
+      chrome.windows.remove(popup.id as number);
+      chrome.windows.onRemoved.removeListener(onPopUpClose);
+    }
+  };
+
+  chrome.windows.onRemoved.addListener(onPopUpClose);
 }
+
+export default controllers;

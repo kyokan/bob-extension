@@ -1,4 +1,3 @@
-import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 
 export type MessageAction = {
@@ -9,11 +8,20 @@ export type MessageAction = {
 }
 
 export default async function postMessage(message: MessageAction) {
-  const [err, res] = await browser.runtime.sendMessage(message);
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
 
-  if (err) {
-    throw new Error(err);
-  }
+      const [err, res] = response || [null, null];
 
-  return res;
+      if (err) {
+        reject(new Error(err));
+      } else {
+        resolve(res);
+      }
+    });
+  });
 }

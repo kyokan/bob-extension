@@ -17,23 +17,44 @@ Bob extension uses the address indexer to make wallet rescan faster and more per
 
 **Install**
 ```
-npm install 
+npm install
 ```
 
-**Run in dev mode**
+**Build for development**
 ```
-NODE_ENV=development npm run dev
-```
-
-**Run in simnet**
-```
-NETWORK_TYPE=simnet npm run dev
+npm run build:dev
 ```
 
-**Build**
+**Build for production**
 ```
-NODE_ENV=production npm run build
+npm run build
 ```
+
+**Build with simnet**
+```
+NETWORK_TYPE=simnet npm run build:dev
+```
+
+**Note**: The extension now uses Manifest V3 and runs as a service worker. After building, load the extension from the `dist/` directory in Chrome via `chrome://extensions` (enable Developer Mode).
+
+## Omnibox Navigation
+
+Navigate to Handshake names using Chrome's omnibox feature:
+
+1. Type `bob` in Chrome's address bar
+2. Press `Tab` or `Space`
+3. Enter a Handshake name (e.g., `welcome`, `proofofconcept`, `nb`)
+4. Press `Enter`
+
+The extension will:
+- Check if the name has a magnet/torrent record (Federalist site) and load the P2P content viewer
+- Otherwise, navigate to `http://<handshake-name>/`
+
+**Note**: For regular HTTP navigation to work, you need a local Handshake resolver (like [hdns](https://github.com/handshake-org/hdns) or [hnsd](https://github.com/handshake-org/hnsd)) or use a DNS provider that supports Handshake names.
+
+### Federalist Support
+
+Bob Extension supports [Federalist](https://github.com/kyokan/federalist) - a decentralized web hosting platform using BitTorrent. Handshake names with magnet links in their TXT records will automatically load through the P2P torrent viewer.
 
 ### Injected Bob3 
 
@@ -54,7 +75,7 @@ Once a name is available, a sendopen transaction starts the opening phase.
 ```js
 // Bob3 uses the same
 const wallet = await bob3.connect();
-const tx = await wallet.sendBid('silverhand');
+const tx = await wallet.sendOpen('silverhand');
 ```
 
 **Send Bid**

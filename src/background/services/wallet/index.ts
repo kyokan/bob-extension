@@ -41,7 +41,9 @@ import {setInfo} from "@src/ui/ducks/node";
 import nodeService from "../node";
 import crypto from "crypto";
 const Mnemonic = require("hsd/lib/hd/mnemonic");
+const HD = require("hsd/lib/hd");
 const WalletDB = require("hsd/lib/wallet/walletdb");
+const Wallet = require("hsd/lib/wallet/wallet");
 const Network = require("hsd/lib/protocol/network");
 const Covenant = require("hsd/lib/primitives/covenant");
 const rules = require("hsd/lib/covenants/rules");
@@ -55,9 +57,10 @@ const MTX = require("hsd/lib/primitives/mtx");
 const Output = require("hsd/lib/primitives/output");
 const Outpoint = require("hsd/lib/primitives/outpoint");
 const MasterKey = require("hsd/lib/wallet/masterkey");
+const policy = require("hsd/lib/protocol/policy");
 const BN = require("bcrypto/lib/bn.js");
 const bdb = require("bdb");
-const DB = require("bdb/lib/DB");
+const DB = require("bdb/lib/db");
 const layout = require("hsd/lib/wallet/layout").txdb;
 const {Resource} = require("hsd/lib/dns/resource");
 
@@ -79,7 +82,6 @@ declare interface WalletService {
   locked: boolean;
   rescanning: boolean;
   watchOnly: boolean;
-  pollerTimeout?: any;
   _getTxNonce: number;
   _getNameNonce: number;
   forceStopRescan: boolean;
@@ -121,6 +123,7 @@ class WalletService extends GenericService {
     this.locked = false;
     await wallet.lock();
     this.emit("unlocked", this.selectedID);
+    this.checkForRescan();
   };
 
   getState = async () => {
@@ -205,22 +208,23 @@ class WalletService extends GenericService {
   };
 
   getWalletIDs = async (): Promise<string[]> => {
-    return this.wdb.getWallets();
+    return await this.wdb.getWallets();
   };
 
   getWalletsInfo = async () => {
-    const wallets = await this.wdb.getWallets();
+    const wallets = (await this.wdb.getWallets()).filter((id: string) => id !== 'primary');
     const walletsInfo = [];
 
     for (const wid of wallets) {
       const info = await this.wdb.get(wid);
       const accounts = await this.getAccountNames(wid);
+      const addresses = await this.genAddresses(0, info.accountDepth, 'receive');
       const {
         accountDepth,
         master: {encrypted},
         watchOnly,
       } = info;
-      walletsInfo.push({wid, accountDepth, encrypted, watchOnly, accounts});
+      walletsInfo.push({wid, accountDepth, encrypted, watchOnly, accounts, addresses, locked: this.locked});
     }
 
     return walletsInfo;
@@ -228,13 +232,18 @@ class WalletService extends GenericService {
 
   getAccountNames = async (walletID?: string) => {
     const wallet = await this.wdb.get(walletID || this.selectedID);
+    if (wallet) {
     const accounts = await wallet.getAccounts();
 
     return accounts;
+    } else {
+      return [];
+    }
   };
 
   getAccountsInfo = async (walletID?: string) => {
     const wallet = await this.wdb.get(walletID || "primary");
+    if (wallet) {
     const walletAccounts = await wallet.getAccounts();
     const accounts = [];
 
@@ -245,6 +254,9 @@ class WalletService extends GenericService {
     }
 
     return accounts;
+  } else {
+    return [];
+  }
   };
 
   getAccountInfo = async (accountName?: string, id?: string) => {
@@ -280,6 +292,11 @@ class WalletService extends GenericService {
   selectAccount = async (accountName: string) => {
     const accountNames = await this.getAccountNames();
     const account = await this.getAccountInfo(accountName);
+
+    if (!account) {
+      throw new Error(`Cannot find account - ${accountName}`);
+    }
+
     const {accountIndex, name, type, watchOnly, wid} = account;
     const walletOptions = {
       id: this.selectedID,
@@ -354,7 +371,7 @@ class WalletService extends GenericService {
 
     for (const wtx of wtxs) {
       if (!wtx.tx.isCoinbase()) {
-        txs.push(wtx.tx);
+        txs.push(wtx.tx.getJSON(this.network));
       }
     }
 
@@ -660,10 +677,17 @@ class WalletService extends GenericService {
     watchOnly: boolean;
   }) => {
     await this.exec("setting", "setAnalytics", options.optIn);
+    
     const wallet = await this.wdb.create(options);
     const balance = await wallet.getBalance();
+
     await this.selectWallet(options.id);
+
     await this.unlockWallet(options.passphrase);
+
+    // Trigger blockchain scan to discover transactions
+    this.checkForRescan();
+
     return wallet.getJSON(false, balance);
   };
 
@@ -678,7 +702,6 @@ class WalletService extends GenericService {
     if (!wallet) return null;
 
     const result = await wallet.createAccount(options, this.passphrase);
-    // console.log("Create wallet account:", result);
     const balance = await wallet.getBalance(result.accountIndex);
 
     return {
@@ -1178,6 +1201,48 @@ class WalletService extends GenericService {
     return createdTx.toJSON();
   };
 
+  createCustomTx = async (txOptions: any) => {
+    const walletId = this.selectedID;
+    const wallet = await this.wdb.get(walletId);
+    const latestBlockNow = await this.exec("node", "getLatestBlock");
+    this.wdb.height = latestBlockNow.height;
+    const outputs = txOptions.outputs;
+    const mtx = new MTX(txOptions);
+
+  
+    const mtxOutputs = [];
+    for (const obj of outputs) {
+      let output;
+      if (obj.data) {
+        const dataBuffer = Buffer.from(obj.data, 'hex');
+        const nulldataAddress = Address.fromNulldata(dataBuffer);
+        output = new Output({ address: nulldataAddress, value: 0 });
+      } else {
+        output = new Output(obj);
+      }
+
+      const addr = output.getAddress();
+      if (output.isDust(txOptions.rate || policy.MIN_RELAY)) {
+        throw new Error('Output is dust.');
+      }
+      if (output.value > 0) {
+        if (!addr || addr.isNull()) {
+          throw new Error('Cannot send to null or unknown address.');
+        }
+      }
+
+      mtxOutputs.push(output);
+    }
+
+    mtx.outputs = mtxOutputs;
+
+    await wallet.fund(mtx, txOptions);
+
+    const createdTx = await wallet.finalize(mtx, txOptions);
+    return createdTx.toJSON();
+  };
+
+
   createSend = async (txOptions: any) => {
     const walletId = this.selectedID;
     const wallet = await this.wdb.get(walletId);
@@ -1414,6 +1479,10 @@ class WalletService extends GenericService {
           "getBlockEntry",
           transactions[i].height
         );
+
+        // TODO figure out why chainwork param fails assertion
+        delete entryOption.chainwork;
+        
         const entry = new ChainEntry({
           ...entryOption,
           version: Number(entryOption.version),
@@ -1425,16 +1494,17 @@ class WalletService extends GenericService {
           reservedRoot: Buffer.from(entryOption.reservedRoot, "hex"),
           extraNonce: Buffer.from(entryOption.extraNonce, "hex"),
           mask: Buffer.from(entryOption.mask, "hex"),
+          height: Number(entryOption.height),
           chainwork:
             entryOption.chainwork && BN.from(entryOption.chainwork, 16, "be"),
         });
-
+        
         await this.wdb._addTX(tx, entry);
 
         retries = 0;
       } catch (e) {
         retries++;
-
+        
         await new Promise((r) => setTimeout(r, 10));
 
         if (retries > 10000) {
@@ -1829,27 +1899,41 @@ class WalletService extends GenericService {
         type: ActionType.SET_TRANSACTIONS,
         payload: await this.getTransactions(),
       });
+
+      // Update balance in Redux store when new transactions are detected
+      const balance = await this.getWalletBalance(this.selectedID, 'default');
+      await pushMessage(setWalletBalance(balance));
     }
   };
 
   async initPoller() {
-    if (this.pollerTimeout) {
-      clearInterval(this.pollerTimeout);
-    }
+    // MV3: Use chrome.alarms instead of setInterval for service worker persistence
+    const ALARM_NAME = 'walletPoller';
 
-    return setInterval(
-      () =>
-        (async () => {
-          await this.checkForRescan();
-          const {hash, height, time} = await this.exec(
-            "node",
-            "getLatestBlock"
-          );
-          await pushMessage(setInfo(hash, height, time));
-          this.emit("newBlock", {hash, height, time});
-        })(),
-      ONE_MINUTE
-    );
+    // Clear any existing alarm
+    await chrome.alarms.clear(ALARM_NAME);
+
+    // Create a new alarm that fires every minute
+    await chrome.alarms.create(ALARM_NAME, {
+      periodInMinutes: 1
+    });
+
+    // Run immediately once
+    await this.runPollerTick();
+  }
+
+  async runPollerTick() {
+    try {
+      await this.checkForRescan();
+      const {hash, height, time} = await this.exec(
+        "node",
+        "getLatestBlock"
+      );
+      await pushMessage(setInfo(hash, height, time));
+      this.emit("newBlock", {hash, height, time});
+    } catch (e) {
+      console.error('Poller tick failed:', e);
+    }
   }
 
   useLedgerProxy = async (txJSON: any) => {
@@ -2025,6 +2109,7 @@ class WalletService extends GenericService {
 
   async start() {
     this.network = Network.get(networkType);
+
     this.wdb = new WalletDB({
       network: this.network,
       memory: false,
@@ -2035,6 +2120,7 @@ class WalletService extends GenericService {
       cacheSize: 512 << 20,
       maxFileSize: 256 << 20,
     });
+
     this.store = bdb.create("/wallet-store");
 
     this.wdb.on("error", (err: Error) => console.error("wdb error", err));
@@ -2047,13 +2133,12 @@ class WalletService extends GenericService {
     }
 
     this.checkForRescan();
-    this.pollerTimeout = this.initPoller();
+    await this.initPoller();
   }
 
   async stop() {
-    if (this.pollerTimeout) {
-      clearInterval(this.pollerTimeout);
-    }
+    // MV3: Clear the chrome.alarm instead of setInterval
+    await chrome.alarms.clear('walletPoller');
   }
 }
 

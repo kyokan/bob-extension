@@ -1,12 +1,11 @@
 import {GenericService} from "@src/util/svc";
 const bdb = require("bdb");
-const DB = require("bdb/lib/DB");
+const DB = require("bdb/lib/db");
 import {get, put} from "@src/util/db";
 
 const RPC_HOST_DB_KEY = "rpc_host";
 const RPC_API_KEY_DB_KEY = "rpc_api_key";
 const ANALYTICS_OPT_IN_KEY = "analytics_opt_in_key";
-const RESOLVE_HNS = "resolve_hns";
 
 const DEFAULT_HOST =
   process.env.DEFAULT_HOST || "https://api.handshakeapi.com/hsd";
@@ -56,17 +55,6 @@ class SettingService extends GenericService {
   getAnalytics = async () => {
     const optIn = await get(this.store, ANALYTICS_OPT_IN_KEY);
     return !!optIn;
-  };
-
-  setResolveHns = async (resolveHns = false) => {
-    await put(this.store, RESOLVE_HNS, resolveHns);
-    this.emit("resolverChanged");
-    return true;
-  };
-
-  getResolveHns = async () => {
-    const resolveHns = await get(this.store, RESOLVE_HNS);
-    return !!resolveHns;
   };
 
   async start() {

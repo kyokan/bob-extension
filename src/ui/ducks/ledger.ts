@@ -29,7 +29,6 @@ const initialState: State = {
 };
 
 export function ledgerConnectShow() {
-  console.log("show");
   return {
     type: ActionType.LEDGER_CONNECT_SHOW,
     payload: {
@@ -39,7 +38,6 @@ export function ledgerConnectShow() {
 }
 
 export function ledgerConnectHide() {
-  console.log("hide");
   return {
     type: ActionType.LEDGER_CONNECT_HIDE,
     payload: {
@@ -49,7 +47,6 @@ export function ledgerConnectHide() {
 }
 
 export function ledgerConfirmed(hasConfirmed: boolean) {
-  console.log("confirmed");
   return {
     type: ActionType.LEDGER_CONFIRMED,
     payload: hasConfirmed,
@@ -57,7 +54,6 @@ export function ledgerConfirmed(hasConfirmed: boolean) {
 }
 
 export function ledgerConnectErr(errMessage: string) {
-  console.log("error");
   return {
     type: ActionType.LEDGER_CONNECT_ERR,
     payload: errMessage,

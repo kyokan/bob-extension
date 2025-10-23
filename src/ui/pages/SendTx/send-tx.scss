@@ -1,20 +1,20 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables" as *;
 
 .send-tx {
   &__amount-input {
     .icon {
       width: 5rem !important;
       height: 1.5rem !important;
-      opacity: .8;
+      opacity: 0.8;
       align-self: center;
       cursor: pointer;
 
       &:hover {
-        opacity: .7;
+        opacity: 0.7;
       }
 
       &:active {
-        opacity: .9;
+        opacity: 0.9;
       }
     }
   }
@@ -30,7 +30,7 @@
     &__label {
       @extend %small-font;
       color: $label-text;
-      padding: 0 .5rem .25rem;
+      padding: 0 0.5rem 0.25rem;
       cursor: default;
     }
 
