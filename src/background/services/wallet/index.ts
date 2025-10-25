@@ -1901,7 +1901,7 @@ class WalletService extends GenericService {
       });
 
       // Update balance in Redux store when new transactions are detected
-      const balance = await this.getWalletBalance(this.selectedID, 'default');
+      const balance = await this.getWalletBalance(this.selectedID, this.selectedAccount);
       await pushMessage(setWalletBalance(balance));
     }
   };
