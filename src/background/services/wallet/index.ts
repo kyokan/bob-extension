@@ -371,7 +371,7 @@ class WalletService extends GenericService {
 
     for (const wtx of wtxs) {
       if (!wtx.tx.isCoinbase()) {
-        txs.push(wtx.tx.getJSON(this.network));
+        txs.push(wtx.tx);
       }
     }
 
