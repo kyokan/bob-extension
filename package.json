@@ -133,7 +133,6 @@
         "redux-logger": "^3.0.6",
         "redux-thunk": "^2.3.0",
         "semver": "^7.3.5",
-        "sha256": "link:@noble/hashes/sha256",
         "webtorrent": "^2.8.4"
     }
 }
