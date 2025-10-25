@@ -385,7 +385,7 @@ class WalletService extends GenericService {
       }
     }
 
-    return txs;
+    return txs.map(tx => tx.getJSON(this.network));
   };
 
   revealSeed = async (passphrase: string) => {
