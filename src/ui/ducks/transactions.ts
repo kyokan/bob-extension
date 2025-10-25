@@ -194,7 +194,17 @@ export default function transactions(
     case ActionType.SET_PENDING_TRANSACTIONS:
       return handleTransactions(state, action, true);
     case ActionType.SET_TRANSACTIONS:
-      return handleTransactions(state, action, false);
+      return {
+        ...state,
+        order: action.payload.map((tx: Transaction) => tx.hash),
+        map: action.payload.reduce(
+          (map: {[h: string]: Transaction}, tx: Transaction) => {
+            map[tx.hash] = tx;
+            return map;
+          },
+          {}
+        ),
+      };
     case ActionType.APPEND_TRANSACTIONS:
       return handleAppendTransactions(state, action);
     default:
@@ -208,45 +218,61 @@ function handleTransactions(
   pending = false
 ): State {
   const newOrder: string[] = state.order.slice();
-  const newMap = { ...state.map };
+  const firstTx = state.map[newOrder[0]];
 
   action.payload.forEach((tx: Transaction) => {
-    const existing = newMap[tx.hash];
+    const existing = state.map[tx.hash];
 
-    if (!existing) {
-      newOrder.push(tx.hash);
-    } else if (existing.height < 0 && tx.height > 0) {
-      // Existing was pending, new is confirmed. Update it.
-      // No need to change order, it's already in newOrder.
+    if (!existing && tx.height > 0) {
+      if (firstTx?.height < tx.height) {
+        newOrder.unshift(tx.hash);
+      } else {
+        newOrder.push(tx.hash);
+      }
+    } else if (!existing && (!tx.height || tx.height < 0)) {
+      newOrder.unshift(tx.hash);
     }
-    newMap[tx.hash] = tx; // Always update the map with the latest transaction data
-  });
-
-  // Sort the entire order array.
-  // Pending transactions (height < 0) should always be at the top.
-  // Confirmed transactions should be sorted by height/date descending.
-  newOrder.sort((hashA, hashB) => {
-    const txA = newMap[hashA];
-    const txB = newMap[hashB];
-
-    if (!txA || !txB) return 0; // Should not happen
-
-    // Pending always come before confirmed
-    if (txA.height < 0 && txB.height > 0) return -1;
-    if (txA.height > 0 && txB.height < 0) return 1;
-
-    // If both are pending or both are confirmed, sort by date/time
-    const dateA = (txA as any).mdate || txA.time;
-    const dateB = (txB as any).mdate || txB.time;
-
-    return dateB - dateA; // Newest first
   });
 
   return {
     ...state,
     order: newOrder,
-    map: newMap,
+    map: pending
+      ? {
+          ...action.payload.reduce(
+            (map: {[h: string]: Transaction}, tx: Transaction) => {
+              const existing = state.map[tx.hash];
+
+              if (!existing || !existing.height || existing.height < 0) {
+                map[tx.hash] = tx;
+              }
+
+              return map;
+            },
+            {}
+          ),
+          ...state.map,
+        }
+      : {
+          ...state.map,
+          ...action.payload.reduce(
+            (map: {[h: string]: Transaction}, tx: Transaction) => {
+              const existing = state.map[tx.hash];
+
+              if (!existing || !existing.height || existing.height < 0) {
+                map[tx.hash] = tx;
+              }
+
+              return map;
+            },
+            {}
+          ),
+        },
   };
+}
+
+function handleAppendTransactions(state: State, action: Action): State {
+  return handleTransactions(state, action);
 }
 
 export const usePendingTXs = (): string[] => {
