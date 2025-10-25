@@ -158,8 +158,6 @@ const controllers: {
 
       await app.exec('wallet', 'createSignMessageRequest', msg, address);
 
-      await app.exec('wallet', 'addTxToQueue');
-
       const popup = await openPopup();
       closePopupOnAcceptOrReject(app, resolve, reject, popup);
     });
@@ -178,8 +176,6 @@ const controllers: {
       });
 
       await app.exec('wallet', 'createSignMessageRequest', msg, undefined, name);
-
-      await app.exec('wallet', 'addTxToQueue');
 
       const popup = await openPopup();
       closePopupOnAcceptOrReject(app, resolve, reject, popup);
