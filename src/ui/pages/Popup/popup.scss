@@ -45,7 +45,7 @@ a {
   }
 
   .popup {
-    width: 100%;
+    max-width: 36rem;
     height: 40rem;
     border: 1px solid variables.$border-gray;
     margin: 3rem auto;
