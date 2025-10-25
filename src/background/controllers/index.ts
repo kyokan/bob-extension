@@ -648,11 +648,16 @@ const controllers: {
     const status = torrentSVC.getTorrent(message.payload).status;
 
     return {
-      torrent,
-      magnetURI,
-      dhtURI,
-      error,
-      status,
+      status: status,
+      downloaded: torrent?.downloaded,
+      downloadSpeed: torrent?.downloadSpeed,
+      progress: torrent?.progress,
+      length: torrent?.length,
+      ready: torrent?.ready,
+      uri: magnetURI,
+      numPeers: torrent?.numPeers || 0,
+      error: error,
+      dht: dhtURI
     };
   },
 
