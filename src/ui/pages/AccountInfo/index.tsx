@@ -15,10 +15,8 @@ import {
   RegularView,
   RegularViewContent,
   RegularViewHeader,
-  RegularViewFooter,
 } from "@src/ui/components/RegularView";
 import Identicon from "@src/ui/components/Identicon";
-import Button, {ButtonType} from "@src/ui/components/Button";
 import Icon from "@src/ui/components/Icon";
 import ErrorMessage from "@src/ui/components/ErrorMessage";
 import "./account-info.scss";
@@ -137,7 +135,7 @@ export default function ReceiveTx() {
 
       {/* <RegularViewFooter>
         <a
-          href={`https://blockexplorer.com/address/${address}`}
+          href={`https://e.hnsfans.com/address/${address}`}
           target="_blank"
         >
           <Button

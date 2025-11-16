@@ -42,7 +42,7 @@ export default function AppHeader(): ReactElement {
             className="app-header__block-height"
             onClick={() =>
               window.open(
-                `https://blockexplorer.com/block/${currentBlockHeight}`
+                `https://e.hnsfans.com/block/${currentBlockHeight}`
               )
             }
           >

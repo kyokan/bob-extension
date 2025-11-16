@@ -1,10 +1,10 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .transactions {
   @extend %col-nowrap;
 
   .transaction + .transaction {
-    border-top: 1px solid $border-gray;
+    border-top: 1px solid variables.$border-gray;
   }
 
   .loader {
@@ -16,7 +16,7 @@
     margin: 1rem auto;
     @extend %regular-font;
     font-weight: 700;
-    color: $border-gray;
+    color: variables.$border-gray;
   }
 }
 
@@ -28,23 +28,23 @@
   transition: background-color 150ms ease-in-out;
 
   &:hover {
-    background-color: $lightgray;
+    background-color: variables.$lightgray;
   }
 
   &:active {
-    background-color: rgba($black, .075);
+    background-color: rgba(variables.$black, .075);
   }
 
   &--pending {
     opacity: .5;
-    background-color: $lightgray;
+    background-color: variables.$lightgray;
 
     &:hover {
-      background-color: rgba($black, .075);
+      background-color: rgba(variables.$black, .075);
     }
 
     &:active {
-      background-color: rgba($black, .1);
+      background-color: rgba(variables.$black, .1);
     }
   }
 
@@ -55,7 +55,7 @@
     height: 2rem;
     align-items: center;
     justify-content: center;
-    border: 1px solid $black;
+    border: 1px solid variables.$black;
     border-radius: 50%;
   }
 
@@ -74,7 +74,7 @@
       &__name {
         @extend %row-nowrap;
         @extend %clickable;
-        color: $secondary-text;
+        color: variables.$secondary-text;
         margin: 0 .5rem 0 .25rem;
         font-weight: 400;
         flex: 1 1 auto;
@@ -83,7 +83,7 @@
 
         .name {
           @extend %ellipsis;
-          border-bottom: 1px dashed $border-gray;
+          border-bottom: 1px dashed variables.$border-gray;
           width: fit-content;
           flex: 0 1 auto;
         }
@@ -92,7 +92,7 @@
 
     &__date {
       @extend %small-font;
-      color: $secondary-text;
+      color: variables.$secondary-text;
     }
   }
 
@@ -107,11 +107,11 @@
       font-weight: 600;
 
       &--positive {
-        color: $success-green;
+        color: variables.$success-green;
       }
 
       &--negative {
-        color: $error-red;
+        color: variables.$error-red;
       }
     }
 

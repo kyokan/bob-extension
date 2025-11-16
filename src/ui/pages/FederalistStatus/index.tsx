@@ -52,8 +52,6 @@ export default function FederalistStatus(): ReactElement {
         error = resp.error;
         dht = resp.dht;
 
-        console.log(resp);
-
         setProgress(downloaded/length);
         setStatus(status);
         setReady(ready);

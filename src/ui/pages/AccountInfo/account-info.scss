@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 $identicon-space: 4rem;
 
@@ -9,8 +9,8 @@ $identicon-space: 4rem;
     padding-bottom: 1rem;
 
     &--full-width {
-      background-color: $lightgray;
-      border-bottom: 1px solid $border-gray;
+      background-color: variables.$lightgray;
+      border-bottom: 1px solid variables.$border-gray;
       padding: 1rem 1.25rem;
     }
 
@@ -36,7 +36,7 @@ $identicon-space: 4rem;
     }
 
     &__icon {
-      color: $secondary-text;
+      color: variables.$secondary-text;
       cursor: pointer;
       margin-left: 0.5rem;
 
@@ -52,15 +52,15 @@ $identicon-space: 4rem;
   }
 
   &__identicon {
-    border: 1px solid $border-gray;
+    border: 1px solid variables.$border-gray;
     border-radius: 50%;
     height: $identicon-space;
     width: $identicon-space;
   }
 
   &__qr-code {
-    background-color: $white;
-    border: 1px solid $border-gray;
+    background-color: variables.$white;
+    border: 1px solid variables.$border-gray;
     margin: 0 auto;
     padding: 1rem;
   }

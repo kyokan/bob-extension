@@ -236,7 +236,7 @@ function TxDetail(props: {hash: string}): ReactElement {
                     }
                     <a
                       className="confirm-tx__input-group__address"
-                      href={`https://blockexplorer.com/address/${input.coin.address}`}
+                      href={`https://e.hnsfans.com/address/${input.coin.address}`}
                       target="_blank"
                     >
                       {ellipsify(input.coin.address)}
@@ -266,7 +266,7 @@ function TxDetail(props: {hash: string}): ReactElement {
                   )}
                   <a
                     className="confirm-tx__output-group__address"
-                    href={`https://blockexplorer.com/address/${output.address}`}
+                    href={`https://e.hnsfans.com/address/${output.address}`}
                     target="_blank"
                   >
                     {ellipsify(output.address)}

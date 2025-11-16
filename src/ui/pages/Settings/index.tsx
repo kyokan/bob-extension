@@ -120,7 +120,6 @@ function NetworkContent(): ReactElement {
   const [rpcAPIKeyError, setRPCApiKeyError] = useState("");
   const [savingUrl, setSavingUrl] = useState(false);
   const [savingAPIKey, setSavingApiKey] = useState(false);
-  const [activeResolver, setActiveResolver] = useState(false);
 
   useEffect(() => {
     (async function onNetworkContentMount() {
@@ -134,14 +133,6 @@ function NetworkContent(): ReactElement {
     })();
   }, []);
 
-  useEffect(() => {
-    (async function () {
-      const optIn = await postMessage({
-        type: MessageTypes.GET_RESOLVE_HNS,
-      });
-      setActiveResolver(optIn);
-    })();
-  }, []);
 
   const onSaveURL = useCallback(async () => {
     setSavingUrl(true);
@@ -171,19 +162,6 @@ function NetworkContent(): ReactElement {
     setSavingApiKey(false);
   }, [rpcAPIKey]);
 
-  const updateResolver = useCallback(
-    async (e) => {
-      await postMessage({
-        type: MessageTypes.SET_RESOLVE_HNS,
-        payload: e.target.checked,
-      });
-      const optIn = await postMessage({
-        type: MessageTypes.GET_RESOLVE_HNS,
-      });
-      setActiveResolver(optIn);
-    },
-    [activeResolver]
-  );
 
   return (
     <>
@@ -216,15 +194,6 @@ function NetworkContent(): ReactElement {
           errorMessage={rpcAPIKeyError}
           onChange={(e) => setAPIKey(e.target.value)}
         />
-      </SettingGroup>
-      <SettingGroup
-        name="HNS Resolver"
-        switchBtnProps={{
-          update: updateResolver,
-          active: activeResolver,
-        }}
-      >
-        <small>Resolve DNS over Handshake.</small>
       </SettingGroup>
     </>
   );

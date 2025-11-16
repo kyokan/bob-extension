@@ -128,7 +128,10 @@ export const createWallet =
 
     await new Promise((r) => setTimeout(r, 1000));
     await dispatch(fetchWalletIDs());
+    await dispatch(fetchWallets());
     await dispatch(selectWallet(walletName));
+    await dispatch(fetchAccountNames(walletName));
+    await dispatch(fetchReceiveAddress(walletName, "default"));
     return;
   };
 

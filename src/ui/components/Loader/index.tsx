@@ -14,7 +14,7 @@ export function Loader(props: Props): ReactElement {
     <div
       className={`loader ${className}`}
       style={{
-        backgroundImage: `url(js/${LoadingLightGrayIcon})`,
+        backgroundImage: `url(${LoadingLightGrayIcon})`,
         height: `${size}rem`,
         width: `${size}rem`,
       }}

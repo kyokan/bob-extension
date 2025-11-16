@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .switch-button {
   cursor: pointer;
@@ -25,7 +25,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: $border-gray;
+  background-color: variables.$border-gray;
   -webkit-transition: .4s;
   transition: .4s;
 }
@@ -43,11 +43,11 @@
 }
 
 input:checked + .slider {
-  background-color: $primary-blue;
+  background-color: variables.$primary-blue;
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 1px $primary-blue;
+  box-shadow: 0 0 1px variables.$primary-blue;
 }
 
 input:checked + .slider:before {

@@ -1,7 +1,7 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .error-message {
-  color: $error-red;
+  color: variables.$error-red;
   text-align: center;
   margin: 0 auto;
   padding: 0.5rem 1.5rem;

@@ -1,10 +1,10 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .domains {
   @extend %col-nowrap;
 
   .domain + .domain {
-    border-top: 1px solid $border-gray;
+    border-top: 1px solid variables.$border-gray;
   }
 
   .loader {
@@ -16,23 +16,23 @@
     margin: 1rem auto;
     @extend %regular-font;
     font-weight: 700;
-    color: $border-gray;
+    color: variables.$border-gray;
   }
 }
 
 .domain {
   @extend %row-nowrap;
   align-items: center;
-  padding: 1rem $gutter;
+  padding: 1rem variables.$gutter;
   cursor: pointer;
   transition: background-color 150ms ease-in-out;
 
   &:hover {
-    background-color: $lightgray;
+    background-color: variables.$lightgray;
   }
 
   &:active {
-    background-color: rgba($black, .075);
+    background-color: rgba(variables.$black, .075);
   }
 
   &__info {
@@ -50,14 +50,14 @@
         font-size: .75rem;
         padding: .125rem .25rem;
         border-radius: .125rem;
-        color: rgba($primary-blue, .75);
-        background-color: rgba($primary-blue, .1);
+        color: rgba(variables.$primary-blue, .75);
+        background-color: rgba(variables.$primary-blue, .1);
       }
     }
 
     &__expiry {
       @extend %small-font;
-      color: $secondary-text;
+      color: variables.$secondary-text;
     }
   }
 

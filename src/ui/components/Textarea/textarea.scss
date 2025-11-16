@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .textarea {
   @extend %regular-font;
@@ -7,12 +7,12 @@
   background-color: transparent;
   border: none;
   width: 100%;
-  color: $primary-text;
+  color: variables.$primary-text;
   font-family: "Work Sans", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
   resize: none;
 
   &::placeholder {
-    color: rgba($white, .2);
+    color: rgba(variables.$white, .2);
   }
 
   &:disabled {
@@ -25,26 +25,26 @@
 
   &__label {
     @extend %small-font;
-    color: $label-text;
+    color: variables.$label-text;
     padding: 0 .5rem .25rem;
     cursor: default;
   }
 
   &__error-message {
     @extend %small-font;
-    color: $error-red;
+    color: variables.$error-red;
     padding: .25rem .5rem 0;
   }
 
   &__group {
     @extend %row-nowrap;
-    background-color: rgba($black, .05);
+    background-color: rgba(variables.$black, .05);
     border-bottom: 1px solid transparent;
     border-radius: .125rem;
 
     &:focus-within {
-      background-color: rgba($black, .035);
-      border-bottom: 1px solid $primary-blue;
+      background-color: rgba(variables.$black, .035);
+      border-bottom: 1px solid variables.$primary-blue;
     }
 
     .icon {

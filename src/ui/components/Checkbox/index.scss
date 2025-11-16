@@ -1,4 +1,4 @@
-@import './src/util/variables';
+@use '../../../../src/util/variables';
 
 .checkbox {
   position: relative;
@@ -11,7 +11,7 @@
           border-color 200ms ease-in-out,
           color 200ms ease-in-out;
   opacity: 1;
-  border: 2px solid rgba($black, .1);
+  border: 2px solid rgba(variables.$black, .1);
 
   input {
     position: absolute;
@@ -35,15 +35,15 @@
   }
 
   &:hover {
-    border-color: rgba($black, .2);
+    border-color: rgba(variables.$black, .2);
   }
 
   &--checked {
-    background-color: $primary-blue;
-    border-color: $primary-blue;
+    background-color: variables.$primary-blue;
+    border-color: variables.$primary-blue;
 
     .icon {
-      color: $white;
+      color: variables.$white;
     }
   }
 

@@ -1,7 +1,7 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .identicon {
-  background-color: $white;
+  background-color: variables.$white;
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;

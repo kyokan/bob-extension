@@ -1,7 +1,7 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .wallet-menu {
-  border: 1px solid $border-gray;
+  border: 1px solid variables.$border-gray;
   border-radius: 50%;
   position: relative;
   cursor: pointer;
@@ -21,21 +21,21 @@
     border-radius: 0.1875rem;
     top: 100%;
     right: 0;
-    background-color: $white;
-    box-shadow: 0 2px 2px 1px rgba($black, 0.1);
+    background-color: variables.$white;
+    box-shadow: 0 2px 2px 1px rgba(variables.$black, 0.1);
     width: 16rem;
 
     &__divider {
-      border-top: 1px solid $border-gray;
+      border-top: 1px solid variables.$border-gray;
     }
 
     &__pill {
       @extend%row-nowrap;
       @extend%clickable;
-      background-color: rgba($black, 0.05);
+      background-color: rgba(variables.$black, 0.05);
       border-radius: 0.25rem;
       font-size: 0.6875rem;
-      color: rgba($primary-text, 0.75);
+      color: rgba(variables.$primary-text, 0.75);
       margin-left: 0.5rem;
       padding: 0.15rem 0.5rem;
     }
@@ -45,9 +45,9 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background-color: $primary-blue;
+      background-color: variables.$primary-blue;
       border-radius: 50%;
-      color: $white;
+      color: variables.$white;
       height: 1.25rem;
       width: 1.25rem;
     }
@@ -60,15 +60,15 @@
       transition: background-color 200ms ease-in-out;
 
       &:hover {
-        background-color: rgba($black, 0.035);
+        background-color: rgba(variables.$black, 0.035);
       }
 
       &:active {
-        background-color: $lightgray;
+        background-color: variables.$lightgray;
       }
 
       .identicon {
-        border: 1px solid $border-gray;
+        border: 1px solid variables.$border-gray;
         width: 1.5rem;
         height: 1.5rem;
       }
@@ -98,7 +98,7 @@
     }
 
     &__accounts {
-      background-color: $lightgray;
+      background-color: variables.$lightgray;
       // border-top: 1px solid $border-gray;
       // border-bottom: 1px solid $border-gray;
       max-height: 137.5px;
@@ -112,11 +112,11 @@
         transition: background-color 200ms ease-in-out;
 
         &:hover {
-          background-color: rgba($black, 0.035);
+          background-color: rgba(variables.$black, 0.035);
         }
 
         &:active {
-          background-color: $lightgray;
+          background-color: variables.$lightgray;
         }
 
         &__name {

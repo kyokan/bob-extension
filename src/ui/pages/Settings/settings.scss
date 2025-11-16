@@ -1,8 +1,8 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .settings {
   .regular-view__header {
-    border-bottom: 1px solid $border-gray;
+    border-bottom: 1px solid variables.$border-gray;
 
     &__l {
       @extend %row-nowrap;
@@ -22,13 +22,13 @@
 .setting-group {
   @extend %row-nowrap;
   align-items: center;
-  border-bottom: 1px solid $border-gray;
-  padding: $gutter;
+  border-bottom: 1px solid variables.$border-gray;
+  padding: variables.$gutter;
 
   &--clickable {
     &:hover {
       @extend %clickable;
-      background-color: $lightgray;
+      background-color: variables.$lightgray;
     }
   }
 
@@ -38,7 +38,7 @@
 
   &__title {
     @extend %h3-font;
-    color: $primary-text;
+    color: variables.$primary-text;
     font-weight: 400;
     margin-bottom: 0.35rem;
   }
@@ -71,12 +71,12 @@
 
   &__description {
     @extend %h5-font;
-    color: $secondary-text;
+    color: variables.$secondary-text;
   }
 
   .icon {
     flex: 0 0 auto;
-    color: $primary-blue;
+    color: variables.$primary-blue;
   }
 }
 

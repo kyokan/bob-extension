@@ -86,7 +86,7 @@ export const TransactionRow = (props: {hash: string}): ReactElement => {
   const pending = !tx!.height || tx!.height < 0;
 
   const openExplorer = useCallback(() => {
-    window.open(`https://blockexplorer.com/tx/${tx!.hash}`, "_blank");
+    window.open(`https://e.hnsfans.com/tx/${tx!.hash}`, "_blank");
   }, [tx!.hash]);
 
   const openExplorerName = useCallback(
@@ -96,7 +96,7 @@ export const TransactionRow = (props: {hash: string}): ReactElement => {
         type: MessageTypes.GET_NAME_BY_HASH,
         payload: nameHash,
       });
-      window.open(`https://blockexplorer.com/name/${result}`, "_blank");
+      window.open(`https://e.hnsfans.com/name/${result}`, "_blank");
     },
     [nameHash]
   );

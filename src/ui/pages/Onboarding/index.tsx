@@ -58,7 +58,7 @@ export default function Onboarding(): ReactElement {
             : "connect ledger",
       },
     });
-    dispatch(
+    await dispatch(
       createWallet({
         walletName,
         seedphrase,
@@ -163,7 +163,7 @@ function Welcome(props: {}): ReactElement {
       <OnboardingModalContent center>
         <div
           className="welcome__logo"
-          style={{backgroundImage: `url(js/${BobIcon})`}}
+          style={{backgroundImage: `url(${BobIcon})`}}
         />
         <p>
           <b>Hi, I am Bob (Extension).</b>

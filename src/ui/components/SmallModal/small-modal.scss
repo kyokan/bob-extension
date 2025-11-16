@@ -1,4 +1,4 @@
-@import 'src/util/variables';
+@use '../../../../src/util/variables';
 
 .small-modal {
   @extend %col-nowrap;

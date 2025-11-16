@@ -33,6 +33,7 @@ export default function Login(props: Props): ReactElement {
 
   const onUnlockWallet = useCallback(async () => {
     setLoading(true);
+
     try {
       await dispatch(unlockWallet(password));
     } catch (e) {
@@ -52,7 +53,7 @@ export default function Login(props: Props): ReactElement {
       </div>
       <div className="login__footer">
         <Input
-          label="Set password"
+          label="Enter password"
           onChange={(e) => {
             setErrorMessage("");
             setPassword(e.target.value);

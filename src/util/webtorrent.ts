@@ -55,15 +55,19 @@ class TorrentSVC {
       if (torrent?.infoHash) client.remove(torrent.infoHash);
     } catch (e) {}
 
-    const keys = Object.keys(localStorage);
-
-    for (let key of keys) {
-      const [savedHost, filename] = key.split('/');
-
-      if (filename && savedHost === hostname) {
-        localStorage.removeItem(key);
+    // MV3: Clear chrome.storage cache for this hostname
+    chrome.storage.local.get(null, (items) => {
+      const keysToRemove: string[] = [];
+      for (let key in items) {
+        const [savedHost, filename] = key.split('/');
+        if (filename && savedHost === hostname) {
+          keysToRemove.push(key);
+        }
       }
-    }
+      if (keysToRemove.length > 0) {
+        chrome.storage.local.remove(keysToRemove);
+      }
+    });
   }
 
   getTorrent(hostname: string) {
@@ -79,7 +83,7 @@ class TorrentSVC {
 
 export const torrentSVC = new TorrentSVC();
 
-export function consume(uri: string, hostname: string) {
+export async function consume(uri: string, hostname: string) {
   if (torrentSVC.getTorrent(hostname).uri) {
     return;
   }
@@ -95,7 +99,7 @@ export function consume(uri: string, hostname: string) {
   if (parsed?.xs) {
     torrentSVC.clearTorrent(hostname);
     torrentSVC.addTorrentDMT(hostname, uri);
-    magnetURI = consumeDMT(parsed?.publicKey);
+    magnetURI = await consumeDMT(parsed?.publicKey);
 
     if (!magnetURI) {
       torrentSVC.addTorrentError(hostname, 'unable to resolve dht');
@@ -143,31 +147,43 @@ export function consume(uri: string, hostname: string) {
 }
 
 export function getTorrentDataURL(file: any, filepath: string) {
-  const cached = localStorage.getItem(filepath);
+  // MV3: Use chrome.storage.local for caching
+  chrome.storage.local.get([filepath], (result) => {
+    if (result[filepath]) {
+      return result[filepath];
+    }
 
-  if (cached) return cached;
-
-  file.getBuffer((err: any, buf: Buffer) => {
-    const base64 = buf.toString('base64');
-    const mimeType = mime.lookup(file.name);
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-    localStorage.setItem(filepath, dataUrl.slice(0, 2000000));
-  });
-}
-
-function getTorrentDataURLAsync(file: any, filepath: string) {
-  const cached = localStorage.getItem(filepath);
-
-  if (cached) return cached;
-
-  return new Promise((resolve) => {
     file.getBuffer((err: any, buf: Buffer) => {
       const base64 = buf.toString('base64');
       const mimeType = mime.lookup(file.name);
       const dataUrl = `data:${mimeType};base64,${base64}`;
       const limitedUrl = dataUrl.slice(0, 2000000);
-      localStorage.setItem(filepath, limitedUrl);
-      resolve(limitedUrl);
+
+      // Cache in chrome.storage
+      chrome.storage.local.set({ [filepath]: limitedUrl });
+    });
+  });
+}
+
+function getTorrentDataURLAsync(file: any, filepath: string) {
+  return new Promise((resolve) => {
+    // MV3: Check chrome.storage cache first
+    chrome.storage.local.get([filepath], (result) => {
+      if (result[filepath]) {
+        resolve(result[filepath]);
+        return;
+      }
+
+      file.getBuffer((err: any, buf: Buffer) => {
+        const base64 = buf.toString('base64');
+        const mimeType = mime.lookup(file.name);
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+        const limitedUrl = dataUrl.slice(0, 2000000);
+
+        // Cache in chrome.storage
+        chrome.storage.local.set({ [filepath]: limitedUrl });
+        resolve(limitedUrl);
+      });
     });
   })
 }

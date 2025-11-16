@@ -1,25 +1,23 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "Bob Extension",
     "description": "Chrome Extension for Handshake",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "omnibox": {
         "keyword": "bob"
     },
-    "browser_action": {
+    "action": {
         "default_icon": "icon-16.png",
+        "default_title": "Bob Extension",
         "default_popup": "popup.html"
     },
     "background": {
-        "scripts": [
-            "js/backgroundPage.js"
-        ],
-        "persistent": true
+        "service_worker": "js/backgroundPage.js",
+        "type": "module"
     },
     "content_scripts": [
         {
             "matches": [
-                "file://*/*",
                 "http://*/*",
                 "https://*/*"
             ],
@@ -35,21 +33,31 @@
         "48": "icon-48.png",
         "128": "icon-128.png"
     },
-    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    },
     "permissions": [
         "tabs",
         "notifications",
-        "http://*/",
-        "https://*/",
-        "webRequest",
-        "webRequestBlocking",
         "proxy",
         "storage",
         "unlimitedStorage",
-        "<all_urls>"
+        "alarms"
+    ],
+    "host_permissions": [
+        "http://*/*",
+        "https://*/*"
     ],
     "web_accessible_resources": [
-        "js/bob3.js",
-        "wasm/sql-wasm.wasm"
+        {
+            "resources": [
+                "js/bob3.js",
+                "federalist.html"
+            ],
+            "matches": [
+                "http://*/*",
+                "https://*/*"
+            ]
+        }
     ]
 }

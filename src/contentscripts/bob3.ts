@@ -54,6 +54,18 @@ async function send(address: string, amount: number) {
 }
 
 /**
+ * Create a custom transaction with multiple outputs
+ * @param options - Transaction options with outputs array
+ */
+async function sendCustomTx(options: { outputs: { address?: string; value: number; data?: string }[], rate?: number, subtractFee?: boolean }) {
+  await assertunLocked();
+  return post({
+    type: MessageTypes.SEND_CUSTOM_TX,
+    payload: options,
+  });
+}
+
+/**
  * Send open
  * @param name - name to open bidding on
  */
@@ -271,6 +283,7 @@ const wallet = {
   getAddress,
   createReveal,
   send,
+  sendCustomTx,
   sendOpen,
   sendBid,
   sendReveal,

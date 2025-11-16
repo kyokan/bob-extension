@@ -1,4 +1,5 @@
-@import "./src/util/variables";
+@use "sass:color";
+@use "../../../../src/util/variables";
 
 .button {
   @extend %regular-font;
@@ -8,7 +9,7 @@
   width: fit-content;
   cursor: pointer;
   padding: .5rem 1rem;
-  border-radius: $border-radius;
+  border-radius: variables.$border-radius;
   border: none;
   user-select: none;
   font-weight: 400;
@@ -39,27 +40,27 @@
 }
 
 .button--primary {
-  background-color: $primary-blue;
-  color: $white;
-  border: 2px solid $primary-blue;
+  background-color: variables.$primary-blue;
+  color: variables.$white;
+  border: 2px solid variables.$primary-blue;
   transition: background-color 150ms ease-in-out;
 
   &:hover {
-    background-color: lighten($primary-blue, 5);
-    border: 2px solid lighten($primary-blue, 5);
+    background-color: color.adjust(variables.$primary-blue, $lightness: 5%);
+    border: 2px solid color.adjust(variables.$primary-blue, $lightness: 5%);
   }
 
   &:active {
-    background-color: darken($primary-blue, 5);
-    border: 2px solid darken($primary-blue, 5);
+    background-color: color.adjust(variables.$primary-blue, $lightness: -5%);
+    border: 2px solid color.adjust(variables.$primary-blue, $lightness: -5%);
   }
 
   &:disabled {
     &:hover,
     &:active {
-      background-color: $primary-blue;
-      color: $white;
-      border: 2px solid $primary-blue;
+      background-color: variables.$primary-blue;
+      color: variables.$white;
+      border: 2px solid variables.$primary-blue;
     }
   }
 }
@@ -67,26 +68,26 @@
 .button--secondary {
   box-sizing: border-box;
   background-color: transparent;
-  color: $primary-blue;
-  border: 2px solid $primary-blue;
+  color: variables.$primary-blue;
+  border: 2px solid variables.$primary-blue;
   transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
 
   &:hover {
-     background-color: rgba($primary-blue, .5);
-     color: $white;
+     background-color: rgba(variables.$primary-blue, .5);
+     color: variables.$white;
    }
 
   &:active {
-    background-color: rgba($primary-blue, 8);
-    color: $white;
+    background-color: rgba(variables.$primary-blue, 8);
+    color: variables.$white;
   }
 
   &:disabled {
     &:hover,
     &:active {
       background-color: transparent;
-      color: $primary-blue;
-      border: 2px solid $primary-blue;
+      color: variables.$primary-blue;
+      border: 2px solid variables.$primary-blue;
     }
   }
 }

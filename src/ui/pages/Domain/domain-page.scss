@@ -1,4 +1,4 @@
-@import "./src/util/variables";
+@use "../../../../src/util/variables";
 
 .domain-page {
   @extend %col-nowrap;
@@ -35,7 +35,7 @@
 
       &__expiry {
         @extend %small-font;
-        color: $secondary-text;
+        color: variables.$secondary-text;
         margin-bottom: .5rem;
       }
 
@@ -73,7 +73,7 @@
 
   &__record {
     @extend %col-nowrap;
-    border: 1px solid $border-gray;
+    border: 1px solid variables.$border-gray;
     padding: .5rem .75rem;
     overflow: hidden;
     border-radius: 2px;
@@ -85,7 +85,7 @@
       margin: 1rem auto;
       @extend %regular-font;
       font-weight: 700;
-      color: $border-gray;
+      color: variables.$border-gray;
     }
 
     &__type {
@@ -106,7 +106,7 @@
 
     &__key {
       @extend %h5-font;
-      color: $label-text;
+      color: variables.$label-text;
       text-transform: uppercase;
     }
 

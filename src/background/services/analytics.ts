@@ -4,7 +4,7 @@ import {get, put} from "@src/util/db";
 import crypto from "crypto";
 import * as os from "os";
 const bdb = require("bdb");
-const DB = require("bdb/lib/DB");
+const DB = require("bdb/lib/db");
 const pkg = require("../../../package.json");
 
 const UUID_KEY = "uuid_key";
