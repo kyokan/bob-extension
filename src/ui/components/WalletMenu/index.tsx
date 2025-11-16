@@ -1,6 +1,7 @@
 import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import ReactTooltip from "react-tooltip";
 import Identicon from "@src/ui/components/Identicon";
+import {useMultiAccountsEnabled} from "@src/ui/ducks/app";
 import {
   lockWallet,
   selectWallet,
@@ -22,6 +23,7 @@ export default function WalletMenu(): ReactElement {
   const history = useHistory();
   const dispatch = useDispatch();
   const {currentWallet, locked} = useWalletState();
+  const multiAccountsEnabled = useMultiAccountsEnabled();
   const [addresses, setAddresses] = useState<
     {address: string; watchOnly: boolean; accounts: string[]}[]
   >([]);
@@ -76,11 +78,10 @@ export default function WalletMenu(): ReactElement {
           <div className="wallet-menu__menu">
             {addresses.map((address, i) => {
               const multiAccount =
-                !locked && currentWallet === walletIDs[i] && !address.watchOnly;
+                multiAccountsEnabled && !locked && currentWallet === walletIDs[i] && !address.watchOnly;
               return (
-                <>
+                <React.Fragment key={i}>
                   <div
-                    key={i}
                     className="wallet-menu__menu__row"
                     onClick={() => onSelectWallet(walletIDs[i])}
                   >
@@ -124,7 +125,7 @@ export default function WalletMenu(): ReactElement {
                       })}
                     </div>
                   )}
-                </>
+                </React.Fragment>
               );
             })}
             <div className="wallet-menu__menu__divider" />

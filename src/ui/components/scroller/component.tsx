@@ -1,6 +1,5 @@
 import React, { FunctionComponent } from "react";
 import "./styles.scss";
-import { browser, Tabs } from "webextension-polyfill-ts";
 
 // // // //
 
@@ -14,11 +13,11 @@ const scrollToBottomScript = `window.scroll(0,9999999)`;
  */
 function executeScript(code: string): void {
     // Query for the active tab in the current window
-    browser.tabs
+    chrome.tabs
         .query({ active: true, currentWindow: true })
-        .then((tabs: Tabs.Tab[]) => {
+        .then((tabs: chrome.tabs.Tab[]) => {
             // Pulls current tab from browser.tabs.query response
-            const currentTab: Tabs.Tab | undefined = tabs[0];
+            const currentTab: chrome.tabs.Tab | undefined = tabs[0];
 
             // Short circuits function execution is current tab isn't found
             if (!currentTab) {
@@ -26,7 +25,7 @@ function executeScript(code: string): void {
             }
 
             // Executes the script in the current tab
-            browser.tabs
+            chrome.tabs
                 .executeScript(currentTab.id, {
                     code,
                 })

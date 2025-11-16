@@ -6,6 +6,7 @@ import {get, put} from "@src/util/db";
 const RPC_HOST_DB_KEY = "rpc_host";
 const RPC_API_KEY_DB_KEY = "rpc_api_key";
 const ANALYTICS_OPT_IN_KEY = "analytics_opt_in_key";
+const MULTI_ACCOUNTS_ENABLED_KEY = "multi_accounts_enabled_key";
 
 const DEFAULT_HOST =
   process.env.DEFAULT_HOST || "https://api.handshakeapi.com/hsd";
@@ -57,6 +58,16 @@ class SettingService extends GenericService {
     return !!optIn;
   };
 
+  setMultiAccountsEnabled = async (enabled = false) => {
+    await put(this.store, MULTI_ACCOUNTS_ENABLED_KEY, enabled);
+    return true;
+  };
+
+  getMultiAccountsEnabled = async () => {
+    const enabled = await get(this.store, MULTI_ACCOUNTS_ENABLED_KEY);
+    return !!enabled;
+  };
+
   async start() {
     this.store = bdb.create("/setting-store");
     await this.store.open();
@@ -65,7 +76,6 @@ class SettingService extends GenericService {
     this.apiHost = apiHost;
   }
 
-  
   async stop() {}
 }
 

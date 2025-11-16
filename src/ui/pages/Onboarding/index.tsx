@@ -2,11 +2,10 @@ import React, {ReactElement, useCallback, useEffect, useState} from "react";
 import {Redirect, Route, Switch, useHistory} from "react-router";
 import {useDispatch} from "react-redux";
 import semver from "semver";
-import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
 import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
-import TermsOfUse from "@src/ui/pages/Onboarding/Terms";
+import TermsOfUse from "@src/ui/pages/Onboarding/terms";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import Checkbox from "@src/ui/components/Checkbox";
 import Icon from "@src/ui/components/Icon";
@@ -23,7 +22,7 @@ import "./onboarding.scss";
 import BobIcon from "@src/static/icons/bob-black.png";
 import {USB} from "hsd-ledger/lib/hsd-ledger-browser";
 import {getAppVersion, getAccountXpub} from "@src/util/withLedger";
-import {isSupported} from "@src/util/webusb";
+import {isSupported} from "@src/util/webUSB";
 import {
   LEDGER_MINIMUM_VERSION,
   LEDGER_USB_VENDOR_ID,
@@ -177,9 +176,9 @@ function Welcome(props: {}): ReactElement {
       <OnboardingModalFooter>
         <Button
           onClick={() => {
-            browser.tabs.create({
+            chrome.tabs.create({
               url:
-                browser.runtime.getURL("popup.html") +
+                chrome.runtime.getURL("popup.html") +
                 `#onboarding/terms?type=create`,
             });
           }}
@@ -189,9 +188,9 @@ function Welcome(props: {}): ReactElement {
         <Button
           btnType={ButtonType.secondary}
           onClick={() => {
-            browser.tabs.create({
+            chrome.tabs.create({
               url:
-                browser.runtime.getURL("popup.html") +
+                chrome.runtime.getURL("popup.html") +
                 `#onboarding/terms?type=import`,
             });
           }}
@@ -201,9 +200,9 @@ function Welcome(props: {}): ReactElement {
         <Button
           btnType={ButtonType.secondary}
           onClick={() => {
-            browser.tabs.create({
+            chrome.tabs.create({
               url:
-                browser.runtime.getURL("popup.html") +
+                chrome.runtime.getURL("popup.html") +
                 `#onboarding/terms?type=connect`,
             });
           }}
@@ -553,7 +552,7 @@ function RevealSeedphrase(props: {
       const mnemonic = await postMessage({
         type: MessageTypes.GENERATE_NEW_MNEMONIC,
       });
-      props.setSeedphrase(mnemonic);
+      props.setSeedphrase(mnemonic as string);
     })();
   }, []);
 
@@ -755,7 +754,7 @@ function OptInAnalytics(props: {
       const res = await postMessage({
         type: MessageTypes.GET_ANALYTICS,
       });
-      setOptIn(res);
+      setOptIn(res as boolean);
     })();
   }, []);
 

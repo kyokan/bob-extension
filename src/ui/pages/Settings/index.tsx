@@ -11,13 +11,15 @@ import {
   RegularViewHeader,
 } from "@src/ui/components/RegularView";
 import {Route, Switch, useHistory} from "react-router";
+import {useDispatch} from "react-redux";
 import Icon from "@src/ui/components/Icon";
 import "./settings.scss";
 import Input from "@src/ui/components/Input";
 import postMessage from "@src/util/postMessage";
 import MessageTypes from "@src/util/messageTypes";
 import Button, {ButtonProps, ButtonType} from "@src/ui/components/Button";
-import {useCurrentWallet, useWalletState} from "@src/ui/ducks/wallet";
+import {selectAccount, useWalletState} from "@src/ui/ducks/wallet";
+import {setMultiAccountsEnabled, useMultiAccountsEnabled} from "@src/ui/ducks/app";
 import Modal from "@src/ui/components/Modal";
 import Textarea from "@src/ui/components/Textarea";
 import SwitchButton from "@src/ui/components/SwitchButton";
@@ -201,6 +203,27 @@ function NetworkContent(): ReactElement {
 
 function WalletContent(): ReactElement {
   const {rescanning} = useWalletState();
+  const multiAccountsEnabled = useMultiAccountsEnabled();
+  const dispatch = useDispatch();
+
+  const updateMultiAccountsEnabled = useCallback(
+    async (e) => {
+      const checked = e.target.checked;
+
+      // persist setting
+      await postMessage({
+        type: MessageTypes.SET_MULTI_ACCOUNTS_ENABLED,
+        payload: checked,
+      });
+
+      // update UI
+      dispatch(setMultiAccountsEnabled(checked));
+      if (!checked) {
+        dispatch(selectAccount("default"));
+      }
+    },
+    [dispatch]
+  );
 
   const rescan = useCallback(() => {
     if (rescanning) return;
@@ -229,6 +252,15 @@ function WalletContent(): ReactElement {
         }}
       >
         <small>Perform a full rescan.</small>
+      </SettingGroup>
+      <SettingGroup
+        name="Enable Multi-Accounts"
+        switchBtnProps={{
+          update: updateMultiAccountsEnabled,
+          active: multiAccountsEnabled,
+        }}
+      >
+        <small><b>Warning: </b>Any transactions made from non-default accounts will not be visible in Bob Desktop as it does not support multi-accounts yet.</small>
       </SettingGroup>
     </>
   );

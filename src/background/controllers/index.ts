@@ -1,11 +1,10 @@
 import MessageTypes from "@src/util/messageTypes";
 import {AppService} from "@src/util/svc";
 import {MessageAction} from "@src/util/postMessage";
-import {Runtime} from "webextension-polyfill-ts";
 import {toDollaryDoos} from "@src/util/number";
 import {getMagnetRecord} from "@src/background/resolve";
 import {consume, torrentSVC} from "@src/util/webtorrent";
-import MessageSender = Runtime.MessageSender;
+import MessageSender = chrome.runtime.MessageSender;
 
 let popupId: number | null = null;
 let pendingPopupRequest: { type: string, payload: any, resolve: (data: any) => void, reject: (err: Error) => void } | null = null;
@@ -312,7 +311,7 @@ const controllers: {
     return new Promise(async (resolve, reject) => {
       try {
         const queue = await app.exec("wallet", "getTxQueue");
-        
+
         if (queue.length) {
           return reject(new Error("user has unconfirmed tx."));
         }
@@ -615,6 +614,14 @@ const controllers: {
     return app.exec("setting", "setAnalytics", message.payload);
   },
 
+  [MessageTypes.GET_MULTI_ACCOUNTS_ENABLED]: async (app, message) => {
+    return app.exec("setting", "getMultiAccountsEnabled");
+  },
+
+  [MessageTypes.SET_MULTI_ACCOUNTS_ENABLED]: async (app, message) => {
+    return app.exec("setting", "setMultiAccountsEnabled", message.payload);
+  },
+
   [MessageTypes.MP_TRACK]: async (app, message) => {
     return app.exec(
       "analytics",
@@ -689,7 +696,7 @@ async function openPopup() {
     height: 600,
   });
 
-  popupId = popup.id as number;
+  popupId = popup!.id as number;
 
   chrome.windows.onRemoved.addListener(function listener(windowId) {
     if (windowId === popupId) {
@@ -698,7 +705,7 @@ async function openPopup() {
     }
   });
 
-  return popup;
+  return popup!;
 }
 
 function closePopupOnAcceptOrReject(

@@ -11,14 +11,23 @@ chrome.runtime.onMessage.addListener((action) => {
   store.dispatch(action);
 });
 
-chrome.tabs.query({active: true, currentWindow: true}).then(() => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await chrome.tabs.query({active: true, currentWindow: true});
   chrome.runtime.connect();
+
+  const popup = document.getElementById("popup");
+
+  if (!popup) {
+    console.error("Popup element not found");
+    return;
+  }
+
   ReactDOM.render(
     <Provider store={store}>
       <HashRouter>
         <Popup />
       </HashRouter>
     </Provider>,
-    document.getElementById("popup")
+    popup
   );
 });
