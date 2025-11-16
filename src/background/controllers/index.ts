@@ -311,7 +311,7 @@ const controllers: {
     return new Promise(async (resolve, reject) => {
       try {
         const queue = await app.exec("wallet", "getTxQueue");
-        
+
         if (queue.length) {
           return reject(new Error("user has unconfirmed tx."));
         }
@@ -612,6 +612,14 @@ const controllers: {
 
   [MessageTypes.SET_ANALYTICS]: async (app, message) => {
     return app.exec("setting", "setAnalytics", message.payload);
+  },
+
+  [MessageTypes.GET_MULTI_ACCOUNTS_ENABLED]: async (app, message) => {
+    return app.exec("setting", "getMultiAccountsEnabled");
+  },
+
+  [MessageTypes.SET_MULTI_ACCOUNTS_ENABLED]: async (app, message) => {
+    return app.exec("setting", "setMultiAccountsEnabled", message.payload);
   },
 
   [MessageTypes.MP_TRACK]: async (app, message) => {
