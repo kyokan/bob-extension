@@ -6,7 +6,7 @@ import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 import postMessage from "@src/util/postMessage";
 import {createWallet, useInitialized, useWalletIDs} from "@src/ui/ducks/wallet";
-import TermsOfUse from "@src/ui/pages/Onboarding/Terms";
+import TermsOfUse from "@src/ui/pages/Onboarding/terms";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import Checkbox from "@src/ui/components/Checkbox";
 import Icon from "@src/ui/components/Icon";
@@ -23,7 +23,7 @@ import "./onboarding.scss";
 import BobIcon from "@src/static/icons/bob-black.png";
 import {USB} from "hsd-ledger/lib/hsd-ledger-browser";
 import {getAppVersion, getAccountXpub} from "@src/util/withLedger";
-import {isSupported} from "@src/util/webusb";
+import {isSupported} from "@src/util/webUSB";
 import {
   LEDGER_MINIMUM_VERSION,
   LEDGER_USB_VENDOR_ID,
