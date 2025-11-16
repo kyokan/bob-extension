@@ -27,7 +27,7 @@ import MessageTypes from "@src/util/messageTypes";
 import ConfirmTx from "@src/ui/pages/ConfirmTx";
 import postMessage from "@src/util/postMessage";
 import {useTXQueue} from "@src/ui/ducks/queue";
-import {fetchMultiAccountsEnabled} from "@src/ui/ducks/app";
+import {fetchMultiAccountsEnabled, fetchExplorer} from "@src/ui/ducks/app";
 import Settings from "@src/ui/pages/Settings";
 import DomainPage from "@src/ui/pages/Domain";
 import ConfirmLedger from "@src/ui/pages/ConfirmLedger";
@@ -67,6 +67,7 @@ export default function Popup(): ReactElement {
         await dispatch(fetchWalletState());
         await dispatch(fetchLatestBlock());
         await dispatch(fetchMultiAccountsEnabled());
+        await dispatch(fetchExplorer());
       } catch (e) {
         console.error(e);
       }

@@ -2,11 +2,13 @@ import {GenericService} from "@src/util/svc";
 const bdb = require("bdb");
 const DB = require("bdb/lib/db");
 import {get, put} from "@src/util/db";
+import {type Explorer, EXPLORERS} from "@src/util/explorer";
 
 const RPC_HOST_DB_KEY = "rpc_host";
 const RPC_API_KEY_DB_KEY = "rpc_api_key";
 const ANALYTICS_OPT_IN_KEY = "analytics_opt_in_key";
 const MULTI_ACCOUNTS_ENABLED_KEY = "multi_accounts_enabled_key";
+const EXPLORER_KEY = "explorer_key";
 
 const DEFAULT_HOST =
   process.env.DEFAULT_HOST || "https://api.handshakeapi.com/hsd";
@@ -66,6 +68,17 @@ class SettingService extends GenericService {
   getMultiAccountsEnabled = async () => {
     const enabled = await get(this.store, MULTI_ACCOUNTS_ENABLED_KEY);
     return !!enabled;
+  };
+
+  setExplorer = async (explorer: Explorer) => {
+    await put(this.store, EXPLORER_KEY, JSON.stringify(explorer));
+    return true;
+  };
+
+  getExplorer = async () => {
+    const explorer = await get(this.store, EXPLORER_KEY);
+    if (!explorer) return EXPLORERS[0];
+    return JSON.parse(explorer);
   };
 
   async start() {

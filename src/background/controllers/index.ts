@@ -622,6 +622,14 @@ const controllers: {
     return app.exec("setting", "setMultiAccountsEnabled", message.payload);
   },
 
+  [MessageTypes.GET_EXPLORER]: async (app, message) => {
+    return app.exec("setting", "getExplorer");
+  },
+
+  [MessageTypes.SET_EXPLORER]: async (app, message) => {
+    return app.exec("setting", "setExplorer", message.payload);
+  },
+
   [MessageTypes.MP_TRACK]: async (app, message) => {
     return app.exec(
       "analytics",
