@@ -175,12 +175,15 @@ function GeneralContent(): ReactElement {
 
   return (
     <>
-      <SettingGroup name="Block Explorer">
-        <Select
-          value={explorer.id}
-          onChange={onExplorerChange}
-          options={explorerOptions}
-        />
+      <SettingGroup
+        name="Block Explorer"
+        selectProps={{
+          value: explorer.id,
+          onChange: onExplorerChange,
+          options: explorerOptions,
+        }}
+      >
+        <small>Select the block explorer to open names, transactions, addresses, and blocks.</small>
       </SettingGroup>
       <SettingGroup
         name="Enable Multi-Accounts"
@@ -503,6 +506,11 @@ type GroupProps = {
     update: (e: any) => Promise<void>;
     active: boolean;
   };
+  selectProps?: {
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+    options: Array<{value: string; children: string}>;
+  };
 };
 
 function SettingGroup(props: GroupProps) {
@@ -532,6 +540,13 @@ function SettingGroup(props: GroupProps) {
               <Button btnType={ButtonType.primary} {...props.primaryBtnProps}>
                 {props.primaryBtnProps.children}
               </Button>
+            )}
+            {props.selectProps && (
+              <Select
+                value={props.selectProps.value}
+                onChange={props.selectProps.onChange}
+                options={props.selectProps.options}
+              />
             )}
           </div>
         </div>
