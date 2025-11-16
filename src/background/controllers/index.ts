@@ -1,11 +1,10 @@
 import MessageTypes from "@src/util/messageTypes";
 import {AppService} from "@src/util/svc";
 import {MessageAction} from "@src/util/postMessage";
-import {Runtime} from "webextension-polyfill-ts";
 import {toDollaryDoos} from "@src/util/number";
 import {getMagnetRecord} from "@src/background/resolve";
 import {consume, torrentSVC} from "@src/util/webtorrent";
-import MessageSender = Runtime.MessageSender;
+import MessageSender = chrome.runtime.MessageSender;
 
 let popupId: number | null = null;
 let pendingPopupRequest: { type: string, payload: any, resolve: (data: any) => void, reject: (err: Error) => void } | null = null;

@@ -1,8 +1,7 @@
-import {browser} from "webextension-polyfill-ts";
 import MessageTypes from "@src/util/messageTypes";
 
 (async function () {
-  const url = browser.runtime.getURL("js/bob3.js");
+  const url = chrome.runtime.getURL("js/bob3.js");
   const container = document.head || document.documentElement;
   const scriptTag = document.createElement("script");
   scriptTag.src = url;
@@ -13,7 +12,7 @@ import MessageTypes from "@src/util/messageTypes";
   window.addEventListener("message", async (event) => {
     const data = event.data;
     if (data && data.target === "bob3-contentscript") {
-      const res = await browser.runtime.sendMessage(data.message);
+      const res = await chrome.runtime.sendMessage(data.message);
       window.postMessage(
         {
           target: "bob3-injectedscript",
@@ -25,7 +24,7 @@ import MessageTypes from "@src/util/messageTypes";
     }
   });
 
-  browser.runtime.onMessage.addListener((action) => {
+  chrome.runtime.onMessage.addListener((action: any) => {
     switch (action.type) {
       case MessageTypes.DISCONNECTED:
         window.postMessage(

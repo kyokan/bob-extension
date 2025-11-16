@@ -1,5 +1,3 @@
-import {browser} from "webextension-polyfill-ts";
-
 export type ReduxAction = {
   type: string;
   payload?: any;
@@ -12,5 +10,5 @@ export default async function pushMessage(message: ReduxAction) {
     return chrome.runtime.sendMessage(message);
   }
 
-  return browser.runtime.sendMessage(message);
+  return chrome.runtime.sendMessage(message);
 }
