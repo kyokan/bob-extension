@@ -689,7 +689,7 @@ async function openPopup() {
     height: 600,
   });
 
-  popupId = popup.id as number;
+  popupId = popup!.id as number;
 
   chrome.windows.onRemoved.addListener(function listener(windowId) {
     if (windowId === popupId) {
@@ -698,7 +698,7 @@ async function openPopup() {
     }
   });
 
-  return popup;
+  return popup!;
 }
 
 function closePopupOnAcceptOrReject(
