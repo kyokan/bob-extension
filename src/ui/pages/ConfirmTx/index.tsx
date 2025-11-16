@@ -13,6 +13,8 @@ import {toUnicode} from "@src/util/name";
 import Textarea from "@src/ui/components/Textarea";
 import {toBIND} from "@src/util/records";
 import ErrorMessage from "@src/ui/components/ErrorMessage";
+import {getExplorerUrl} from "@src/util/explorer";
+import {useExplorer} from "@src/ui/ducks/app";
 import {
   RegularView,
   RegularViewContent,
@@ -212,6 +214,7 @@ function TxDetail(props: {hash: string}): ReactElement {
   const pendingTx = useQueuedTXByHash(props.hash);
   const action = getTXAction(pendingTx);
   const [isViewingDetail, setViewDetail] = useState(false);
+  const explorer = useExplorer();
 
   if (pendingTx.method) return <></>;
 
@@ -236,7 +239,7 @@ function TxDetail(props: {hash: string}): ReactElement {
                     }
                     <a
                       className="confirm-tx__input-group__address"
-                      href={`https://e.hnsfans.com/address/${input.coin.address}`}
+                      href={getExplorerUrl(explorer, "address", input.coin.address)}
                       target="_blank"
                     >
                       {ellipsify(input.coin.address)}
@@ -266,7 +269,7 @@ function TxDetail(props: {hash: string}): ReactElement {
                   )}
                   <a
                     className="confirm-tx__output-group__address"
-                    href={`https://e.hnsfans.com/address/${output.address}`}
+                    href={getExplorerUrl(explorer, "address", output.address)}
                     target="_blank"
                   >
                     {ellipsify(output.address)}

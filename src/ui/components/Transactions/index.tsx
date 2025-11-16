@@ -20,6 +20,8 @@ import MessageTypes from "@src/util/messageTypes";
 import {Loader} from "@src/ui/components/Loader";
 import Button, {ButtonType} from "@src/ui/components/Button";
 import RepairBidModal from "@src/ui/components/RepairBidModal";
+import {getExplorerUrl} from "@src/util/explorer";
+import {useExplorer} from "@src/ui/ducks/app";
 
 export default function Transactions(): ReactElement {
   const order = useTXOrder();
@@ -79,6 +81,7 @@ const ActionToFA: {[actionType: string]: string} = {
 export const TransactionRow = (props: {hash: string}): ReactElement => {
   const {hash} = props;
   const [showRepairModal, setRepairModal] = useState(false);
+  const explorer = useExplorer();
   const tx = useTXByHash(hash);
   const value = getTXValue(tx!);
   const action = getTXAction(tx!);
@@ -86,8 +89,8 @@ export const TransactionRow = (props: {hash: string}): ReactElement => {
   const pending = !tx!.height || tx!.height < 0;
 
   const openExplorer = useCallback(() => {
-    window.open(`https://e.hnsfans.com/tx/${tx!.hash}`, "_blank");
-  }, [tx!.hash]);
+    window.open(getExplorerUrl(explorer, "tx", tx!.hash), "_blank");
+  }, [tx!.hash, explorer]);
 
   const openExplorerName = useCallback(
     async (e) => {
@@ -96,9 +99,9 @@ export const TransactionRow = (props: {hash: string}): ReactElement => {
         type: MessageTypes.GET_NAME_BY_HASH,
         payload: nameHash,
       });
-      window.open(`https://e.hnsfans.com/name/${result}`, "_blank");
+      window.open(getExplorerUrl(explorer, "name", result), "_blank");
     },
-    [nameHash]
+    [nameHash, explorer]
   );
 
   const displayValue = formatNumber(fromDollaryDoos(value));

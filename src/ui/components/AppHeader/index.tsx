@@ -1,4 +1,4 @@
-import React, {ReactElement, useState} from "react";
+import React, {ReactElement, useCallback} from "react";
 import ReactTooltip from "react-tooltip";
 import BobIcon from "../../../static/icons/bob-black.png";
 import BobMoveIcon from "../../../static/icons/bob-moves.gif";
@@ -9,12 +9,22 @@ import {useBobMessage, useBobMoving} from "@src/ui/ducks/app";
 import classNames from "classnames";
 import {useWalletState} from "@src/ui/ducks/wallet";
 import {useCurrentBlockHeight} from "@src/ui/ducks/node";
+import {getExplorerUrl} from "@src/util/explorer";
+import {useExplorer} from "@src/ui/ducks/app";
 
 export default function AppHeader(): ReactElement {
   const {rescanning} = useWalletState();
   const bobMessage = useBobMessage();
   const bobMoving = useBobMoving();
   const currentBlockHeight = useCurrentBlockHeight();
+  const explorer = useExplorer();
+
+  const handleBlockClick = useCallback(() => {
+    window.open(
+      getExplorerUrl(explorer, "block", String(currentBlockHeight)),
+      "_blank"
+    );
+  }, [explorer, currentBlockHeight]);
 
   return (
     <>
@@ -40,11 +50,7 @@ export default function AppHeader(): ReactElement {
         <div className="app-header__m">
           <div
             className="app-header__block-height"
-            onClick={() =>
-              window.open(
-                `https://e.hnsfans.com/block/${currentBlockHeight}`
-              )
-            }
+            onClick={handleBlockClick}
           >
             <div className="app-header__block-height__label">
               Current Block:

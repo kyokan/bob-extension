@@ -65,8 +65,10 @@ enum MessageTypes {
   // settings
   GET_ANALYTICS = "getAnalytics",
   GET_API = "get_api",
+  GET_EXPLORER = "get_explorer",
   GET_MULTI_ACCOUNTS_ENABLED = "getMultiAccountsEnabled",
   SET_ANALYTICS = "setAnalytics",
+  SET_EXPLORER = "set_explorer",
   SET_MULTI_ACCOUNTS_ENABLED = "setMultiAccountsEnabled",
   SET_RPC_HOST = "set_rpc_host",
   SET_RPC_KEY = "set_rpc_key",

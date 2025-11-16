@@ -23,6 +23,9 @@ import {setMultiAccountsEnabled, useMultiAccountsEnabled} from "@src/ui/ducks/ap
 import Modal from "@src/ui/components/Modal";
 import Textarea from "@src/ui/components/Textarea";
 import SwitchButton from "@src/ui/components/SwitchButton";
+import Select from "@src/ui/components/Select";
+import {EXPLORERS} from "@src/util/explorer";
+import {useExplorer, setExplorer} from "@src/ui/ducks/app";
 
 const pkg = require("../../../../package.json");
 
@@ -44,6 +47,16 @@ export default function Settings(): ReactElement {
   return (
     <RegularView className="settings">
       <Switch>
+        <Route path="/settings/general">
+          <RegularViewHeader onClose={() => history.push("/")}>
+            <Icon
+              size={1.25}
+              fontAwesome="fa-arrow-left"
+              onClick={() => history.goBack()}
+            />
+            <div className="settings__title">General</div>
+          </RegularViewHeader>
+        </Route>
         <Route path="/settings/network">
           <RegularViewHeader onClose={() => history.push("/")}>
             <Icon
@@ -92,6 +105,9 @@ export default function Settings(): ReactElement {
       </Switch>
       <RegularViewContent>
         <Switch>
+          <Route path="/settings/general">
+            <GeneralContent />
+          </Route>
           <Route path="/settings/network">
             <NetworkContent />
           </Route>
@@ -110,6 +126,75 @@ export default function Settings(): ReactElement {
         </Switch>
       </RegularViewContent>
     </RegularView>
+  );
+}
+
+function GeneralContent(): ReactElement {
+  const explorer = useExplorer();
+  const multiAccountsEnabled = useMultiAccountsEnabled();
+  const dispatch = useDispatch();
+
+  const explorerOptions = EXPLORERS.map((explorerOption) => ({
+    value: explorerOption.id,
+    children: explorerOption.label,
+  }));
+  if (explorer && !EXPLORERS.find((e) => e.id === explorer.id)) {
+    explorerOptions.push({
+      value: "custom",
+      children: "Custom",
+    });
+  }
+
+  const onExplorerChange = useCallback(async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newId = e.target.value;
+    if (newId === "custom") return;
+    const newExplorer = EXPLORERS.find((e) => e.id === newId) || EXPLORERS[0];
+    await postMessage({
+      type: MessageTypes.SET_EXPLORER,
+      payload: newExplorer,
+    });
+    dispatch(setExplorer(newExplorer));
+  }, [dispatch]);
+
+  const updateMultiAccountsEnabled = useCallback(
+    async (e) => {
+      const checked = e.target.checked;
+      // persist setting
+      await postMessage({
+        type: MessageTypes.SET_MULTI_ACCOUNTS_ENABLED,
+        payload: checked,
+      });
+      // update UI
+      dispatch(setMultiAccountsEnabled(checked));
+      if (!checked) {
+        dispatch(selectAccount("default"));
+      }
+    },
+    [dispatch]
+  );
+
+  return (
+    <>
+      <SettingGroup
+        name="Block Explorer"
+        selectProps={{
+          value: explorer.id,
+          onChange: onExplorerChange,
+          options: explorerOptions,
+        }}
+      >
+        <small>Select the block explorer to open names, transactions, addresses, and blocks.</small>
+      </SettingGroup>
+      <SettingGroup
+        name="Enable Multi-Accounts"
+        switchBtnProps={{
+          update: updateMultiAccountsEnabled,
+          active: multiAccountsEnabled,
+        }}
+      >
+        <small><b>Warning: </b>Any transactions made from non-default accounts will not be visible in Bob Desktop as it does not support multi-accounts yet.</small>
+      </SettingGroup>
+    </>
   );
 }
 
@@ -164,7 +249,6 @@ function NetworkContent(): ReactElement {
     setSavingApiKey(false);
   }, [rpcAPIKey]);
 
-
   return (
     <>
       <SettingGroup
@@ -203,27 +287,6 @@ function NetworkContent(): ReactElement {
 
 function WalletContent(): ReactElement {
   const {rescanning} = useWalletState();
-  const multiAccountsEnabled = useMultiAccountsEnabled();
-  const dispatch = useDispatch();
-
-  const updateMultiAccountsEnabled = useCallback(
-    async (e) => {
-      const checked = e.target.checked;
-
-      // persist setting
-      await postMessage({
-        type: MessageTypes.SET_MULTI_ACCOUNTS_ENABLED,
-        payload: checked,
-      });
-
-      // update UI
-      dispatch(setMultiAccountsEnabled(checked));
-      if (!checked) {
-        dispatch(selectAccount("default"));
-      }
-    },
-    [dispatch]
-  );
 
   const rescan = useCallback(() => {
     if (rescanning) return;
@@ -252,15 +315,6 @@ function WalletContent(): ReactElement {
         }}
       >
         <small>Perform a full rescan.</small>
-      </SettingGroup>
-      <SettingGroup
-        name="Enable Multi-Accounts"
-        switchBtnProps={{
-          update: updateMultiAccountsEnabled,
-          active: multiAccountsEnabled,
-        }}
-      >
-        <small><b>Warning: </b>Any transactions made from non-default accounts will not be visible in Bob Desktop as it does not support multi-accounts yet.</small>
       </SettingGroup>
     </>
   );
@@ -393,6 +447,11 @@ function SettingsSelectContent(): ReactElement {
   return (
     <>
       <SettingSelectGroup
+        name="General"
+        description="Explorer selection and features"
+        onClick={() => history.push("/settings/general")}
+      />
+      <SettingSelectGroup
         name="Network"
         description="Edit RPC network"
         onClick={() => history.push("/settings/network")}
@@ -447,6 +506,11 @@ type GroupProps = {
     update: (e: any) => Promise<void>;
     active: boolean;
   };
+  selectProps?: {
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+    options: Array<{value: string; children: string}>;
+  };
 };
 
 function SettingGroup(props: GroupProps) {
@@ -476,6 +540,13 @@ function SettingGroup(props: GroupProps) {
               <Button btnType={ButtonType.primary} {...props.primaryBtnProps}>
                 {props.primaryBtnProps.children}
               </Button>
+            )}
+            {props.selectProps && (
+              <Select
+                value={props.selectProps.value}
+                onChange={props.selectProps.onChange}
+                options={props.selectProps.options}
+              />
             )}
           </div>
         </div>
